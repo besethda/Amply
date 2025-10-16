@@ -1,0 +1,12 @@
+@font-face {
+  font-family: "Lexend Deca";
+  src: url(/fonts/LexendDeca-VariableFont_wght.ttf) format("truetype");
+  font-weight: 100 800;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Dekko";
+  src: url(/fonts/Dekko-Regular.ttf) format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
