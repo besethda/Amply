@@ -4,11 +4,89 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Amply – Listener</title>
+    <link rel="stylesheet" href="styles/general.css" />
+    <link rel="stylesheet" href="styles/index.css" />
+    <link rel="stylesheet" href="styles/styles.css" />
     <script src="scripts/script.js" defer></script>
-    <link rel="stylesheet" href="styles/styles.css"
   </head>
   <body>
-    <h1>🎵 Amply – Listener</h1>
-    <div id="trackList">Loading tracks...</div>
+    <header class="header">
+      <img class="logo" src="./images/amply.png" alt="Amply Logo" />
+    </header>
+    <main class="main">
+      <div class="songslist">
+        <div class="song-box">
+          <div id="trackList">Loading tracks...</div>
+        </div>
+      </div>
+    </main>
+
+    <div id="playerBar" class="player-bar hidden">
+      <div class="player-info">
+        <span id="currentTrackName">No track playing</span>
+      </div>
+
+      <div class="player-controls">
+        <!-- Previous -->
+        <button id="prevTrack" class="icon-button" aria-label="Previous track">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+            fill="currentColor"
+          >
+            <path
+              d="M6 4v7.382l7.447-7.447a1 1 0 0 1 1.707.707v6.382l7.447-7.447a1 1 0 0 1 1.707.707v16.764a1 1 0 0 1-1.707.707L15.154 13v6.382a1 1 0 0 1-1.707.707L6 12.618V20a1 1 0 0 1-2 0V4a1 1 0 0 1 2 0z"
+            />
+          </svg>
+        </button>
+
+        <!-- Play / Pause -->
+        <button id="playPause" class="icon-button" aria-label="Play or pause">
+          <svg
+            id="playIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="34"
+            height="34"
+            fill="currentColor"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+
+          <svg
+            id="pauseIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="34"
+            height="34"
+            fill="currentColor"
+            style="display: none"
+          >
+            <path d="M6 19h4V5H6zm8-14v14h4V5h-4z" />
+          </svg>
+        </button>
+
+        <!-- Next -->
+        <button id="nextTrack" class="icon-button" aria-label="Next track">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+            fill="currentColor"
+          >
+            <path
+              d="M18 20V12.618l-7.447 7.447A1 1 0 0 1 8.846 19V12.618L1.4 20.065A1 1 0 0 1-.307 19.358V2.594a1 1 0 0 1 1.707-.707L8.846 9.334V2.952a1 1 0 0 1 1.707-.707L18 9.692V4a1 1 0 0 1 2 0v16a1 1 0 0 1-2 0z"
+            />
+          </svg>
+        </button>
+
+        <input type="range" id="progressBar" value="0" min="0" max="100" />
+      </div>
+
+      <audio id="globalAudio" controls hidden></audio>
+    </div>
   </body>
 </html>

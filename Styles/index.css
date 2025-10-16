@@ -1,0 +1,173 @@
+h1 {
+  color: #6cf;
+  text-align: center;
+}
+
+.songslist {
+  width: 90%;
+  margin-left: 5%;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.song-box {
+  width: 100%;
+}
+
+#trackList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.track {
+  position: relative;
+  width: clamp(105px, 16vw, 180px);
+  aspect-ratio: 1;
+  background: #ffffff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+  padding: 1vw;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+.track:hover {
+  transform: scale(1.05);
+}
+
+.track strong {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #111;
+}
+
+/* Hide the play button until hover */
+.track-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  opacity: 0;
+  background: #6cf;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.track:hover .track-play {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  background: #8df;
+  transition: 0.4s ease-in-out;
+}
+
+.track-play:hover {
+  background: #656565;
+}
+
+.track-play svg {
+  width: 38px;
+  height: 38px;
+  fill: #ffffff;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover {
+  transform: scale(1.15);
+  color: #aeaeae; /* Spotify green */
+}
+
+button {
+  background: #6cf;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+button {
+  background: #6cf;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #8df;
+}
+
+.player-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 11px;
+  width: 80%;
+  background: linear-gradient(to bottom, #3c95b5e0, #7e1c52b6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.5rem;
+  border-top: 1px solid #333;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  transition: transform 0.3s;
+}
+
+.player-bar.hidden {
+  transform: translateY(100%);
+}
+
+.player-info {
+  flex: 1;
+  width: 13%;
+  color: rgb(255, 255, 255);
+  font-size: 2rem;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  width: 80%;
+  gap: 1rem;
+}
+
+#progressBar {
+  width: 87%;
+  accent-color: #6cf;
+}

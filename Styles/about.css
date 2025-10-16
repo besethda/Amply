@@ -1,27 +1,9 @@
 @import url(fonts.css);
 
-* {
-  box-sizing: border-box;
-  font-family: "Dekko";
-}
-
 body {
   padding: 0;
   margin: 0;
   color: rgb(22, 22, 22);
-}
-
-.logo {
-  height: 12vh;
-  width: auto;
-  margin-left: 2vw;
-}
-
-.header {
-  margin: 0;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
 }
 
 .title {
@@ -32,13 +14,6 @@ body {
   padding: 18px;
   border-bottom: white 1px solid;
   margin-left: 6%;
-}
-
-.main {
-  background-image: linear-gradient(to right, #269dc98c, #cb398973);
-  margin: 0;
-  padding-top: 5vh;
-  padding-bottom: 6vh;
 }
 
 .text {
