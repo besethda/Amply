@@ -1,0 +1,79 @@
+body {
+  font-family: sans-serif;
+  background: #111;
+  color: #eee;
+  padding: 2rem;
+  max-width: 600px;
+  margin: auto;
+}
+h1 {
+  color: #6cf;
+}
+input,
+button {
+  margin: 0.5rem 0;
+  padding: 0.6rem;
+  font-size: 1rem;
+}
+button {
+  background: #6cf;
+  border: none;
+  color: #111;
+  cursor: pointer;
+  border-radius: 8px;
+}
+button:hover {
+  background: #8df;
+}
+#status {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+.section {
+  margin-top: 2rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #1a1a1a;
+}
+label {
+  display: block;
+  margin-top: 0.5rem;
+}
+input[type="text"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  margin-top: 0.3rem;
+}
+.note {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+#warningBanner {
+  background: #ffae00;
+  color: #111;
+  padding: 1rem;
+  text-align: center;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  border-bottom: 2px solid #222;
+}
+
+#artistStatus {
+  background: linear-gradient(90deg, #6cf, #a4e);
+  color: white;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.hidden {
+  display: none;
+}
