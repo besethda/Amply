@@ -1,7 +1,3 @@
-import { API_URL, loadSongs, $, requireAuth } from "./general.js";
-
-requireAuth(); // 🚨 Redirects to login if not logged in
-
 // === DOM ELEMENTS ===
 const trackList = $("#trackList");
 const playerBar = $("#playerBar");
@@ -20,6 +16,10 @@ let currentSong = null;
 let songs = [];
 let isRepeat = false;
 let isShuffle = false;
+
+import { API_URL, loadSongs, $, requireAuth } from "../../scripts/general.js";
+
+requireAuth(); // 🔐 Redirects if not logged in
 
 // === LOAD SONGS ON START ===
 window.addEventListener("DOMContentLoaded", async () => {
@@ -41,6 +41,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     trackList.innerHTML = `<p>Failed to load songs.</p>`;
   }
 });
+
+
 
 // === RENDER SONG GRID ===
 function renderSongs(list) {

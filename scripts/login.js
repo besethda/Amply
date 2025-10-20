@@ -60,7 +60,7 @@ loginBtn?.addEventListener("click", async () => {
 
       message.style.color = "green";
       message.textContent = "✅ Login successful! Redirecting...";
-      setTimeout(() => (window.location.href = "dashboard.html"), 1000);
+      setTimeout(() => (window.location.href = "/Amply-listener/listener.html"), 1000);
       return;
     }
 
