@@ -1,6 +1,5 @@
 // scripts/upload.js
-import { API_URL, checkArtistConnected, loadConfig } from "./general.js";
-
+import { API_URL, checkArtistConnected, loadConfig } from "../../scripts/general.js";
 const uploadBtn = document.getElementById("uploadBtn");
 const fileInput = document.getElementById("fileInput");
 const coverArtInput = document.getElementById("coverArt");

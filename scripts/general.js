@@ -100,3 +100,46 @@ export function logout() {
   localStorage.removeItem("amplyRefreshToken");
   window.location.href = "/login.html";
 }
+
+// ✅ Check if an artist is logged in
+export function checkArtistConnected() {
+  const token = localStorage.getItem("amplyIdToken");
+
+  // not logged in? redirect to login page
+  if (!token) {
+    console.warn("⚠️ Artist not logged in — redirecting...");
+    window.location.href = "/login.html";
+    return false;
+  }
+
+  // optional: check if the user belongs to artist group
+  try {
+    const payload = parseJwt(token);
+    const groups = payload["cognito:groups"] || [];
+
+    if (!groups.includes("artist") && !groups.includes("admin")) {
+      console.warn("⚠️ Not an artist — redirecting to listener page...");
+      window.location.href = "../index.html";
+      return false;
+    }
+  } catch (e) {
+    console.error("JWT parsing failed", e);
+    window.location.href = "../login.html";
+    return false;
+  }
+
+  console.log("✅ Artist authenticated");
+  return true;
+}
+
+// ✅ Placeholder for loading user config
+export async function loadConfig() {
+  try {
+    const res = await fetch("../config.json");
+    if (!res.ok) throw new Error("Missing config.json");
+    return await res.json();
+  } catch (err) {
+    console.warn("⚠️ No config found:", err);
+    return {};
+  }
+}
