@@ -1,3 +1,4 @@
+const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
 const INDEX_URL = "https://amply-central-596430611327.s3.eu-north-1.amazonaws.com/amply-index.json";
 
 const trackList = document.getElementById("trackList");
@@ -8,6 +9,7 @@ const progressBar = document.getElementById("progressBar");
 const playerBar = document.getElementById("playerBar");
 const currentTrackName = document.getElementById("currentTrackName");
 const audio = document.getElementById("globalAudio");
+const searchBar = document.getElementById("searchBar");
 
 let currentSong = null;
 let songs = [];
@@ -15,15 +17,15 @@ let songs = [];
 // === LOAD SONGS ===
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    const res = await fetch(INDEX_URL + "?v=" + Date.now()); // avoid cache
+    const res = await fetch(INDEX_URL + "?v=" + Date.now());
     const data = await res.json();
 
-    // Flatten all songs from all artists
+    // include artist bucket for streaming
     songs = data.artists.flatMap((artist) =>
       artist.songs.map((song) => ({
         ...song,
         artist: artist.name,
-        stream_url: song.art_url?.replace("/art/", "/songs/").replace("-cover", ""), // fallback if needed
+        bucket: artist.bucket, // ✅ added so we know where to stream from
       }))
     );
 
@@ -35,41 +37,33 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 
 // === RENDER SONGS ===
-function renderSongs(songs) {
+function renderSongs(list) {
   trackList.innerHTML = "";
-
-  if (!songs.length) {
+  if (!list.length) {
     trackList.innerHTML = `<p>No songs uploaded yet.</p>`;
     return;
   }
 
-  songs.forEach((song) => {
+  list.forEach((song) => {
     const songBox = document.createElement("div");
     songBox.className = "track";
 
     songBox.innerHTML = `
-      <img src="${song.art_url || './images/default-art.jpg'}" 
-           alt="${song.title} cover" 
-           class="cover-art" 
-           style="width:100%;border-radius:12px;">
+      <img src="${song.art_url || './images/default-art.jpg'}"
+           alt="${song.title} cover"
+           class="cover-art">
       <strong>${song.title}</strong>
-      <span style="font-size:0.9rem;color:#333;">${song.artist || 'Unknown Artist'}</span>
-      <div class="track-play">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
-      </div>
+      <div style="font-size:0.9rem;color:#bbb;">${song.artist}</div>
     `;
 
-    // play click
     songBox.addEventListener("click", () => playSong(song));
     trackList.appendChild(songBox);
   });
 }
 
-// === PLAY / PAUSE ===
-function playSong(song) {
-  if (currentSong && currentSong.stream_url === song.stream_url && !audio.paused) {
+// === PLAY SONG (SECURE STREAM) ===
+async function playSong(song) {
+  if (currentSong && currentSong.title === song.title && !audio.paused) {
     audio.pause();
     playIcon.style.display = "block";
     pauseIcon.style.display = "none";
@@ -77,15 +71,30 @@ function playSong(song) {
   }
 
   currentSong = song;
-  audio.src = song.stream_url;
-  audio.play();
-
   playerBar.classList.remove("hidden");
   currentTrackName.textContent = `${song.title} – ${song.artist}`;
-  playIcon.style.display = "none";
-  pauseIcon.style.display = "block";
+
+  try {
+    // ✅ now includes both bucket and file
+    const res = await fetch(
+      `${API_URL}/stream?bucket=${encodeURIComponent(song.bucket)}&file=${encodeURIComponent(song.file)}`
+    );
+
+    const data = await res.json();
+    if (!res.ok || !data.streamUrl) throw new Error(data.error || "Failed to get stream URL");
+
+    audio.src = data.streamUrl;
+    await audio.play();
+
+    playIcon.style.display = "none";
+    pauseIcon.style.display = "block";
+  } catch (err) {
+    console.error("🎵 Stream error:", err);
+    alert("Sorry — this track can’t be played right now.");
+  }
 }
 
+// === PLAYER CONTROLS ===
 playPauseBtn.addEventListener("click", () => {
   if (!currentSong) return;
 
@@ -100,7 +109,6 @@ playPauseBtn.addEventListener("click", () => {
   }
 });
 
-// === PROGRESS BAR ===
 audio.addEventListener("timeupdate", () => {
   if (audio.duration) {
     progressBar.value = (audio.currentTime / audio.duration) * 100;
@@ -111,4 +119,16 @@ progressBar.addEventListener("input", () => {
   if (audio.duration) {
     audio.currentTime = (progressBar.value / 100) * audio.duration;
   }
+});
+
+// === SEARCH FILTER ===
+searchBar.addEventListener("input", (e) => {
+  const q = e.target.value.toLowerCase();
+  const filtered = songs.filter(
+    (s) =>
+      s.title.toLowerCase().includes(q) ||
+      s.artist.toLowerCase().includes(q) ||
+      s.genre?.join(", ").toLowerCase().includes(q)
+  );
+  renderSongs(filtered);
 });

@@ -1,5 +1,3 @@
-@import url(fonts.css);
-
 * {
   box-sizing: border-box;
   font-family: "Dekko", sans-serif;
@@ -7,7 +5,6 @@
 
 body {
   margin: 0;
-  background-image: linear-gradient(to right, #269dc98c, #cb398973);
   color: #fff;
   overflow-x: hidden;
 }

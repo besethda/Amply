@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amply – Artist Login</title>
+    <link rel="stylesheet" href="Styles/general.css" />
+    <link rel="stylesheet" href="Styles/login.css" />
+    <script type="module" src="scripts/login.js"></script>
+  </head>
+  <body>
+    <div class="login-box">
+      <img
+        src="../images/amply.png"
+        alt="Amply Logo"
+        style="width: 80px; margin-bottom: 1rem"
+      />
+      <h1>Welcome, Artist</h1>
+      <p>Sign in to manage your music, uploads, and analytics.</p>
+      <button id="signIn">Sign In</button>
+    </div>
+
+    <script type="module">
+      import { userManager } from "./scripts/main.js";
+      document.getElementById("signIn").addEventListener("click", async () => {
+        await userManager.signinRedirect();
+      });
+    </script>
+  </body>
+</html>

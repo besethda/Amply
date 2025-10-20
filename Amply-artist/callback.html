@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amply – Dashboard</title>
+    <link rel="stylesheet" href="Styles/general.css" />
+    <link rel="stylesheet" href="Styles/login.css" />
+    <script type="module" src="scripts/main.js"></script>
+  </head>
+  <body>
+    <div class="login-box">
+      <h1>🎶 Welcome Back!</h1>
+      <p>You're signed in as:</p>
+      <div class="user-info">
+        <strong>Email:</strong> <span id="email"></span><br />
+        <strong>Access Token:</strong>
+        <pre
+          id="access-token"
+          style="overflow: auto; max-width: 300px; white-space: wrap"
+        ></pre>
+      </div>
+      <button id="signOut">Sign Out</button>
+    </div>
+
+    <script type="module">
+      import { userManager, signOutRedirect } from "./scripts/main.js";
+
+      userManager.signinCallback().then((user) => {
+        document.getElementById("email").textContent =
+          user.profile?.email || "(no email)";
+        document.getElementById("access-token").textContent = user.access_token;
+        localStorage.setItem("amplyAccessToken", user.access_token);
+      });
+
+      document.getElementById("signOut").addEventListener("click", async () => {
+        await signOutRedirect();
+      });
+    </script>
+  </body>
+</html>

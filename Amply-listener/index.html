@@ -3,26 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Listener</title>
-    <link rel="stylesheet" href="Styles/general.css" />
-    <link rel="stylesheet" href="Styles/index.css" />
-    <link rel="icon" href="./images/amply.png" />
-    <script src="scripts/listener.js" defer></script>
-  </head>
-  <body>
-    <header class="header">
-      <img class="logo" src="./images/amply.png" alt="Amply Logo" />
-      <select id="artistSelect" class="artist-select">
-        <option value="">Loading artists...</option>
-      </select>
-    </header>
+    <title>Amply – Listen</title>
 
-    <main class="main">
-      <div class="songslist">
-        <div class="song-box">
-          <div id="trackList">Select an artist to view their tracks.</div>
-        </div>
+    <link rel="stylesheet" href="../Styles/general.css" />
+    <link rel="stylesheet" href="Styles/listener.css" />
+    <link rel="icon" href="./images/amply.png" />
+    <script type="module" src="scripts/listener.js" defer></script>
+  </head>
+
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="../images/amply.png" alt="Amply" class="sidebar-logo" />
+        <h2>Amply</h2>
       </div>
+      <nav class="menu">
+        <ul>
+          <li class="active">🏠 Home</li>
+          <li>🎧 Playlists</li>
+          <li>🔥 Recommended</li>
+          <li>❤️ Liked Songs</li>
+          <li>⚙️ Settings</li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <input
+          type="text"
+          id="searchBar"
+          placeholder="Search for songs or artists..."
+        />
+      </header>
+
+      <section class="songs-section">
+        <h2>🎵 Discover Music</h2>
+        <div id="trackList" class="track-list"></div>
+      </section>
     </main>
 
     <div id="playerBar" class="player-bar hidden">

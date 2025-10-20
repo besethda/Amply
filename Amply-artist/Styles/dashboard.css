@@ -1,0 +1,61 @@
+.dashboard {
+  margin-right: 280px; /* leave space for sidebar */
+  padding: 3rem;
+  color: #fff;
+}
+
+.metrics {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.metric-box {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  flex: 1;
+  min-width: 220px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.metric-box:hover {
+  transform: translateY(-4px);
+}
+
+.metric-box h3 {
+  margin-bottom: 0.5rem;
+  color: #6cf;
+}
+
+.metric-box p {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.top-songs {
+  margin-top: 3rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.top-songs h2 {
+  color: #6cf;
+  margin-bottom: 1rem;
+}
+
+.top-songs ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.top-songs li {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}

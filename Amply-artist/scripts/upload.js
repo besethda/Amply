@@ -11,7 +11,7 @@ window.addEventListener("DOMContentLoaded", () => {
   checkArtistConnected();
 });
 
-// ✅ Logout button (optional)
+// ✅ Logout button
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
@@ -35,6 +35,23 @@ uploadBtn.addEventListener("click", async () => {
     return;
   }
 
+  // 🎵 Validate audio format
+  const validAudioTypes = ["audio/mpeg", "audio/wav"];
+  const validAudioExts = [".mp3", ".wav"];
+  const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  if (!validAudioTypes.includes(file.type) && !validAudioExts.includes(fileExt)) {
+    statusDiv.textContent = "❌ Only .mp3 or .wav audio files are allowed.";
+    return;
+  }
+
+  // ⚠️ Warn about large audio files (over ~30 MB)
+  const maxAudioSizeMB = 30;
+  const audioSizeMB = (file.size / 1024 / 1024).toFixed(1);
+  if (audioSizeMB > maxAudioSizeMB) {
+    statusDiv.innerHTML = `⚠️ Your audio file is <strong>${audioSizeMB} MB</strong>. 
+    Large files may take longer to upload or buffer slowly for listeners.`;
+  }
+
   const config = loadConfig();
   console.log("🎛 Loaded config:", config);
 
@@ -54,7 +71,24 @@ uploadBtn.addEventListener("click", async () => {
     let coverUrl = "";
     const coverFile = coverArtInput.files[0];
     if (coverFile) {
-      const coverKey = `art/${file.name.replace(/\.[^/.]+$/, "")}-cover.${coverFile.name.split(".").pop()}`;
+      const validImageTypes = ["image/jpeg", "image/png"];
+      const validImageExts = [".jpg", ".jpeg", ".png"];
+      const coverExt = coverFile.name.toLowerCase().slice(coverFile.name.lastIndexOf("."));
+
+      if (!validImageTypes.includes(coverFile.type) && !validImageExts.includes(coverExt)) {
+        statusDiv.textContent = "❌ Only .jpg, .jpeg, or .png image files are allowed for cover art.";
+        return;
+      }
+
+      // ⚠️ Warn about large image files (over ~5 MB)
+      const maxImageSizeMB = 5;
+      const imageSizeMB = (coverFile.size / 1024 / 1024).toFixed(1);
+      if (imageSizeMB > maxImageSizeMB) {
+        statusDiv.innerHTML = `⚠️ Your image file is <strong>${imageSizeMB} MB</strong>. 
+        Consider using a smaller image to improve loading speed.`;
+      }
+
+      const coverKey = `art/${file.name.replace(/\.[^/.]+$/, "")}-cover${coverExt}`;
       console.log("🎨 Uploading cover art:", { coverKey });
 
       const presignCover = await fetch(`${API_URL}/get-upload-url`, {
@@ -170,10 +204,10 @@ uploadBtn.addEventListener("click", async () => {
       throw new Error(`Central index update failed: ${errText}`);
     }
 
-    statusDiv.textContent = `✅ Uploaded "${metadata.title}" successfully!`;
+    statusDiv.innerHTML = `✅ Uploaded "<strong>${metadata.title}</strong>" successfully!`;
     console.log("✅ Upload complete and central index updated.");
   } catch (err) {
     console.error("❌ Upload error:", err);
-    statusDiv.textContent = "❌ Error: " + err.message;
+    statusDiv.innerHTML = "❌ Error: " + err.message;
   }
 });

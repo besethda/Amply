@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amply – Artist Dashboard</title>
+
+    <link rel="stylesheet" href="../Styles/general.css" />
+    <link rel="stylesheet" href="../Styles/artist-sidebar.css" />
+    <link rel="stylesheet" href="Styles/dashboard.css" />
+
+    <script type="module" src="scripts/general.js" defer></script>
+    <script type="module" src="scripts/dashboard.js" defer></script>
+  </head>
+
+  <body>
+    <header class="header">
+      <img class="logo" src="../images/amply.png" alt="Amply logo" />
+      <h1 style="color: white; margin-right: 280px">Dashboard</h1>
+    </header>
+
+    <main class="main dashboard">
+      <div class="metrics">
+        <div class="metric-box">
+          <h3>💰 Revenue This Month</h3>
+          <p>$142.50</p>
+        </div>
+        <div class="metric-box">
+          <h3>🧾 Total Billed to Artist</h3>
+          <p>$37.20</p>
+        </div>
+        <div class="metric-box">
+          <h3>🎧 Streams This Month</h3>
+          <p>4,231</p>
+        </div>
+      </div>
+
+      <div class="top-songs">
+        <h2>🔥 Top Songs</h2>
+        <ul>
+          <li><strong>Dr. Scott</strong> — 1,204 streams</li>
+          <li><strong>Sunset Drive</strong> — 947 streams</li>
+          <li><strong>Late Nights</strong> — 856 streams</li>
+          <li><strong>Funky Times</strong> — 605 streams</li>
+        </ul>
+      </div>
+    </main>
+
+    <!-- Shared Sidebar -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-header">🎧 Amply Artist</div>
+        <ul class="menu">
+          <li class="active" onclick="location.href='dashboard.html'">
+            📊 Dashboard
+          </li>
+          <li onclick="location.href='upload.html'">⬆️ Upload Song</li>
+          <li onclick="location.href='songs.html'">💽 My Songs</li>
+          <li onclick="location.href='payments.html'">💰 Payments</li>
+          <li onclick="location.href='settings.html'">⚙️ Settings</li>
+        </ul>
+      </div>
+      <div class="sidebar-footer" id="logoutBtn">🚪 Logout</div>
+    </aside>
+  </body>
+</html>

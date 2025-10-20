@@ -1,0 +1,55 @@
+@import url(fonts.css);
+
+* {
+  box-sizing: border-box;
+  font-family: "Dekko";
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-image: linear-gradient(to right, rgb(35, 70, 88), rgb(70, 30, 97));
+}
+
+.main {
+  margin: 0;
+  padding-top: 8vh;
+  padding-bottom: 6vh;
+}
+
+.header {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.logo {
+  height: 12vh;
+  width: auto;
+  margin-left: 2vw;
+}
+
+.nav {
+  width: fit-content;
+  height: 100%;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2vw;
+}
+
+.nav-option {
+  text-decoration: none;
+  padding: 1vw;
+  color: #51a5d9df;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+}
+
+.nav-option:hover {
+  transform: scale(1.1);
+  color: white;
+}
