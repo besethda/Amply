@@ -3,28 +3,54 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Artist Login</title>
-    <link rel="stylesheet" href="Styles/general.css" />
+    <title>Amply – Login</title>
+    <link rel="stylesheet" href="../Styles/general.css" />
     <link rel="stylesheet" href="Styles/login.css" />
-    <script type="module" src="scripts/login.js"></script>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
+    />
+    <script src="./login.js" type="module" defer></script>
   </head>
-  <body>
-    <div class="login-box">
-      <img
-        src="../images/amply.png"
-        alt="Amply Logo"
-        style="width: 80px; margin-bottom: 1rem"
-      />
-      <h1>Welcome, Artist</h1>
-      <p>Sign in to manage your music, uploads, and analytics.</p>
-      <button id="signIn">Sign In</button>
-    </div>
 
-    <script type="module">
-      import { userManager } from "./scripts/main.js";
-      document.getElementById("signIn").addEventListener("click", async () => {
-        await userManager.signinRedirect();
-      });
-    </script>
+  <body>
+    <div class="login-container" id="loginBox">
+      <h2>Welcome to Amply</h2>
+
+      <!-- LOGIN FORM -->
+      <div id="loginForm">
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="password" id="password" placeholder="Password" required />
+        <button id="loginBtn">Sign In</button>
+        <div id="message"></div>
+        <p class="toggle-text">
+          Don’t have an account?
+          <span id="showSignup">Create one</span>
+        </p>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signupForm" style="display: none">
+        <input type="email" id="signupEmail" placeholder="Email" required />
+        <input
+          type="password"
+          id="signupPassword"
+          placeholder="Password"
+          required
+        />
+        <input
+          type="password"
+          id="signupConfirm"
+          placeholder="Confirm Password"
+          required
+        />
+        <button id="signupButton">Create Account</button>
+        <p id="signupMessage"></p>
+        <p class="toggle-text">
+          Already have an account?
+          <span id="showLogin">Sign in</span>
+        </p>
+      </div>
+    </div>
   </body>
 </html>

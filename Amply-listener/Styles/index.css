@@ -1,155 +1,108 @@
-* {
-  box-sizing: border-box;
-  font-family: "Dekko", sans-serif;
+/* ===== LISTENER (HOME) PAGE ONLY ===== */
+/* Keep shared stuff (sidebar, top bar, player bar, buttons, resets) in ../Styles/general.css */
+
+/* Section title */
+.songs-section h2 {
+  color: #6cf;
+  margin-bottom: 1rem;
+  font-size: 1.6rem;
 }
 
-body {
-  margin: 0;
-  color: #fff;
-  overflow-x: hidden;
+/* Grid */
+#trackList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.5rem;
+  justify-items: center;
 }
 
-/* ===== HEADER ===== */
-.header {
-  margin: 0;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2vw;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.logo {
-  height: 12vh;
-  width: auto;
-  margin-left: 2vw;
-}
-
-/* ===== ARTIST SELECTOR ===== */
-.artist-select {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  outline: none;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.artist-select:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.artist-select option {
-  background: #222;
-  color: #fff;
-}
-
-/* ===== MAIN ===== */
-.main {
-  margin: 0;
-  padding-top: 8vh;
-  padding-bottom: 6vh;
-}
-
-/* ===== SONG GRID ===== */
-.songslist {
-  width: 90%;
-  margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2rem;
-}
-
-/* ===== TRACK CARDS ===== */
+/* Card */
 .song-box {
   position: relative;
-  width: clamp(105px, 16vw, 180px);
-  aspect-ratio: 1;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
-  padding: 1vw;
-  overflow: hidden;
+  width: 160px;
+  text-align: center;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 
 .song-box:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(108, 255, 255, 0.2);
 }
 
-/* Album artwork */
+/* Square art */
 .cover-art {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 12px;
-  z-index: 1;
+  border-radius: 10px;
+  transition: transform 0.3s ease;
 }
 
-/* Overlay for text info */
+.song-box:hover .cover-art {
+  transform: scale(1.05);
+}
+
+/* Info strip under image */
 .song-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0.8rem;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-  z-index: 2;
-  text-align: center;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.4rem 0.3rem 0.5rem;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  height: 48px; /* compact text area */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Title/artist with horizontal scroll (hidden bar) */
+.song-title,
+.song-artist {
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox hide */
+}
+
+.song-title::-webkit-scrollbar,
+.song-artist::-webkit-scrollbar {
+  display: none; /* WebKit hide */
 }
 
 .song-title {
-  font-size: 1rem;
+  color: #fff;
   font-weight: 600;
-  margin: 0;
-}
-
-.song-artist {
   font-size: 0.9rem;
-  opacity: 0.85;
-  margin: 0.2rem 0 0;
+}
+.song-artist {
+  color: #aaa;
+  font-size: 0.8rem;
 }
 
-/* ===== PLAY BUTTON ===== */
+/* Big play button on hover */
 .play-btn {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.9);
   opacity: 0;
-  background: #6cf;
   border: none;
   border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 1.5rem;
-  z-index: 3;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s;
+  width: 48px;
+  height: 48px;
+  background: #6cf;
+  color: #111;
+  font-size: 1.4rem;
+  font-weight: bold;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
 }
 
 .song-box:hover .play-btn {
@@ -157,123 +110,23 @@ body {
   transform: translate(-50%, -50%) scale(1);
 }
 
-.play-btn:hover {
-  background: #8df;
-}
-
-/* ===== PLAYER BAR ===== */
-.player-bar {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 12px 12px 0 0;
-  width: 90%;
-  max-width: 1000px;
-  background: linear-gradient(to right, #3c95b5e0, #7e1c52b6);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #333;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  transition: transform 0.3s ease-in-out;
-}
-
-.player-bar.hidden {
-  transform: translate(-50%, 120%);
-}
-
-.player-info {
-  color: #fff;
-  font-size: 1.3rem;
-  font-weight: 500;
-  text-align: center;
-  margin-bottom: 0.5rem;
-}
-
-.player-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 90%;
-  max-width: 800px;
-  gap: 1rem;
-}
-
-.icon-button {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  transition: transform 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-button:hover {
-  transform: scale(1.15);
-  color: #d9d9d9;
-}
-
-#progressBar {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  accent-color: #6cf;
-  cursor: pointer;
-}
-
-/* ===== GENERAL BUTTON STYLE ===== */
-button {
-  background: #6cf;
-  border: none;
-  border-radius: 6px;
-  padding: 0.6rem 1rem;
-  color: #111;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-
-button:hover {
-  background: #8df;
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #6cf;
-}
-
-/* ===== MEDIA QUERIES ===== */
+/* Responsive tweaks */
 @media (max-width: 768px) {
-  .player-bar {
-    width: 100%;
-    border-radius: 0;
-  }
-
-  .player-info {
-    font-size: 1rem;
+  #trackList {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1rem;
   }
 
   .song-box {
-    width: clamp(90px, 30vw, 150px);
+    width: 130px;
   }
-
-  .artist-select {
-    font-size: 0.9rem;
+  .song-info {
+    height: 42px;
+  }
+  .song-title {
+    font-size: 0.85rem;
+  }
+  .song-artist {
+    font-size: 0.75rem;
   }
 }

@@ -1,55 +1,136 @@
-@import url(fonts.css);
+@import url("fonts.css");
 
+/* ========= GLOBAL RESET ========= */
 * {
   box-sizing: border-box;
-  font-family: "Dekko";
-}
-
-body {
+  font-family: "Dekko", sans-serif;
   margin: 0;
   padding: 0;
-  background-image: linear-gradient(to right, rgb(35, 70, 88), rgb(70, 30, 97));
 }
 
+html,
+body {
+  height: 100%;
+  background: linear-gradient(to right, rgb(35, 70, 88), rgb(70, 30, 97));
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ========= GLOBAL ELEMENTS ========= */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  background: #6cf;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+button:hover {
+  background: #8df;
+}
+
+/* ========= LAYOUT STRUCTURE ========= */
 .main {
-  margin: 0;
+  min-height: 100vh;
   padding-top: 8vh;
   padding-bottom: 6vh;
 }
 
 .header {
-  margin: 0;
-  padding: 0;
   display: flex;
-  flex-direction: row;
   justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2vw;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
-  height: 12vh;
+  height: 10vh;
   width: auto;
-  margin-left: 2vw;
 }
 
+/* ========= NAVIGATION BAR ========= */
 .nav {
-  width: fit-content;
-  height: 100%;
-  font-size: 2rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-right: 2vw;
+  gap: 1rem;
+  font-size: 1.2rem;
 }
 
 .nav-option {
   text-decoration: none;
-  padding: 1vw;
-  color: #51a5d9df;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  color: #6cf;
   cursor: pointer;
-  transition: 0.3s ease-in-out;
+  transition: color 0.2s, transform 0.2s;
 }
 
 .nav-option:hover {
-  transform: scale(1.1);
-  color: white;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* ========= UTILITIES ========= */
+.hidden {
+  display: none !important;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========= SCROLLBAR ========= */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6cf;
+}
+
+/* ========= RESPONSIVE ========= */
+@media (max-width: 768px) {
+  .nav {
+    font-size: 1rem;
+  }
+
+  .logo {
+    height: 8vh;
+  }
 }

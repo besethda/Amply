@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amply – Playlists</title>
+
+    <link rel="stylesheet" href="../Styles/general.css" />
+    <link rel="stylesheet" href="../Styles/playlists.css" />
+    <script type="module" src="../Scripts/playlists.js" defer></script>
+  </head>
+
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="../images/amply.png" alt="Amply" class="sidebar-logo" />
+        <h2>Amply</h2>
+      </div>
+      <nav class="menu">
+        <ul>
+          <li onclick="window.location.href='listener.html'">🏠 Home</li>
+          <li class="active">🎧 Playlists</li>
+          <li onclick="window.location.href='recommended.html'">
+            🔥 Recommended
+          </li>
+          <li onclick="window.location.href='liked.html'">❤️ Liked Songs</li>
+          <li onclick="window.location.href='settings.html'">⚙️ Settings</li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="top-bar">
+        <input type="text" placeholder="Search playlists..." />
+      </header>
+
+      <section>
+        <h2>Your Playlists</h2>
+        <div id="playlistGrid" class="playlist-grid"></div>
+      </section>
+    </main>
+
+    <div id="playerBar" class="player-bar hidden">
+      <span id="currentTrackName">No track playing</span>
+      <input type="range" id="progressBar" min="0" max="100" />
+    </div>
+  </body>
+</html>

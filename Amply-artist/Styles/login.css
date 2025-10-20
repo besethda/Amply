@@ -1,47 +1,71 @@
-/* Keep Amply's vibe, minimal clean aesthetic */
 body {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: var(--main-background-color, #f9f9f9);
-  color: var(--main-color, #222);
-  font-family: inherit;
+  justify-content: center;
+  height: 100vh;
+  font-family: "Inter", sans-serif;
+  color: #fff;
 }
 
-h1 {
-  font-size: 2rem;
-  margin-bottom: 1.2rem;
-}
-
-.login-box {
-  background: var(--secondary-background-color, #fff);
-  padding: 2rem 3rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+.login-container {
+  background: white;
+  color: #222;
+  width: 360px;
+  padding: 2rem;
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
   text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+h2 {
+  color: #1d72b8;
+  margin-bottom: 1rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
 }
 
 button {
-  background-color: var(--accent-color, #1db954);
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.8rem;
+  background: #1d72b8;
   color: white;
+  font-size: 1.1rem;
   border: none;
-  border-radius: 12px;
-  padding: 0.8rem 1.6rem;
-  font-size: 1rem;
+  border-radius: 8px;
   cursor: pointer;
-  transition: 0.3s ease;
+  transition: background 0.2s ease;
 }
 
 button:hover {
-  background-color: #17a44b;
+  background: #155a8a;
 }
 
-.user-info {
-  margin-top: 2rem;
-  background: var(--secondary-background-color, #fff);
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+.toggle-text {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.toggle-text span {
+  color: #1d72b8;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#message,
+#signupMessage {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: red;
 }

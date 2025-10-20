@@ -1,0 +1,300 @@
+/* ===== GLOBAL RESET ===== */
+* {
+  box-sizing: border-box;
+  font-family: "Dekko", sans-serif;
+}
+
+body {
+  margin: 0;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ====== SIDEBAR ====== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 100vh;
+  background: #111;
+  color: #ccc;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-logo {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.sidebar h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #6cf;
+}
+
+.menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+}
+
+.menu li {
+  padding: 0.7rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.menu li:hover,
+.menu li.active {
+  background: #6cf;
+  color: #111;
+}
+
+/* ====== MAIN CONTENT ====== */
+.main-content {
+  margin-left: 220px;
+  padding: 2rem;
+  color: white;
+  min-height: 100vh;
+  padding-bottom: 8rem; /* space for floating player bar */
+}
+
+/* ====== TOP BAR ====== */
+.top-bar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+#searchBar {
+  width: 80%;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #222;
+  color: white;
+}
+
+.player-bar {
+  position: fixed;
+  left: 220px; /* align next to sidebar */
+  right: 0;
+  bottom: 20px;
+  margin: 0 auto;
+  width: calc(100% - 240px);
+  max-width: 900px;
+  background: linear-gradient(90deg, #2b4b7a, #5a1e5c);
+  color: #fff;
+  border-radius: 16px;
+  padding: 1rem 1rem;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.player-bar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 120%);
+}
+
+.player-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem; /* tighter */
+}
+
+#prevBtn svg {
+  transform: scaleX(-1);
+}
+
+/* CENTER: PROGRESS + SONG INFO */
+.player-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+#progressBar {
+  width: 100%;
+  max-width: 650px;
+  margin-bottom: 0.4rem;
+  cursor: pointer;
+  accent-color: #6cf;
+}
+
+.track-info {
+  text-align: center;
+  line-height: 1.2;
+}
+
+#currentTrackName {
+  display: block;
+  font-weight: 400;
+  font-size: 1.3rem;
+}
+
+#currentTrackArtist {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* RIGHT: SHUFFLE / REPEAT */
+.player-options {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* BUTTONS */
+.icon-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover {
+  transform: scale(1.2);
+  color: #d9d9d9;
+}
+
+#playPause svg {
+  pointer-events: none;
+}
+
+/* Repeat button active state */
+#repeatBtn.active svg {
+  stroke: #6cf;
+  transform: scale(1.1);
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+/* Shuffle button active state */
+#shuffleBtn.active svg {
+  stroke: #6cf;
+  transform: scale(1.1);
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+#shuffleBtn.active:hover svg {
+  stroke: #8df;
+}
+
+/* ====== GENERAL ELEMENTS ====== */
+button {
+  background: #6cf;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #8df;
+}
+
+/* ====== UTILITIES ====== */
+.hidden {
+  display: none !important;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ====== SCROLLBAR ====== */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6cf;
+}
+
+/* ====== FADE-IN EFFECT ====== */
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .player-bar {
+    width: 95%;
+    padding: 0.8rem 1.2rem;
+    bottom: 10px;
+  }
+
+  #progressBar {
+    max-width: 260px;
+  }
+
+  #currentTrackName {
+    font-size: 0.9rem;
+  }
+
+  #currentTrackArtist {
+    font-size: 0.75rem;
+  }
+
+  .icon-button {
+    font-size: 1.2rem;
+  }
+}
