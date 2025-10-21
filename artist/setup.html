@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Amply – Artist Setup</title>
-    <!-- ✅ Correct CSS imports -->
+
     <!-- STYLES -->
     <link rel="stylesheet" href="../Styles/core.css" />
     <link rel="stylesheet" href="../Styles/fonts.css" />
-    <link rel="stylesheet" href="../Styles/artist/general.css" />
     <link rel="stylesheet" href="../Styles/artist/setup.css" />
 
+    <!-- SCRIPTS -->
     <script type="module" src="../scripts/general.js" defer></script>
     <script type="module" src="../scripts/artist/setup.js" defer></script>
   </head>
@@ -23,50 +23,36 @@
 
     <!-- MAIN CONTENT -->
     <main>
-      <h1>Amply – Artist Setup</h1>
+      <h1>🎤 Artist Setup</h1>
 
-      <div class="section">
-        <h2>Step 1 – Create Your AWS Artist Environment</h2>
+      <section class="section fade-in">
+        <h2>Step 1 — Create Your Artist Environment</h2>
         <p>
-          This will create your own secure S3 bucket, CloudFront distribution,
-          and IAM role. Once created, copy the output values from AWS into the
-          boxes below.
+          Amply will create your own private AWS environment for music uploads.
+          This includes an S3 bucket, IAM role, and CloudFront delivery system —
+          all automatically linked to Amply.
         </p>
 
-        <label for="artistName">Enter your artist name (no spaces):</label>
+        <label for="artistName">Artist Name (no spaces):</label>
         <input type="text" id="artistName" placeholder="e.g. skywave" />
 
-        <button id="connectAwsBtn">🌐 Launch AWS Setup</button>
+        <button id="connectAwsBtn">🚀 Create My Environment</button>
 
         <p class="note">
-          After setup finishes, open the “Outputs” tab in AWS and copy these
-          three values below:
+          Once you click the button, AWS will open in a new tab. After the setup
+          finishes, click the “Return to Amply” button in AWS.
+        </p>
+      </section>
+
+      <section id="postSetup" class="section hidden">
+        <h2>Setup Complete 🎉</h2>
+        <p>
+          Great job! Once AWS finishes creating your environment, you'll be
+          redirected automatically. If not, you can return manually below.
         </p>
 
-        <label>Bucket Name</label>
-        <input
-          type="text"
-          id="bucketName"
-          placeholder="amply-yourname-123456789"
-        />
-
-        <label>Role ARN</label>
-        <input
-          type="text"
-          id="roleArn"
-          placeholder="arn:aws:iam::123456789012:role/AmplyAccessRole-yourname"
-        />
-
-        <label>CloudFront Domain</label>
-        <input
-          type="text"
-          id="cloudfrontDomain"
-          placeholder="d123abc4def5.cloudfront.net"
-        />
-
-        <button id="saveConfigBtn">✅ Save & Continue</button>
-        <p id="configStatus"></p>
-      </div>
+        <a href="setup-complete.html" class="continue-btn">Continue →</a>
+      </section>
     </main>
   </body>
 </html>
