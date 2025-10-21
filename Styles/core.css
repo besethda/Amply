@@ -1,11 +1,12 @@
 @import url("fonts.css");
 @import url("variables.css");
 @import url('https://fonts.googleapis.com/css2?family=Electrolize&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@100..900&display=swap');
 
 /* ========= GLOBAL RESET ========= */
 * {
   box-sizing: border-box;
-  font-family: "Electrolize", sans-serif;
+  font-family: "Commissioner", sans-serif;
   margin: 0;
   padding: 0;
 }
@@ -24,6 +25,7 @@ a {
 }
 
 button {
+  font-family: 'Electrolize';
   background: var(--accent-color);
   border: none;
   border-radius: 6px;
@@ -34,8 +36,22 @@ button {
   transition: background 0.2s ease;
 }
 
+#searchbar {
+  background-color: #383838;
+}
+
 button:hover {
   background: rgb(248, 133, 0);
+  color: rgb(24, 24, 24);
+}
+
+h2 {
+  font-family: 'Electrolize';
+}
+
+li {
+  font-family: 'Electrolize';
+  text-align: center;
 }
 
 /* Common utility classes */

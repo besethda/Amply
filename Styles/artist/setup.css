@@ -1,9 +1,7 @@
 @import url("../Styles/core.css");
 
 body {
-  background: linear-gradient(to right, rgb(35, 70, 88), rgb(70, 30, 97));
   color: #fff;
-  font-family: "Dekko", sans-serif;
   min-height: 100vh;
   margin: 0;
   display: flex;
@@ -24,7 +22,7 @@ body {
 }
 
 .logo {
-  height: 8vh;
+  height: 6vh;
 }
 
 /* ===== MAIN ===== */
@@ -36,9 +34,9 @@ main {
 }
 
 h1 {
-  color: #6cf;
+  color: var(--accent-color);
   font-size: 2.4rem;
-  text-shadow: 0 0 12px rgba(108, 255, 255, 0.4);
+  text-shadow: 0 0 5px rgba(108, 167, 255, 0.37);
 }
 
 .section {
@@ -51,13 +49,14 @@ h1 {
 }
 
 h2 {
-  color: #6cf;
+  color: var(--accent-color);
   margin-bottom: 1rem;
 }
 
 p {
   color: #ddd;
   line-height: 1.5;
+  font-size: 1.4rem;
 }
 
 label {
@@ -65,6 +64,7 @@ label {
   margin-top: 1.5rem;
   text-align: left;
   font-weight: 500;
+  font-size: 1.3rem;
 }
 
 input {
@@ -81,7 +81,7 @@ input {
 
 input:focus {
   background: rgba(255, 255, 255, 0.15);
-  outline: 1px solid #6cf;
+  outline: 1px solid var(--accent-color);
   transform: scale(1.01);
 }
 
@@ -89,7 +89,7 @@ button,
 .continue-btn {
   display: inline-block;
   margin-top: 1.5rem;
-  background: #6cf;
+  background: var(--accent-color);
   border: none;
   color: #111;
   padding: 0.8rem 1.4rem;
@@ -103,16 +103,16 @@ button,
 
 button:hover,
 .continue-btn:hover {
-  background: #8df;
+  background: var(--accent-color);
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(108, 255, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
 }
 
 .note {
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   color: #bbb;
   margin-top: 1rem;
-  border-left: 3px solid #6cf;
+  border-left: 3px solid var(--accent-color);;
   padding-left: 0.6rem;
   text-align: left;
 }
