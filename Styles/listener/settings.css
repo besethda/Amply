@@ -1,5 +1,9 @@
+body {
+  overflow: hidden;
+}
+
 .head {
-  font-family: 'Commissioner';
+  font-size: 1.7rem;
 }
 
 .settings-section {
@@ -41,7 +45,7 @@
 
 .settings-card.highlight {
   color: var(--accent-color);
-  background: rgba(108, 255, 255, 0.08);
+  background: rgba(11, 61, 138, 0.233);
 }
 
 .primary-btn,
