@@ -1,14 +1,12 @@
-/* ===== LISTENER (HOME) PAGE ONLY ===== */
-/* Keep shared stuff (sidebar, top bar, player bar, buttons, resets) in ../Styles/general.css */
+/* ===== LISTENER HOME PAGE (Discover Music Grid) ===== */
 
-/* Section title */
 .songs-section h2 {
   color: #6cf;
   margin-bottom: 1rem;
   font-size: 1.6rem;
 }
 
-/* Grid */
+/* Grid layout */
 #trackList {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -16,64 +14,39 @@
   justify-items: center;
 }
 
-/* Card */
+/* Song card */
 .song-box {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
   width: 160px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
   text-align: center;
   cursor: pointer;
-  overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .song-box:hover {
   transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 20px rgba(108, 255, 255, 0.2);
 }
 
-/* Square art */
+/* Cover image */
 .cover-art {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1/1;
   object-fit: cover;
-  border-radius: 10px;
-  transition: transform 0.3s ease;
 }
 
-.song-box:hover .cover-art {
-  transform: scale(1.05);
-}
-
-/* Info strip under image */
+/* Song info */
 .song-info {
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.3);
   padding: 0.4rem 0.3rem 0.5rem;
   border-radius: 0 0 10px 10px;
-  overflow: hidden;
-  height: 48px; /* compact text area */
+  height: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-}
-
-/* Title/artist with horizontal scroll (hidden bar) */
-.song-title,
-.song-artist {
-  margin: 0;
-  padding: 0;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none; /* Firefox hide */
-}
-
-.song-title::-webkit-scrollbar,
-.song-artist::-webkit-scrollbar {
-  display: none; /* WebKit hide */
 }
 
 .song-title {
@@ -81,12 +54,13 @@
   font-weight: 600;
   font-size: 0.9rem;
 }
+
 .song-artist {
   color: #aaa;
   font-size: 0.8rem;
 }
 
-/* Big play button on hover */
+/* Play button */
 .play-btn {
   position: absolute;
   top: 50%;
@@ -102,7 +76,7 @@
   font-size: 1.4rem;
   font-weight: bold;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .song-box:hover .play-btn {
@@ -110,7 +84,7 @@
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* Responsive tweaks */
+/* Responsive tweak */
 @media (max-width: 768px) {
   #trackList {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -119,14 +93,5 @@
 
   .song-box {
     width: 130px;
-  }
-  .song-info {
-    height: 42px;
-  }
-  .song-title {
-    font-size: 0.85rem;
-  }
-  .song-artist {
-    font-size: 0.75rem;
   }
 }

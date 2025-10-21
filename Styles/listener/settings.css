@@ -1,0 +1,71 @@
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.settings-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.settings-card h3 {
+  color: #6cf;
+  margin-bottom: 0.8rem;
+  font-size: 1.7rem;
+}
+
+.settings-card p,
+.settings-card label {
+  font-size: 1.6rem;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-card input[type="checkbox"] {
+  transform: scale(1.3);
+  accent-color: #6cf;
+}
+
+.settings-card.highlight {
+  border: 1px solid #6cf;
+  background: rgba(108, 255, 255, 0.08);
+}
+
+.primary-btn,
+.accent-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.primary-btn {
+  background: #6cf;
+  color: #111;
+}
+
+.primary-btn:hover {
+  background: #8df;
+}
+
+.accent-btn {
+  background: #4a1d6b;
+  color: #fff;
+  border: 1px solid #6cf;
+}
+
+.accent-btn:hover {
+  background: #6cf;
+  color: #111;
+}

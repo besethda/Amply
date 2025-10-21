@@ -17,7 +17,7 @@ if (logoutBtn) {
     localStorage.removeItem("amplyArtistConfig");
     localStorage.removeItem("artistName");
     alert("You’ve been logged out.");
-    window.location.href = "setup.html";
+    window.location.href = "./../listener.html";
   });
 }
 

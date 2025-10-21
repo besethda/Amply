@@ -16,7 +16,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ========= GLOBAL ELEMENTS ========= */
 a {
   color: inherit;
   text-decoration: none;
@@ -37,58 +36,10 @@ button:hover {
   background: #8df;
 }
 
-/* ========= LAYOUT STRUCTURE ========= */
-.main {
-  min-height: 100vh;
-  padding-top: 8vh;
-  padding-bottom: 6vh;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2vw;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.logo {
-  height: 10vh;
-  width: auto;
-}
-
-/* ========= NAVIGATION BAR ========= */
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 1.2rem;
-}
-
-.nav-option {
-  text-decoration: none;
-  padding: 0.5rem 0.8rem;
-  border-radius: 6px;
-  color: #6cf;
-  cursor: pointer;
-  transition: color 0.2s, transform 0.2s;
-}
-
-.nav-option:hover {
-  color: #fff;
-  transform: scale(1.05);
-}
-
-/* ========= UTILITIES ========= */
+/* Common utility classes */
 .hidden {
   display: none !important;
 }
-
 .center {
   display: flex;
   align-items: center;
@@ -98,7 +49,6 @@ button:hover {
 .fade-in {
   animation: fadeIn 0.3s ease;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -110,27 +60,14 @@ button:hover {
   }
 }
 
-/* ========= SCROLLBAR ========= */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
-
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 8px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #6cf;
-}
-
-/* ========= RESPONSIVE ========= */
-@media (max-width: 768px) {
-  .nav {
-    font-size: 1rem;
-  }
-
-  .logo {
-    height: 8vh;
-  }
 }

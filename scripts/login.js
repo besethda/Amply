@@ -1,12 +1,24 @@
+// === CONFIGURATION ===
 const region = "eu-north-1";
 const clientId = "2a031n3pf59i2grgkqcd2m6jrj"; // your Cognito app client ID
+const url = `https://cognito-idp.${region}.amazonaws.com/`; // shared endpoint
 
-// --- FORM ELEMENTS ---
+// === SITE PATH CONFIG (works locally + GitHub Pages) ===
+const BASE_PATH =
+  window.location.origin +
+  (window.location.pathname.includes("Amply-main") ? "/Amply-main" : "");
+
+// ✅ Small helper for cleaner navigation
+function goTo(path) {
+  window.location.href = `${BASE_PATH}${path}`;
+}
+
+// === FORM ELEMENTS ===
 const loginForm = document.getElementById("loginForm");
 const signupForm = document.getElementById("signupForm");
 const container = document.getElementById("loginBox");
 
-// --- LOGIN ---
+// === LOGIN ===
 const loginBtn = document.getElementById("loginBtn");
 const message = document.getElementById("message");
 
@@ -22,12 +34,8 @@ loginBtn?.addEventListener("click", async () => {
   message.style.color = "#333";
   message.textContent = "Signing in...";
 
-  const url = `https://cognito-idp.${region}.amazonaws.com/`;
   const payload = {
-    AuthParameters: {
-      USERNAME: email,
-      PASSWORD: password,
-    },
+    AuthParameters: { USERNAME: email, PASSWORD: password },
     AuthFlow: "USER_PASSWORD_AUTH",
     ClientId: clientId,
   };
@@ -42,13 +50,7 @@ loginBtn?.addEventListener("click", async () => {
       body: JSON.stringify(payload),
     });
 
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
-    }
+    const data = await res.json();
     console.log("🔹 Login response:", data);
 
     // ✅ Login successful
@@ -60,19 +62,15 @@ loginBtn?.addEventListener("click", async () => {
 
       message.style.color = "green";
       message.textContent = "✅ Login successful! Redirecting...";
-      setTimeout(() => (window.location.href = "/Amply-listener/listener.html"), 1000);
+      setTimeout(() => goTo("/listener/listener.html"), 1000);
       return;
     }
 
-    // ⚠️ User not confirmed
-    if (
-      data.__type?.includes("NotAuthorizedException") ||
-      data.__type?.includes("UserNotConfirmedException") ||
-      JSON.stringify(data).toLowerCase().includes("not confirmed")
-    ) {
+    // ⚠️ Unconfirmed user → show verify form
+    if (data.__type?.includes("UserNotConfirmedException")) {
       message.style.color = "orange";
       message.textContent = "⚠️ Account not verified. Please check your email.";
-      showVerifyForm(email, true); // auto resend code
+      showVerifyForm(email, true);
       return;
     }
 
@@ -80,18 +78,11 @@ loginBtn?.addEventListener("click", async () => {
   } catch (err) {
     console.error("❌ Login error:", err);
     message.style.color = "red";
-    message.textContent =
-      err.message?.includes("not confirmed")
-        ? "⚠️ Account not verified. Please check your email."
-        : "❌ " + (err.message || "Login failed.");
-
-    if (err.message?.toLowerCase().includes("not confirmed")) {
-      showVerifyForm(email, true);
-    }
+    message.textContent = "❌ " + (err.message || "Login failed.");
   }
 });
 
-// --- SIGNUP ---
+// === SIGNUP ===
 const signupButton = document.getElementById("signupButton");
 const signupMessage = document.getElementById("signupMessage");
 
@@ -105,12 +96,14 @@ signupButton?.addEventListener("click", async () => {
     return;
   }
 
-  const url = `https://cognito-idp.${region}.amazonaws.com/`;
   const payload = {
     ClientId: clientId,
     Username: email,
     Password: password,
-    UserAttributes: [{ Name: "email", Value: email }],
+    UserAttributes: [
+      { Name: "email", Value: email },
+      { Name: "custom:role", Value: "listener" }, // 👈 everyone starts as listener
+    ],
   };
 
   try {
@@ -146,7 +139,7 @@ signupButton?.addEventListener("click", async () => {
   }
 });
 
-// --- TOGGLE LOGIN/SIGNUP ---
+// === TOGGLE LOGIN/SIGNUP ===
 document.getElementById("showSignup")?.addEventListener("click", () => {
   loginForm.style.display = "none";
   signupForm.style.display = "block";
@@ -156,12 +149,12 @@ document.getElementById("showLogin")?.addEventListener("click", () => {
   loginForm.style.display = "block";
 });
 
-// --- VERIFY ACCOUNT ---
+// === VERIFY ACCOUNT ===
 function showVerifyForm(prefilledEmail = "", autoResend = false) {
   loginForm.style.display = "none";
   signupForm.style.display = "none";
 
-  let existing = document.getElementById("verifyForm");
+  const existing = document.getElementById("verifyForm");
   if (existing) existing.remove();
 
   const verifyForm = document.createElement("div");
@@ -188,6 +181,7 @@ function showVerifyForm(prefilledEmail = "", autoResend = false) {
   if (autoResend && prefilledEmail) resendCode(prefilledEmail);
 }
 
+// === VERIFY + AUTO LOGIN ===
 async function verifyAccount() {
   const email = document.getElementById("verifyEmail").value.trim();
   const code = document.getElementById("verifyCode").value.trim();
@@ -198,7 +192,6 @@ async function verifyAccount() {
     return;
   }
 
-  const url = `https://cognito-idp.${region}.amazonaws.com/`;
   const payload = { ClientId: clientId, Username: email, ConfirmationCode: code };
 
   try {
@@ -214,29 +207,66 @@ async function verifyAccount() {
     const data = await res.json();
     console.log("🔹 Verify response:", data);
 
-    if (Object.keys(data).length === 0) {
+    if (!data.__type || data.Session || Object.keys(data).length === 0) {
       verifyMessage.style.color = "green";
-      verifyMessage.textContent = "✅ Verified! You can now log in.";
-      setTimeout(() => {
-        document.getElementById("verifyForm").remove();
-        loginForm.style.display = "block";
-      }, 1500);
+      verifyMessage.textContent = "✅ Verified! Logging you in...";
+
+      const password =
+        document.getElementById("signupPassword")?.value.trim() ||
+        document.getElementById("password")?.value.trim();
+
+      if (!password) {
+        verifyMessage.textContent = "✅ Verified! Please log in manually.";
+        return;
+      }
+
+      // Auto-login
+      const loginPayload = {
+        AuthParameters: { USERNAME: email, PASSWORD: password },
+        AuthFlow: "USER_PASSWORD_AUTH",
+        ClientId: clientId,
+      };
+
+      const loginRes = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-amz-json-1.1",
+          "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
+        },
+        body: JSON.stringify(loginPayload),
+      });
+
+      const loginData = await loginRes.json();
+      console.log("🔹 Auto-login response:", loginData);
+
+      if (loginData.AuthenticationResult) {
+        const { AccessToken, IdToken, RefreshToken } = loginData.AuthenticationResult;
+        localStorage.setItem("amplyAccessToken", AccessToken);
+        localStorage.setItem("amplyIdToken", IdToken);
+        localStorage.setItem("amplyRefreshToken", RefreshToken);
+
+        verifyMessage.textContent = "✅ Verified and logged in!";
+        setTimeout(() => goTo("/Amply-listener/listener.html"), 700);
+      } else {
+        verifyMessage.textContent = "✅ Verified! Please log in manually.";
+      }
     } else {
       verifyMessage.style.color = "red";
       verifyMessage.textContent =
         "❌ " + (data.message || "Verification failed. Try again.");
+      console.error("❌ Verify response error:", data);
     }
   } catch (err) {
     console.error("❌ Verify error:", err);
+    verifyMessage.style.color = "red";
     verifyMessage.textContent =
       "❌ " + (err.message || "Verification failed. Try again.");
   }
 }
 
-// --- RESEND CODE ---
+// === RESEND CODE ===
 async function resendCode(prefilledEmail = "") {
-  const emailInput =
-    prefilledEmail || document.getElementById("verifyEmail")?.value.trim();
+  const emailInput = prefilledEmail || document.getElementById("verifyEmail")?.value.trim();
   const verifyMessage = document.getElementById("verifyMessage");
 
   if (!emailInput) {
@@ -247,7 +277,6 @@ async function resendCode(prefilledEmail = "") {
   verifyMessage.style.color = "#333";
   verifyMessage.textContent = "Sending new code...";
 
-  const url = `https://cognito-idp.${region}.amazonaws.com/`;
   const payload = { ClientId: clientId, Username: emailInput };
 
   try {
@@ -255,8 +284,7 @@ async function resendCode(prefilledEmail = "") {
       method: "POST",
       headers: {
         "Content-Type": "application/x-amz-json-1.1",
-        "X-Amz-Target":
-          "AWSCognitoIdentityProviderService.ResendConfirmationCode",
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.ResendConfirmationCode",
       },
       body: JSON.stringify(payload),
     });
@@ -269,13 +297,11 @@ async function resendCode(prefilledEmail = "") {
       verifyMessage.textContent = `✅ Code resent to ${data.CodeDeliveryDetails.Destination}`;
     } else {
       verifyMessage.style.color = "red";
-      verifyMessage.textContent =
-        "❌ Could not resend code. Try again in a minute.";
+      verifyMessage.textContent = "❌ Could not resend code. Try again.";
     }
   } catch (err) {
     console.error("❌ Resend error:", err);
     verifyMessage.style.color = "red";
-    verifyMessage.textContent =
-      "❌ " + (err.message || "Failed to resend code.");
+    verifyMessage.textContent = "❌ " + (err.message || "Failed to resend code.");
   }
 }

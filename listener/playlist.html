@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amply – Playlist</title>
+
+    <!-- STYLES -->
+    <link rel="stylesheet" href="../Styles/core.css" />
+    <link rel="stylesheet" href="../Styles/fonts.css" />
+    <link rel="stylesheet" href="../Styles/listener/general.css" />
+    <link rel="stylesheet" href="../Styles/listener/playlist.css" />
+
+    <!-- SCRIPTS -->
+    <script type="module" src="../scripts/general.js" defer></script>
+    <script type="module" src="../scripts/player.js" defer></script>
+    <script type="module" src="../scripts/listener/playlist.js" defer></script>
+  </head>
+
+  <body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="../images/amply.png" alt="Amply" class="sidebar-logo" />
+      </div>
+      <nav class="menu">
+        <ul>
+          <li onclick="window.location.href='listener.html'">🏠 Home</li>
+          <li class="active">🎧 Playlists</li>
+          <li onclick="window.location.href='explore.html'">🔥 Explore</li>
+          <li onclick="window.location.href='liked.html'">❤️ Liked Songs</li>
+          <li onclick="window.location.href='settings.html'">⚙️ Settings</li>
+        </ul>
+      </nav>
+
+      <!-- LOGOUT BUTTON -->
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <header class="top-bar">
+        <input
+          type="text"
+          id="searchBar"
+          placeholder="Search for playlists..."
+        />
+      </header>
+
+      <section class="playlist-section fade-in">
+        <h2>🎧 Your Playlists</h2>
+        <div id="playlistGrid" class="playlist-grid"></div>
+      </section>
+    </main>
+
+    <!-- PLAYER BAR -->
+    <div id="playerBar" class="player-bar hidden">
+      <div class="player-inner">
+        <!-- LEFT: Controls -->
+        <div class="player-controls">
+          <button id="prevBtn" class="icon-button" aria-label="Previous">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="transform: scaleX(-1)"
+            >
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19"></line>
+            </svg>
+          </button>
+
+          <button id="playPause" class="icon-button" aria-label="Play or pause">
+            <svg
+              id="playIcon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="34"
+              height="34"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+
+            <svg
+              id="pauseIcon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="34"
+              height="34"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="display: none"
+            >
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+
+          <button id="nextBtn" class="icon-button" aria-label="Next">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- CENTER: Progress + Song Info -->
+        <div class="player-center">
+          <input type="range" id="progressBar" value="0" min="0" max="100" />
+          <div class="track-info">
+            <span id="currentTrackName">No track playing</span>
+            <span id="currentTrackArtist"></span>
+          </div>
+        </div>
+
+        <!-- RIGHT: Shuffle + Repeat -->
+        <div class="player-options">
+          <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="4" y1="20" x2="21" y2="3"></line>
+              <polyline points="21 16 21 21 16 21"></polyline>
+              <line x1="15" y1="15" x2="21" y2="21"></line>
+              <line x1="4" y1="4" x2="9" y2="9"></line>
+            </svg>
+          </button>
+
+          <button id="repeatBtn" class="icon-button" aria-label="Repeat">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="17 1 21 5 17 9"></polyline>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+              <polyline points="7 23 3 19 7 15"></polyline>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <audio id="globalAudio" controls hidden></audio>
+    </div>
+  </body>
+</html>

@@ -3,16 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Listen</title>
+    <title>Amply – Settings</title>
 
     <!-- STYLES -->
-    <link rel="stylesheet" href="./../Styles/general.css" />
-    <link rel="stylesheet" href="Styles/general.css" />
-    <link rel="stylesheet" href="Styles/listener.css" />
-    <link rel="icon" href="./images/amply.png" />
+    <link rel="stylesheet" href="../Styles/core.css" />
+    <link rel="stylesheet" href="../Styles/fonts.css" />
+    <link rel="stylesheet" href="../Styles/listener/general.css" />
+    <link rel="stylesheet" href="../Styles/listener/settings.css" />
 
-    <!-- SCRIPT -->
-    <script type="module" src="scripts/listener.js" defer></script>
+    <!-- SCRIPTS -->
+    <script type="module" src="../scripts/general.js" defer></script>
+    <script type="module" src="../scripts/listener/settings.js" defer></script>
   </head>
 
   <body>
@@ -23,35 +24,68 @@
       </div>
       <nav class="menu">
         <ul>
-          <li class="active">🏠 Home</li>
-          <li>🎧 Playlists</li>
-          <li>🔥 Recommended</li>
-          <li>❤️ Liked Songs</li>
-          <li>⚙️ Settings</li>
+          <li onclick="window.location.href='listener.html'">🏠 Home</li>
+          <li onclick="window.location.href='playlist.html'">🎧 Playlists</li>
+          <li onclick="window.location.href='explore.html'">🔥 Explore</li>
+          <li onclick="window.location.href='liked.html'">❤️ Liked Songs</li>
+          <li class="active" onclick="window.location.href='settings.html'">
+            ⚙️ Settings
+          </li>
         </ul>
       </nav>
+
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+      </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="main-content">
+    <main class="main-content fade-in">
       <header class="top-bar">
-        <input
-          type="text"
-          id="searchBar"
-          placeholder="Search for songs or artists..."
-        />
+        <h2>⚙️ Settings & Account</h2>
       </header>
 
-      <section class="songs-section">
-        <h2>🎵 Discover Music</h2>
-        <div id="trackList" class="track-list"></div>
+      <section class="settings-section">
+        <div class="settings-card">
+          <h3>👤 Account Details</h3>
+          <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+          <p><strong>User ID:</strong> <span id="userId">Loading...</span></p>
+        </div>
+
+        <div class="settings-card">
+          <h3>💳 Payment Summary</h3>
+          <p>Plan: <span id="planName">Free Tier</span></p>
+          <p>This Month: <span id="paymentAmount">0 SEK</span></p>
+          <button id="managePayments" class="primary-btn">
+            Manage Payments
+          </button>
+        </div>
+
+        <div class="settings-card">
+          <h3>🎛 Preferences</h3>
+          <label>
+            <input type="checkbox" id="darkModeToggle" />
+            Enable dark mode
+          </label>
+          <label>
+            <input type="checkbox" id="notificationsToggle" checked />
+            Email notifications
+          </label>
+        </div>
+
+        <div class="settings-card highlight">
+          <h3>🎤 Become an Artist</h3>
+          <p>Ready to upload your own music and reach listeners worldwide?</p>
+          <button id="becomeArtistBtn" class="accent-btn">
+            Become an Artist
+          </button>
+        </div>
       </section>
     </main>
 
-    <!-- PLAYER BAR -->
+    <!-- GLOBAL PLAYER BAR -->
     <div id="playerBar" class="player-bar hidden">
       <div class="player-inner">
-        <!-- LEFT: Controls -->
         <div class="player-controls">
           <button id="prevBtn" class="icon-button" aria-label="Previous">
             <svg
@@ -86,7 +120,6 @@
             >
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
-
             <svg
               id="pauseIcon"
               xmlns="http://www.w3.org/2000/svg"
@@ -123,7 +156,6 @@
           </button>
         </div>
 
-        <!-- CENTER: Progress + Song Info -->
         <div class="player-center">
           <input type="range" id="progressBar" value="0" min="0" max="100" />
           <div class="track-info">
@@ -132,7 +164,6 @@
           </div>
         </div>
 
-        <!-- RIGHT: Shuffle + Repeat -->
         <div class="player-options">
           <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
             <svg
