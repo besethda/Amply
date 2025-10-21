@@ -31,7 +31,7 @@ loginBtn?.addEventListener("click", async () => {
     return;
   }
 
-  message.style.color = "#333";
+  message.style.color = "rgb(255, 117, 31)";
   message.textContent = "Signing in...";
 
   const payload = {

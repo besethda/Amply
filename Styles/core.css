@@ -1,9 +1,11 @@
 @import url("fonts.css");
+@import url("variables.css");
+@import url('https://fonts.googleapis.com/css2?family=Electrolize&display=swap');
 
 /* ========= GLOBAL RESET ========= */
 * {
   box-sizing: border-box;
-  font-family: "Dekko", sans-serif;
+  font-family: "Electrolize", sans-serif;
   margin: 0;
   padding: 0;
 }
@@ -11,7 +13,7 @@
 html,
 body {
   height: 100%;
-  background: linear-gradient(to right, rgb(35, 70, 88), rgb(70, 30, 97));
+  background: var(--background-gradient);
   color: #fff;
   overflow-x: hidden;
 }
@@ -22,7 +24,7 @@ a {
 }
 
 button {
-  background: #6cf;
+  background: var(--accent-color);
   border: none;
   border-radius: 6px;
   padding: 0.6rem 1rem;
@@ -33,7 +35,7 @@ button {
 }
 
 button:hover {
-  background: #8df;
+  background: rgb(248, 133, 0);
 }
 
 /* Common utility classes */
@@ -69,5 +71,5 @@ button:hover {
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6cf;
+  background: rgb(248, 133, 0);
 }

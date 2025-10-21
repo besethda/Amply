@@ -1,0 +1,6 @@
+:root {
+  --background-gradient: linear-gradient(to right, rgb(59, 54, 49), rgb(7, 7, 7));
+  --accent-color: rgb(255, 117, 31);
+  --text-main-color: #eee;
+  --text-second-color: rgb(255, 117, 31);
+}
