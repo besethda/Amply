@@ -21,7 +21,7 @@ connectAwsBtn.addEventListener("click", () => {
   localStorage.setItem("artistId", artistId);
 
   // ✅ Add Return URL for the Quick Create flow
-  const returnUrl = "https://amply.app/Amply-artist/setup-complete.html";
+  const returnUrl = "https://amply.app/artist/setup-complete.html";
 
   // ✅ Build stack name and CloudFormation URL
   const stackName = `amply-${artistId}`;

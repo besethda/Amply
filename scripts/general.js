@@ -28,7 +28,7 @@ export function requireAuth() {
     const path = window.location.pathname;
     let loginPath;
 
-    if (path.includes("Amply-listener") || path.includes("Amply-artist")) {
+    if (path.includes("listener") || path.includes("artist")) {
       loginPath = "./../index.html";
     } else {
       loginPath = "./../index.html";

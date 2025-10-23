@@ -14,14 +14,10 @@
     <!-- SCRIPTS -->
     <script type="module" src="../scripts/general.js" defer></script>
     <script type="module" src="../scripts/artist/upload.js" defer></script>
+    <script type="module" src="../scripts/artist/general.js" defer></script>
   </head>
 
   <body>
-    <header class="header">
-      <img class="logo" src="../images/amply.png" alt="Amply logo" />
-      <h1 class="page-title">Upload Song</h1>
-    </header>
-
     <main class="main">
       <div class="upload">
         <div class="section">
@@ -31,10 +27,10 @@
           <h2>Upload a New Track</h2>
           <div id="status"></div>
 
-          <label for="fileInput">🎵 Song File</label>
+          <label for="fileInput">Song File</label>
           <input type="file" id="fileInput" accept="audio/*" />
 
-          <label for="coverArt">🎨 Cover Art</label>
+          <label for="coverArt">Cover Art</label>
           <input type="file" id="coverArt" accept="image/*" />
 
           <label for="trackTitle">Title</label>
@@ -57,19 +53,32 @@
 
     <!-- Shared Sidebar -->
     <aside class="sidebar">
-      <div>
-        <div class="sidebar-header">🎧 Amply Artist</div>
-        <ul class="menu">
-          <li onclick="location.href='dashboard.html'">📊 Dashboard</li>
-          <li class="active" onclick="location.href='upload.html'">
-            ⬆️ Upload Song
-          </li>
-          <li onclick="location.href='songs.html'">💽 My Songs</li>
-          <li onclick="location.href='payments.html'">💰 Payments</li>
-          <li onclick="location.href='settings.html'">⚙️ Settings</li>
-        </ul>
+      <div class="sidebar-header">
+        <img src="../images/Amply_lgo.png" alt="Amply" class="sidebar-logo" />
       </div>
-      <div class="sidebar-footer" id="logoutBtn">🚪 Logout</div>
+
+      <nav class="menu">
+        <ul>
+          <li onclick="location.href='dashboard.html'">Dashboard</li>
+          <li class="active" onclick="location.href='upload.html'">
+            Upload Song
+          </li>
+          <li onclick="location.href='songs.html'">My Songs</li>
+          <li onclick="location.href='payments.html'">Payments</li>
+          <li onclick="location.href='settings.html'">Settings</li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button
+          onclick="location.href='../listener/listener.html'"
+          id="toPlayer"
+          class="toPlayer-btn"
+        >
+          ←To Player
+        </button>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
     </aside>
   </body>
 </html>

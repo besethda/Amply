@@ -13,6 +13,24 @@ function goTo(path) {
   window.location.href = `${BASE_PATH}${path}`;
 }
 
+// ✅ JWT decoding helper
+function parseJwt(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error("JWT decode failed:", e);
+    return {};
+  }
+}
+
 // === FORM ELEMENTS ===
 const loginForm = document.getElementById("loginForm");
 const signupForm = document.getElementById("signupForm");
@@ -53,7 +71,6 @@ loginBtn?.addEventListener("click", async () => {
     const data = await res.json();
     console.log("🔹 Login response:", data);
 
-    // ✅ Login successful
     if (data.AuthenticationResult) {
       const { AccessToken, IdToken, RefreshToken } = data.AuthenticationResult;
       localStorage.setItem("amplyAccessToken", AccessToken);
@@ -63,35 +80,22 @@ loginBtn?.addEventListener("click", async () => {
       message.style.color = "green";
       message.textContent = "✅ Login successful! Redirecting...";
 
-      try {
-        // Decode JWT to check Cognito group
-        const base64Url = IdToken.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split("")
-            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-            .join("")
-        );
-        const userInfo = JSON.parse(jsonPayload);
-        const groups = userInfo["cognito:groups"] || [];
-        console.log("User groups:", groups);
+      // Decode token and redirect based on role
+      const userInfo = parseJwt(IdToken);
+      console.log("Decoded user info:", userInfo);
 
-        // Redirect based on Cognito group
-        if (groups.includes("artist") || groups.includes("admin")) {
-          setTimeout(() => goTo("/artist/dashboard.html"), 1000);
-        } else {
-          setTimeout(() => goTo("/listener/listener.html"), 1000);
-        }
-      } catch (e) {
-        console.error("Error decoding JWT:", e);
+      const groups = userInfo["cognito:groups"] || [];
+      const role = userInfo["custom:role"] || "";
+
+      if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
+        setTimeout(() => goTo("/artist/dashboard.html"), 1000);
+      } else {
         setTimeout(() => goTo("/listener/listener.html"), 1000);
       }
 
       return;
     }
 
-    // ⚠️ Unconfirmed user → show verify form
     if (data.__type?.includes("UserNotConfirmedException")) {
       message.style.color = "orange";
       message.textContent = "⚠️ Account not verified. Please check your email.";
@@ -127,7 +131,7 @@ signupButton?.addEventListener("click", async () => {
     Password: password,
     UserAttributes: [
       { Name: "email", Value: email },
-      { Name: "custom:role", Value: "listener" }, // 👈 everyone starts as listener
+      { Name: "custom:role", Value: "listener" }, // everyone starts as listener
     ],
   };
 
@@ -270,29 +274,14 @@ async function verifyAccount() {
         localStorage.setItem("amplyIdToken", IdToken);
         localStorage.setItem("amplyRefreshToken", RefreshToken);
 
-        verifyMessage.textContent = "✅ Verified and logged in!";
+        const userInfo = parseJwt(IdToken);
+        const role = userInfo["custom:role"] || "";
+        const groups = userInfo["cognito:groups"] || [];
 
-        try {
-          // decode the token to check group
-          const base64Url = IdToken.split(".")[1];
-          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split("")
-              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-              .join("")
-          );
-          const userInfo = JSON.parse(jsonPayload);
-          const groups = userInfo["cognito:groups"] || [];
-
-          if (groups.includes("artist") || groups.includes("admin")) {
-            setTimeout(() => goTo("/Amply-artist/dashboard.html"), 700);
-          } else {
-            setTimeout(() => goTo("/Amply-listener/listener.html"), 700);
-          }
-        } catch (e) {
-          console.error("Error decoding JWT:", e);
-          setTimeout(() => goTo("/Amply-listener/listener.html"), 700);
+        if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
+          setTimeout(() => goTo("/artist/dashboard.html"), 700);
+        } else {
+          setTimeout(() => goTo("/listener/listener.html"), 700);
         }
       } else {
         verifyMessage.textContent = "✅ Verified! Please log in manually.";
@@ -301,7 +290,6 @@ async function verifyAccount() {
       verifyMessage.style.color = "red";
       verifyMessage.textContent =
         "❌ " + (data.message || "Verification failed. Try again.");
-      console.error("❌ Verify response error:", data);
     }
   } catch (err) {
     console.error("❌ Verify error:", err);

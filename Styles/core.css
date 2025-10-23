@@ -67,6 +67,135 @@ li {
 .fade-in {
   animation: fadeIn 0.3s ease;
 }
+
+/* ====== PLAYER BAR ====== */
+.player-bar {
+  position: fixed;
+  left: 220px;
+  right: 0;
+  bottom: 20px;
+  margin: 0 auto;
+  width: calc(100% - 240px);
+  max-width: 900px;
+  background: linear-gradient(90deg, #2b4b7a, #5a1e5c);
+  color: #fff;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.player-bar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(120%);
+}
+
+.player-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* PLAYER CONTROLS */
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* CENTER: PROGRESS + INFO */
+.player-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+#progressBar {
+  width: 100%;
+  max-width: 650px;
+  margin-bottom: 0.4rem;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+}
+
+.track-info {
+  text-align: center;
+  line-height: 1.2;
+}
+
+#currentTrackName {
+  display: block;
+  font-weight: 400;
+  font-size: 1.2rem;
+}
+
+#currentTrackArtist {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* RIGHT: SHUFFLE / REPEAT */
+.player-options {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ICON BUTTONS */
+.icon-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  margin-top: 1.8rem;
+}
+
+.icon-button:hover {
+  transform: scale(1.2);
+  color: #d9d9d9;
+}
+
+#playPause svg {
+  pointer-events: none;
+}
+
+/* Active button states */
+#repeatBtn.active svg,
+#shuffleBtn.active svg {
+  stroke: var(--accent-color);
+  transform: scale(1.1);
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+/* ===== UTILITIES ===== */
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -88,4 +217,39 @@ li {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(248, 133, 0);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .player-bar {
+    left: 0;
+    width: 95%;
+    padding: 0.8rem 1.2rem;
+    bottom: 10px;
+  }
+
+  #progressBar {
+    max-width: 260px;
+  }
+
+  #currentTrackName {
+    font-size: 0.9rem;
+  }
+
+  #currentTrackArtist {
+    font-size: 0.75rem;
+  }
+
+  .icon-button {
+    font-size: 1.2rem;
+  }
 }

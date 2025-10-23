@@ -1,4 +1,5 @@
-import { API_URL } from "../general.js";
+import { API_URL} from "../general.js";
+import { saveArtistConfig} from "./general.js";
 
 const setupMessage = document.getElementById("setupMessage");
 
@@ -18,18 +19,26 @@ async function checkStackStatus() {
 
     if (data.status === "CREATE_COMPLETE") {
       setupMessage.textContent = "✅ Environment ready! Redirecting…";
+
+      saveArtistConfig({
+        artistId,
+        roleArn: data.roleArn,
+        bucketName: data.bucketName,
+        cloudfrontDomain: data.cloudfrontDomain,
+      });
+
       setTimeout(() => {
         window.location.href = "/Amply-artist/dashboard.html";
       }, 1500);
       return true;
     }
 
-    if (data.status && data.status.includes("FAILED")) {
+    if (data.status?.includes("FAILED")) {
       setupMessage.textContent = "❌ Setup failed. Please contact support.";
       return true;
     }
 
-    return false; // still creating
+    return false;
   } catch (err) {
     console.error("Error checking stack status:", err);
     setupMessage.textContent = "⚠️ Still waiting for confirmation...";
@@ -37,7 +46,6 @@ async function checkStackStatus() {
   }
 }
 
-// Poll every 10 seconds until ready (max 5 minutes)
 let attempts = 0;
 const interval = setInterval(async () => {
   const done = await checkStackStatus();
@@ -45,5 +53,4 @@ const interval = setInterval(async () => {
   if (done || attempts > 30) clearInterval(interval);
 }, 10000);
 
-// Initial check immediately
 checkStackStatus();
