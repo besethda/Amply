@@ -105,6 +105,30 @@ button,
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.3s ease;
 }
 
+.back-arrow {
+  position: absolute;
+  top: 7.2rem;
+  left: 1.2rem;
+  color: var(--text-main-color);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  transition: background-color 0.25s ease, transform 0.15s ease;
+}
+
+.back-arrow:hover {
+  transform: scale(1.1);
+}
+
+.arrow-icon {
+  width: 2.7rem;
+  height: 2.7rem;
+}
+
 button:hover,
 .continue-btn:hover {
   background: var(--accent-color);

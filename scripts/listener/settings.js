@@ -20,7 +20,6 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("becomeArtistBtn").addEventListener("click", () => {
-    alert("Redirecting to artist registration...");
     window.location.href = "../artist/setup.html"; // future page
   });
 
