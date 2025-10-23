@@ -62,7 +62,32 @@ loginBtn?.addEventListener("click", async () => {
 
       message.style.color = "green";
       message.textContent = "✅ Login successful! Redirecting...";
-      setTimeout(() => goTo("/listener/listener.html"), 1000);
+
+      try {
+        // Decode JWT to check Cognito group
+        const base64Url = IdToken.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const userInfo = JSON.parse(jsonPayload);
+        const groups = userInfo["cognito:groups"] || [];
+        console.log("User groups:", groups);
+
+        // Redirect based on Cognito group
+        if (groups.includes("artist") || groups.includes("admin")) {
+          setTimeout(() => goTo("/artist/dashboard.html"), 1000);
+        } else {
+          setTimeout(() => goTo("/listener/listener.html"), 1000);
+        }
+      } catch (e) {
+        console.error("Error decoding JWT:", e);
+        setTimeout(() => goTo("/listener/listener.html"), 1000);
+      }
+
       return;
     }
 
@@ -246,7 +271,29 @@ async function verifyAccount() {
         localStorage.setItem("amplyRefreshToken", RefreshToken);
 
         verifyMessage.textContent = "✅ Verified and logged in!";
-        setTimeout(() => goTo("/Amply-listener/listener.html"), 700);
+
+        try {
+          // decode the token to check group
+          const base64Url = IdToken.split(".")[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+          const userInfo = JSON.parse(jsonPayload);
+          const groups = userInfo["cognito:groups"] || [];
+
+          if (groups.includes("artist") || groups.includes("admin")) {
+            setTimeout(() => goTo("/Amply-artist/dashboard.html"), 700);
+          } else {
+            setTimeout(() => goTo("/Amply-listener/listener.html"), 700);
+          }
+        } catch (e) {
+          console.error("Error decoding JWT:", e);
+          setTimeout(() => goTo("/Amply-listener/listener.html"), 700);
+        }
       } else {
         verifyMessage.textContent = "✅ Verified! Please log in manually.";
       }
@@ -266,7 +313,8 @@ async function verifyAccount() {
 
 // === RESEND CODE ===
 async function resendCode(prefilledEmail = "") {
-  const emailInput = prefilledEmail || document.getElementById("verifyEmail")?.value.trim();
+  const emailInput =
+    prefilledEmail || document.getElementById("verifyEmail")?.value.trim();
   const verifyMessage = document.getElementById("verifyMessage");
 
   if (!emailInput) {
@@ -302,6 +350,7 @@ async function resendCode(prefilledEmail = "") {
   } catch (err) {
     console.error("❌ Resend error:", err);
     verifyMessage.style.color = "red";
-    verifyMessage.textContent = "❌ " + (err.message || "Failed to resend code.");
+    verifyMessage.textContent =
+      "❌ " + (err.message || "Failed to resend code.");
   }
 }

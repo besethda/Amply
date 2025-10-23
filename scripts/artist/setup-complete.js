@@ -1,50 +1,49 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const artistConfig = localStorage.getItem("amplyArtistConfig");
-  const summary = document.getElementById("configSummary");
-  const manual = document.getElementById("manualConfig");
-  const continueBtn = document.getElementById("continueBtn");
+import { API_URL } from "../general.js";
 
-  if (artistConfig) {
-    const config = JSON.parse(artistConfig);
+const setupMessage = document.getElementById("setupMessage");
 
-    document.getElementById("artistNameDisplay").textContent = config.displayName || config.artistId;
-    document.getElementById("bucketDisplay").textContent = config.bucketName;
-    document.getElementById("cloudfrontDisplay").textContent = config.cloudfrontDomain;
+async function checkStackStatus() {
+  const artistId = localStorage.getItem("artistId");
 
-    summary.classList.remove("hidden");
-    continueBtn.classList.remove("hidden");
-  } else {
-    manual.classList.remove("hidden");
+  if (!artistId) {
+    setupMessage.textContent = "⚠️ Missing artist info. Please restart setup.";
+    return;
   }
 
-  document.getElementById("saveConfigBtn")?.addEventListener("click", () => {
-    const bucket = document.getElementById("bucketName").value.trim();
-    const role = document.getElementById("roleArn").value.trim();
-    const cf = document.getElementById("cloudfrontDomain").value.trim();
-    const status = document.getElementById("configStatus");
+  setupMessage.textContent = `Checking AWS environment for ${artistId}…`;
 
-    if (!bucket || !role || !cf) {
-      status.textContent = "⚠️ Please fill in all fields.";
-      return;
+  try {
+    const res = await fetch(`${API_URL}/verify-stack?artist=${artistId}`);
+    const data = await res.json();
+
+    if (data.status === "CREATE_COMPLETE") {
+      setupMessage.textContent = "✅ Environment ready! Redirecting…";
+      setTimeout(() => {
+        window.location.href = "/Amply-artist/dashboard.html";
+      }, 1500);
+      return true;
     }
 
-    const artistName = localStorage.getItem("artistName") || "Unknown";
-    const artistId = localStorage.getItem("artistId") || artistName.toLowerCase();
+    if (data.status && data.status.includes("FAILED")) {
+      setupMessage.textContent = "❌ Setup failed. Please contact support.";
+      return true;
+    }
 
-    const config = {
-      artistId,
-      displayName: artistName,
-      bucketName: bucket,
-      roleArn: role,
-      cloudfrontDomain: cf,
-    };
+    return false; // still creating
+  } catch (err) {
+    console.error("Error checking stack status:", err);
+    setupMessage.textContent = "⚠️ Still waiting for confirmation...";
+    return false;
+  }
+}
 
-    localStorage.setItem("amplyArtistConfig", JSON.stringify(config));
-    status.textContent = "✅ Configuration saved!";
-    setTimeout(() => window.location.reload(), 800);
-  });
+// Poll every 10 seconds until ready (max 5 minutes)
+let attempts = 0;
+const interval = setInterval(async () => {
+  const done = await checkStackStatus();
+  attempts++;
+  if (done || attempts > 30) clearInterval(interval);
+}, 10000);
 
-  continueBtn?.addEventListener("click", () => {
-    window.location.href = "upload.html";
-  });
-});
+// Initial check immediately
+checkStackStatus();

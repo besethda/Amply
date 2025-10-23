@@ -26,7 +26,7 @@ body {
   color: var(--accent-color);
   margin-bottom: 1rem;
   font-size: 1.7rem;
-  font-weight: 400;
+  font-weight: 300;
 }
 
 .settings-card p,
@@ -58,7 +58,7 @@ body {
   cursor: pointer;
   font-size: 1.3rem;
   transition: background 0.2s ease;
-} 
+}
 .primary-btn {
   color: #111;
 }

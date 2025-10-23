@@ -16,7 +16,11 @@ body {
   align-items: center;
   padding: 1rem 3rem;
   width: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: linear-gradient(
+    65deg,
+    rgba(0, 0, 0, 0.3),
+    rgba(128, 127, 127, 0.3)
+  );
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -112,7 +116,7 @@ button:hover,
   font-size: 1.2rem;
   color: #bbb;
   margin-top: 1rem;
-  border-left: 3px solid var(--accent-color);;
+  border-left: 3px solid var(--accent-color);
   padding-left: 0.6rem;
   text-align: left;
 }

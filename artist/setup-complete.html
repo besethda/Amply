@@ -3,14 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Setup Complete</title>
+    <title>Amply – Finalizing Setup</title>
 
-    <!-- STYLES -->
-    <link rel="stylesheet" href="./Styles/artist/setup-complete.css" />
     <link rel="stylesheet" href="../Styles/core.css" />
-    <link rel="stylesheet" href="./Styles/general.css" />
+    <link rel="stylesheet" href="../Styles/fonts.css" />
+    <link rel="stylesheet" href="../Styles/artist/setup.css" />
+    <link rel="stylesheet" href="../Styles/artist/setup-complete.css" />
 
-    <!-- JS -->
     <script
       type="module"
       src="../scripts/artist/setup-complete.js"
@@ -18,48 +17,27 @@
     ></script>
   </head>
 
-  <body>
-    <header class="header">
-      <img class="logo" src="../images/amply.png" alt="Amply" />
-      <nav class="nav">
-        <a href="upload.html" class="nav-option">Upload</a>
-        <a href="../Amply-listener/listener.html" class="nav-option"
-          >Listener</a
-        >
-      </nav>
-    </header>
+  <body class="centered">
+    <img class="logo" src="../images/Amply_lgo.png" alt="Amply Logo" />
+    <div class="loader-box">
+      <!-- 🎵 SVG Spinner -->
+      <svg
+        class="spinner"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 50 50"
+      >
+        <circle
+          class="path"
+          cx="25"
+          cy="25"
+          r="20"
+          fill="none"
+          stroke-width="5"
+        ></circle>
+      </svg>
 
-    <main class="setup-complete fade-in">
-      <h1>✅ Artist Setup Complete!</h1>
-      <p class="subtitle">
-        Your AWS environment is ready. Amply can now securely upload and stream
-        your music.
-      </p>
-
-      <div id="configSummary" class="config-summary hidden">
-        <h2>Your Configuration</h2>
-        <p><strong>Artist:</strong> <span id="artistNameDisplay"></span></p>
-        <p><strong>Bucket:</strong> <span id="bucketDisplay"></span></p>
-        <p><strong>CloudFront:</strong> <span id="cloudfrontDisplay"></span></p>
-      </div>
-
-      <div id="manualConfig" class="manual hidden">
-        <h2>Missing details?</h2>
-        <p>Copy the values from your AWS CloudFormation Outputs:</p>
-        <input type="text" id="bucketName" placeholder="Bucket Name" />
-        <input type="text" id="roleArn" placeholder="Role ARN" />
-        <input
-          type="text"
-          id="cloudfrontDomain"
-          placeholder="CloudFront Domain"
-        />
-        <button id="saveConfigBtn">💾 Save Configuration</button>
-        <p id="configStatus"></p>
-      </div>
-
-      <button id="continueBtn" class="continue-btn hidden">
-        Continue to Uploads →
-      </button>
-    </main>
+      <h2>Setting up your artist environment…</h2>
+      <p id="setupMessage">Please wait — this could take a few minutes.</p>
+    </div>
   </body>
 </html>
