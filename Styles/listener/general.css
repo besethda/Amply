@@ -62,11 +62,20 @@
 .sidebar-footer {
   margin-top: auto;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+}
+
+#artistDashboardBtn:hover {
+  background: linear-gradient(90deg, #6cf, #a4e);
+  border: none;
+  color: white;
 }
 
 .logout-btn {
   background: #333;
+  margin-top: 10px;
   color: #eee;
   border: 1px solid #555;
   border-radius: 8px;

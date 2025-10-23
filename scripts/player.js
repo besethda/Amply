@@ -1,4 +1,4 @@
-import { API_URL } from "../../scripts/general.js";
+import { API_URL } from "../scripts/general.js";
 
 const audio = document.getElementById("globalAudio");
 const playerBar = document.getElementById("playerBar");

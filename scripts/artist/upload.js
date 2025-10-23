@@ -1,12 +1,20 @@
-import { API_URL, logout } from "../general.js";
+// === UPLOAD SCRIPT (Artist Dashboard) ===
+// Handles song uploads, cover art, metadata, and central index updates.
+
+import { API_URL, logout, parseJwt } from "../general.js";
 import { requireArtistAWS, loadArtistConfig } from "./general.js";
 
 const uploadBtn = document.getElementById("uploadBtn");
 const fileInput = document.getElementById("fileInput");
 const coverArtInput = document.getElementById("coverArt");
 const statusDiv = document.getElementById("status");
-
 const logoutBtn = document.getElementById("logoutBtn");
+
+// 🧭 Require authentication and AWS config
+window.addEventListener("DOMContentLoaded", () => {
+  requireArtistAWS();
+});
+
 if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
 // === UPLOAD FLOW ===
@@ -17,6 +25,7 @@ uploadBtn.addEventListener("click", async () => {
     return;
   }
 
+  // 🎵 Validate audio format
   const validAudioTypes = ["audio/mpeg", "audio/wav"];
   const validAudioExts = [".mp3", ".wav"];
   const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
@@ -25,27 +34,31 @@ uploadBtn.addEventListener("click", async () => {
     return;
   }
 
+  // ⚠️ Warn about large audio files
   const maxAudioSizeMB = 30;
   const audioSizeMB = (file.size / 1024 / 1024).toFixed(1);
   if (audioSizeMB > maxAudioSizeMB) {
-    statusDiv.innerHTML = `⚠️ Your audio file is <strong>${audioSizeMB} MB</strong>. 
-    Large files may take longer to upload.`;
+    statusDiv.innerHTML = `⚠️ Your file is <strong>${audioSizeMB} MB</strong>. 
+    Large uploads may take longer to process.`;
   }
 
+  // 🔐 Load artist configuration
   const config = loadArtistConfig();
-  if (!config.roleArn || !config.bucketName) {
-    statusDiv.textContent = "❌ Missing AWS configuration.";
+  if (!config?.roleArn || !config?.bucketName) {
+    statusDiv.textContent = "❌ Missing AWS connection info. Please reconnect your artist account.";
     return;
   }
 
+  // 🏷️ Track metadata inputs
   const title = document.getElementById("trackTitle").value.trim();
   const genre = document.getElementById("trackGenre").value.trim();
   const price = parseFloat(document.getElementById("trackPrice").value) || 0.01;
 
   try {
-    statusDiv.textContent = "Preparing upload...";
+    // ⏳ Show progress
+    statusDiv.innerHTML = `<span style="color:#8df;">Preparing upload...</span>`;
 
-    // === 1️⃣ Upload cover art (optional) ===
+    // === 1️⃣ Upload Cover Art (optional) ===
     let coverUrl = "";
     const coverFile = coverArtInput.files[0];
     if (coverFile) {
@@ -67,19 +80,24 @@ uploadBtn.addEventListener("click", async () => {
           contentType: coverFile.type || "image/jpeg",
         }),
       });
+
       const presignCoverData = await presignCover.json();
+      if (!presignCoverData.uploadUrl) throw new Error("Failed to get upload URL for cover art.");
 
       await fetch(presignCoverData.uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": coverFile.type || "image/jpeg" },
         body: coverFile,
       });
+
       coverUrl = `https://${config.cloudfrontDomain}/${coverKey}`;
+      console.log("🎨 Uploaded cover art:", coverUrl);
     }
 
-    // === 2️⃣ Upload audio ===
-    statusDiv.textContent = "Uploading track to S3...";
+    // === 2️⃣ Upload Audio File ===
+    statusDiv.innerHTML = `<span style="color:#8df;">Uploading audio...</span>`;
     const songKey = `songs/${file.name}`;
+
     const presignAudio = await fetch(`${API_URL}/get-upload-url`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -90,7 +108,9 @@ uploadBtn.addEventListener("click", async () => {
         contentType: file.type || "audio/mpeg",
       }),
     });
+
     const presignAudioData = await presignAudio.json();
+    if (!presignAudioData.uploadUrl) throw new Error("Failed to get upload URL for audio.");
 
     await fetch(presignAudioData.uploadUrl, {
       method: "PUT",
@@ -98,10 +118,13 @@ uploadBtn.addEventListener("click", async () => {
       body: file,
     });
 
-    // === 3️⃣ Metadata JSON ===
+    console.log("🎵 Uploaded audio:", songKey);
+
+    // === 3️⃣ Create Metadata JSON ===
+    statusDiv.innerHTML = `<span style="color:#8df;">Finalizing metadata...</span>`;
     const metadata = {
       title: title || file.name.replace(/\.[^/.]+$/, ""),
-      artist: config.displayName || config.artistId,
+      artist: config.displayName || config.artistId || "Unknown Artist",
       genre: genre ? genre.split(",").map((g) => g.trim()) : [],
       price_per_stream: price,
       art_url: coverUrl,
@@ -110,6 +133,7 @@ uploadBtn.addEventListener("click", async () => {
     };
 
     const metaKey = `songs/${file.name.replace(/\.[^/.]+$/, "")}.json`;
+
     const presignMeta = await fetch(`${API_URL}/get-upload-url`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -120,7 +144,9 @@ uploadBtn.addEventListener("click", async () => {
         contentType: "application/json",
       }),
     });
+
     const presignMetaData = await presignMeta.json();
+    if (!presignMetaData.uploadUrl) throw new Error("Failed to get upload URL for metadata.");
 
     await fetch(presignMetaData.uploadUrl, {
       method: "PUT",
@@ -128,8 +154,9 @@ uploadBtn.addEventListener("click", async () => {
       body: JSON.stringify(metadata, null, 2),
     });
 
-    // === 4️⃣ Update central index ===
-    await fetch(`${API_URL}/update-index`, {
+    // === 4️⃣ Update Central Index ===
+    statusDiv.innerHTML = `<span style="color:#8df;">Updating global index...</span>`;
+    const updateRes = await fetch(`${API_URL}/update-index`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -141,9 +168,16 @@ uploadBtn.addEventListener("click", async () => {
       }),
     });
 
+    if (!updateRes.ok) {
+      const errText = await updateRes.text();
+      throw new Error(`Central index update failed: ${errText}`);
+    }
+
+    // ✅ Done
     statusDiv.innerHTML = `✅ Uploaded "<strong>${metadata.title}</strong>" successfully!`;
+    console.log("✅ Upload complete and global index updated.");
   } catch (err) {
     console.error("❌ Upload error:", err);
-    statusDiv.innerHTML = "❌ Error: " + err.message;
+    statusDiv.innerHTML = `❌ Error: ${err.message}`;
   }
 });

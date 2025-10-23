@@ -29,26 +29,32 @@ export function loadArtistConfig() {
   }
 }
 
-// ✅ Require AWS setup before allowing access
-export function requireArtistAWS({ redirect = true, showBanner = true } = {}) {
-  const config = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
-  const banner = document.getElementById("warningBanner");
-  const status = document.getElementById("artistStatus");
+import { parseJwt } from "../general.js";
 
-  if (!config.roleArn || !config.bucketName) {
-    if (showBanner && banner) {
-      banner.textContent = "⚠️ Not connected to AWS — complete setup first.";
-      banner.classList.remove("hidden");
-    }
-    if (redirect) window.location.href = "/artist/setup.html";
+export function requireArtistAWS() {
+  const token = localStorage.getItem("amplyIdToken");
+  if (!token) {
+    console.warn("❌ No auth token — redirecting to login.");
+    window.location.href = "/index.html";
     return false;
   }
 
-  if (status) {
-    status.textContent = `🎶 Connected as ${config.displayName || config.artistId}`;
-    status.classList.remove("hidden");
+  const payload = parseJwt(token);
+  const role = payload["custom:role"];
+  const groups = payload["cognito:groups"] || [];
+
+  const config = loadArtistConfig();
+
+  // ✅ Allow access if they're an artist even if AWS isn't connected yet
+  if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
+    if (!config || !config.bucketName) {
+      console.warn("⚠️ Artist AWS config not found. Staying on page (no redirect).");
+    }
+    return true;
   }
 
-  if (banner) banner.classList.add("hidden");
-  return true;
+  // ❌ Non-artist users get redirected to listener home
+  console.warn("❌ Not an artist — redirecting to listener.");
+  window.location.href = "/listener/listener.html";
+  return false;
 }

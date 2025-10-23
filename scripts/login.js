@@ -1,14 +1,15 @@
 // === CONFIGURATION ===
 const region = "eu-north-1";
-const clientId = "2a031n3pf59i2grgkqcd2m6jrj"; // your Cognito app client ID
-const url = `https://cognito-idp.${region}.amazonaws.com/`; // shared endpoint
+const clientId = "2a031n3pf59i2grgkqcd2m6jrj";
+const url = `https://cognito-idp.${region}.amazonaws.com/`;
+export const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
 
 // === SITE PATH CONFIG (works locally + GitHub Pages) ===
 const BASE_PATH =
   window.location.origin +
   (window.location.pathname.includes("Amply-main") ? "/Amply-main" : "");
 
-// ✅ Small helper for cleaner navigation
+// ✅ Helper for navigation
 function goTo(path) {
   window.location.href = `${BASE_PATH}${path}`;
 }
@@ -78,15 +79,53 @@ loginBtn?.addEventListener("click", async () => {
       localStorage.setItem("amplyRefreshToken", RefreshToken);
 
       message.style.color = "green";
-      message.textContent = "✅ Login successful! Redirecting...";
+      message.textContent = "✅ Login successful! Loading account data...";
 
-      // Decode token and redirect based on role
+      // === 🧠 Decode and store user info ===
       const userInfo = parseJwt(IdToken);
       console.log("Decoded user info:", userInfo);
 
-      const groups = userInfo["cognito:groups"] || [];
-      const role = userInfo["custom:role"] || "";
+      const emailDecoded = (userInfo.email || email).toLowerCase();
+      const artistId =
+        (userInfo["custom:artistId"] ||
+          userInfo["cognito:username"] ||
+          emailDecoded.split("@")[0]).toLowerCase();
+      const role = userInfo["custom:role"] || "listener";
 
+      localStorage.setItem("email", emailDecoded);
+      localStorage.setItem("artistId", artistId);
+      localStorage.setItem("role", role);
+
+      // === 🎵 Always try to fetch artist config by ID first, fallback to email ===
+      try {
+        let artistConfig;
+        let query;
+
+        // First try with artistId
+        query = artistId;
+        let res = await fetch(`${API_URL}/get-artist-config?artist=${encodeURIComponent(query)}`);
+        artistConfig = await res.json();
+
+        // If nothing found, try with email
+        if (!artistConfig || !artistConfig.bucketName) {
+          console.warn(`⚠️ No config found for artistId: ${artistId}, trying email...`);
+          query = emailDecoded;
+          res = await fetch(`${API_URL}/get-artist-config?artist=${encodeURIComponent(query)}`);
+          artistConfig = await res.json();
+        }
+
+        if (artistConfig && artistConfig.bucketName) {
+          localStorage.setItem("amplyArtistConfig", JSON.stringify(artistConfig));
+          console.log("✅ Artist config loaded:", artistConfig);
+        } else {
+          console.warn("⚠️ No artist config found for:", query);
+        }
+      } catch (err) {
+        console.error("❌ Failed to load artist config:", err);
+      }
+
+      // === 🎯 Redirect based on role ===
+      const groups = userInfo["cognito:groups"] || [];
       if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
         setTimeout(() => goTo("/artist/dashboard.html"), 1000);
       } else {
@@ -131,7 +170,7 @@ signupButton?.addEventListener("click", async () => {
     Password: password,
     UserAttributes: [
       { Name: "email", Value: email },
-      { Name: "custom:role", Value: "listener" }, // everyone starts as listener
+      { Name: "custom:role", Value: "listener" },
     ],
   };
 
@@ -178,7 +217,7 @@ document.getElementById("showLogin")?.addEventListener("click", () => {
   loginForm.style.display = "block";
 });
 
-// === VERIFY ACCOUNT ===
+// === VERIFY ACCOUNT + RESEND CODE ===
 function showVerifyForm(prefilledEmail = "", autoResend = false) {
   loginForm.style.display = "none";
   signupForm.style.display = "none";
@@ -210,7 +249,6 @@ function showVerifyForm(prefilledEmail = "", autoResend = false) {
   if (autoResend && prefilledEmail) resendCode(prefilledEmail);
 }
 
-// === VERIFY + AUTO LOGIN ===
 async function verifyAccount() {
   const email = document.getElementById("verifyEmail").value.trim();
   const code = document.getElementById("verifyCode").value.trim();
@@ -238,54 +276,7 @@ async function verifyAccount() {
 
     if (!data.__type || data.Session || Object.keys(data).length === 0) {
       verifyMessage.style.color = "green";
-      verifyMessage.textContent = "✅ Verified! Logging you in...";
-
-      const password =
-        document.getElementById("signupPassword")?.value.trim() ||
-        document.getElementById("password")?.value.trim();
-
-      if (!password) {
-        verifyMessage.textContent = "✅ Verified! Please log in manually.";
-        return;
-      }
-
-      // Auto-login
-      const loginPayload = {
-        AuthParameters: { USERNAME: email, PASSWORD: password },
-        AuthFlow: "USER_PASSWORD_AUTH",
-        ClientId: clientId,
-      };
-
-      const loginRes = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-amz-json-1.1",
-          "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
-        },
-        body: JSON.stringify(loginPayload),
-      });
-
-      const loginData = await loginRes.json();
-      console.log("🔹 Auto-login response:", loginData);
-
-      if (loginData.AuthenticationResult) {
-        const { AccessToken, IdToken, RefreshToken } = loginData.AuthenticationResult;
-        localStorage.setItem("amplyAccessToken", AccessToken);
-        localStorage.setItem("amplyIdToken", IdToken);
-        localStorage.setItem("amplyRefreshToken", RefreshToken);
-
-        const userInfo = parseJwt(IdToken);
-        const role = userInfo["custom:role"] || "";
-        const groups = userInfo["cognito:groups"] || [];
-
-        if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
-          setTimeout(() => goTo("/artist/dashboard.html"), 700);
-        } else {
-          setTimeout(() => goTo("/listener/listener.html"), 700);
-        }
-      } else {
-        verifyMessage.textContent = "✅ Verified! Please log in manually.";
-      }
+      verifyMessage.textContent = "✅ Verified! Please log in.";
     } else {
       verifyMessage.style.color = "red";
       verifyMessage.textContent =
@@ -299,7 +290,6 @@ async function verifyAccount() {
   }
 }
 
-// === RESEND CODE ===
 async function resendCode(prefilledEmail = "") {
   const emailInput =
     prefilledEmail || document.getElementById("verifyEmail")?.value.trim();

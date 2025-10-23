@@ -6,21 +6,51 @@
     <title>Amply – Artist Dashboard</title>
 
     <!-- STYLES -->
-    <link rel="stylesheet" href="../Styles/core.css" />
-    <link rel="stylesheet" href="../Styles/fonts.css" />
-    <link rel="stylesheet" href="../Styles/artist/general.css" />
-    <link rel="stylesheet" href="../Styles/artist/dashboard.css" />
+    <link rel="stylesheet" href="/Styles/core.css" />
+    <link rel="stylesheet" href="/Styles/fonts.css" />
+    <link rel="stylesheet" href="/Styles/artist/general.css" />
+    <link rel="stylesheet" href="/Styles/artist/settings.css" />
 
     <!-- SCRIPTS -->
-    <script type="module" src="../scripts/general.js" defer></script>
-    <script type="module" src="../scripts/artist/dashboard.js" defer></script>
-    <script type="module" src="../scripts/artist/general.js" defer></script>
+    <script type="module" src="/scripts/general.js" defer></script>
+    <script type="module" src="/scripts/artist/general.js" defer></script>
+    <script type="module" src="/scripts/artist/settings.js" defer></script>
   </head>
 
   <body>
     <header class="header">
       <h1>Settings</h1>
     </header>
+    <main class="main">
+      <div class="settings">
+        <div class="section">
+          <h2>Artist Settings</h2>
+          <p>View your connected artist info below.</p>
+
+          <div id="artistInfoBox" class="info-box">
+            <p>
+              <strong>Artist ID:</strong> <span id="artistId">Loading...</span>
+            </p>
+            <p>
+              <strong>Artist Name:</strong>
+              <span id="artistName">Loading...</span>
+            </p>
+            <p>
+              <strong>Bucket Name:</strong>
+              <span id="bucketName">Loading...</span>
+            </p>
+            <p>
+              <strong>CloudFront Domain:</strong>
+              <span id="cloudfrontDomain">Loading...</span>
+            </p>
+            <p><strong>Region:</strong> <span id="region">Loading...</span></p>
+          </div>
+
+          <button id="refreshBtn">🔄 Refresh Info</button>
+        </div>
+      </div>
+    </main>
+
     <!-- Shared Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
