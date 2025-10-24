@@ -1,8 +1,9 @@
+import { API_URL } from "./general.js"; // ✅ use shared API endpoint
+
 // === CONFIGURATION ===
 const region = "eu-north-1";
 const clientId = "2a031n3pf59i2grgkqcd2m6jrj";
 const url = `https://cognito-idp.${region}.amazonaws.com/`;
-export const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
 
 // === SITE PATH CONFIG (works locally + GitHub Pages) ===
 const BASE_PATH =
@@ -60,6 +61,8 @@ loginBtn?.addEventListener("click", async () => {
   };
 
   try {
+    console.log("🧩 Cognito request payload:", payload);
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -69,6 +72,7 @@ loginBtn?.addEventListener("click", async () => {
       body: JSON.stringify(payload),
     });
 
+    console.log("🧩 Cognito response status:", res.status);
     const data = await res.json();
     console.log("🔹 Login response:", data);
 
@@ -81,9 +85,8 @@ loginBtn?.addEventListener("click", async () => {
       message.style.color = "green";
       message.textContent = "✅ Login successful! Loading account data...";
 
-      // === 🧠 Decode and store user info ===
       const userInfo = parseJwt(IdToken);
-      console.log("Decoded user info:", userInfo);
+      console.log("🧠 Decoded user info:", userInfo);
 
       const emailDecoded = (userInfo.email || email).toLowerCase();
       const artistId =
@@ -96,29 +99,49 @@ loginBtn?.addEventListener("click", async () => {
       localStorage.setItem("artistId", artistId);
       localStorage.setItem("role", role);
 
-      // === 🎵 Always try to fetch artist config by ID first, fallback to email ===
+      // === 🎵 Try to fetch artist config (by artist ID, fallback to email) ===
       try {
-        let artistConfig;
-        let query;
+        console.log("🧩 Using API_URL:", API_URL);
+        console.log("🧩 Fetching artist config for:", artistId);
 
-        // First try with artistId
-        query = artistId;
-        let res = await fetch(`${API_URL}/get-artist-config?artist=${encodeURIComponent(query)}`);
-        artistConfig = await res.json();
+        const fullUrl1 = `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`;
+        console.log("➡️ Fetching:", fullUrl1);
 
-        // If nothing found, try with email
+        let res = await fetch(fullUrl1);
+        console.log("🔍 Status for ID fetch:", res.status);
+        const text1 = await res.text();
+        console.log("📦 Raw response (ID):", text1);
+        let artistConfig = null;
+
+        try {
+          artistConfig = JSON.parse(text1);
+        } catch (e) {
+          console.error("❌ JSON parse error for ID:", e);
+        }
+
         if (!artistConfig || !artistConfig.bucketName) {
           console.warn(`⚠️ No config found for artistId: ${artistId}, trying email...`);
-          query = emailDecoded;
-          res = await fetch(`${API_URL}/get-artist-config?artist=${encodeURIComponent(query)}`);
-          artistConfig = await res.json();
+
+          const fullUrl2 = `${API_URL}/get-artist-config?artist=${encodeURIComponent(emailDecoded)}`;
+          console.log("➡️ Fetching fallback:", fullUrl2);
+
+          const resEmail = await fetch(fullUrl2);
+          console.log("🔍 Status for email fetch:", resEmail.status);
+          const text2 = await resEmail.text();
+          console.log("📦 Raw response (email):", text2);
+
+          try {
+            artistConfig = JSON.parse(text2);
+          } catch (e) {
+            console.error("❌ JSON parse error (email):", e);
+          }
         }
 
         if (artistConfig && artistConfig.bucketName) {
           localStorage.setItem("amplyArtistConfig", JSON.stringify(artistConfig));
           console.log("✅ Artist config loaded:", artistConfig);
         } else {
-          console.warn("⚠️ No artist config found for:", query);
+          console.warn("⚠️ No artist config found for:", emailDecoded);
         }
       } catch (err) {
         console.error("❌ Failed to load artist config:", err);
@@ -144,191 +167,8 @@ loginBtn?.addEventListener("click", async () => {
 
     throw new Error(data.message || "Login failed");
   } catch (err) {
-    console.error("❌ Login error:", err);
+    console.error("❌ Login error (outer):", err);
     message.style.color = "red";
     message.textContent = "❌ " + (err.message || "Login failed.");
   }
 });
-
-// === SIGNUP ===
-const signupButton = document.getElementById("signupButton");
-const signupMessage = document.getElementById("signupMessage");
-
-signupButton?.addEventListener("click", async () => {
-  const email = document.getElementById("signupEmail").value.trim();
-  const password = document.getElementById("signupPassword").value.trim();
-  const confirm = document.getElementById("signupConfirm").value.trim();
-
-  if (password !== confirm) {
-    signupMessage.textContent = "❌ Passwords do not match.";
-    return;
-  }
-
-  const payload = {
-    ClientId: clientId,
-    Username: email,
-    Password: password,
-    UserAttributes: [
-      { Name: "email", Value: email },
-      { Name: "custom:role", Value: "listener" },
-    ],
-  };
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-amz-json-1.1",
-        "X-Amz-Target": "AWSCognitoIdentityProviderService.SignUp",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    console.log("🔹 Signup response:", data);
-
-    if (data.CodeDeliveryDetails || data.UserConfirmed === false) {
-      signupMessage.style.color = "green";
-      signupMessage.textContent =
-        "✅ Account created! Check your email for the verification code.";
-      showVerifyForm(email);
-    } else if (data.UserConfirmed === true) {
-      signupMessage.style.color = "green";
-      signupMessage.textContent = "✅ Account created and confirmed!";
-    } else {
-      signupMessage.style.color = "red";
-      signupMessage.textContent =
-        "❌ " + (data.message || "Signup failed. Try again.");
-    }
-  } catch (err) {
-    console.error("❌ Signup error:", err);
-    signupMessage.style.color = "red";
-    signupMessage.textContent = "❌ " + (err.message || "Signup failed.");
-  }
-});
-
-// === TOGGLE LOGIN/SIGNUP ===
-document.getElementById("showSignup")?.addEventListener("click", () => {
-  loginForm.style.display = "none";
-  signupForm.style.display = "block";
-});
-document.getElementById("showLogin")?.addEventListener("click", () => {
-  signupForm.style.display = "none";
-  loginForm.style.display = "block";
-});
-
-// === VERIFY ACCOUNT + RESEND CODE ===
-function showVerifyForm(prefilledEmail = "", autoResend = false) {
-  loginForm.style.display = "none";
-  signupForm.style.display = "none";
-
-  const existing = document.getElementById("verifyForm");
-  if (existing) existing.remove();
-
-  const verifyForm = document.createElement("div");
-  verifyForm.id = "verifyForm";
-  verifyForm.innerHTML = `
-    <h3>Email Verification</h3>
-    <input type="email" id="verifyEmail" placeholder="Email" value="${prefilledEmail}" required />
-    <input type="text" id="verifyCode" placeholder="Verification Code" required />
-    <button id="verifyButton">Verify Account</button>
-    <button id="resendCode" style="margin-top:8px;background:#555;">Resend Code</button>
-    <p id="verifyMessage"></p>
-    <p class="toggle-text"><span id="backToLogin">Back to login</span></p>
-  `;
-  container.appendChild(verifyForm);
-
-  document.getElementById("backToLogin").onclick = () => {
-    verifyForm.remove();
-    loginForm.style.display = "block";
-  };
-
-  document.getElementById("verifyButton").onclick = verifyAccount;
-  document.getElementById("resendCode").onclick = resendCode;
-
-  if (autoResend && prefilledEmail) resendCode(prefilledEmail);
-}
-
-async function verifyAccount() {
-  const email = document.getElementById("verifyEmail").value.trim();
-  const code = document.getElementById("verifyCode").value.trim();
-  const verifyMessage = document.getElementById("verifyMessage");
-
-  if (!email || !code) {
-    verifyMessage.textContent = "❌ Please enter both email and code.";
-    return;
-  }
-
-  const payload = { ClientId: clientId, Username: email, ConfirmationCode: code };
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-amz-json-1.1",
-        "X-Amz-Target": "AWSCognitoIdentityProviderService.ConfirmSignUp",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    console.log("🔹 Verify response:", data);
-
-    if (!data.__type || data.Session || Object.keys(data).length === 0) {
-      verifyMessage.style.color = "green";
-      verifyMessage.textContent = "✅ Verified! Please log in.";
-    } else {
-      verifyMessage.style.color = "red";
-      verifyMessage.textContent =
-        "❌ " + (data.message || "Verification failed. Try again.");
-    }
-  } catch (err) {
-    console.error("❌ Verify error:", err);
-    verifyMessage.style.color = "red";
-    verifyMessage.textContent =
-      "❌ " + (err.message || "Verification failed. Try again.");
-  }
-}
-
-async function resendCode(prefilledEmail = "") {
-  const emailInput =
-    prefilledEmail || document.getElementById("verifyEmail")?.value.trim();
-  const verifyMessage = document.getElementById("verifyMessage");
-
-  if (!emailInput) {
-    verifyMessage.textContent = "Enter your email first.";
-    return;
-  }
-
-  verifyMessage.style.color = "#333";
-  verifyMessage.textContent = "Sending new code...";
-
-  const payload = { ClientId: clientId, Username: emailInput };
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-amz-json-1.1",
-        "X-Amz-Target": "AWSCognitoIdentityProviderService.ResendConfirmationCode",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    console.log("🔹 Resend response:", data);
-
-    if (data.CodeDeliveryDetails) {
-      verifyMessage.style.color = "green";
-      verifyMessage.textContent = `✅ Code resent to ${data.CodeDeliveryDetails.Destination}`;
-    } else {
-      verifyMessage.style.color = "red";
-      verifyMessage.textContent = "❌ Could not resend code. Try again.";
-    }
-  } catch (err) {
-    console.error("❌ Resend error:", err);
-    verifyMessage.style.color = "red";
-    verifyMessage.textContent =
-      "❌ " + (err.message || "Failed to resend code.");
-  }
-}
