@@ -1,7 +1,7 @@
 // === UPLOAD SCRIPT (Artist Dashboard) ===
 // Handles song uploads, cover art, metadata, and central index updates.
 
-import { API_URL, logout, parseJwt } from "../general.js";
+import { API_URL, logout } from "../general.js";
 import { requireArtistAWS, loadArtistConfig } from "./general.js";
 
 const uploadBtn = document.getElementById("uploadBtn");
@@ -17,15 +17,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
 if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
-// === UPLOAD FLOW ===
 uploadBtn.addEventListener("click", async () => {
   const file = fileInput.files[0];
   if (!file) {
-    statusDiv.textContent = "Please choose a music file first.";
+    statusDiv.textContent = "Please choose an audio file to upload.";
     return;
   }
 
-  // 🎵 Validate audio format
   const validAudioTypes = ["audio/mpeg", "audio/wav"];
   const validAudioExts = [".mp3", ".wav"];
   const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
@@ -34,28 +32,29 @@ uploadBtn.addEventListener("click", async () => {
     return;
   }
 
-  // ⚠️ Warn about large audio files
   const maxAudioSizeMB = 30;
   const audioSizeMB = (file.size / 1024 / 1024).toFixed(1);
   if (audioSizeMB > maxAudioSizeMB) {
-    statusDiv.innerHTML = `⚠️ Your file is <strong>${audioSizeMB} MB</strong>. 
-    Large uploads may take longer to process.`;
+    statusDiv.innerHTML = `⚠️ Your file is <strong>${audioSizeMB} MB</strong>. Large uploads may take longer.`;
   }
 
-  // 🔐 Load artist configuration
   const config = loadArtistConfig();
   if (!config?.roleArn || !config?.bucketName) {
-    statusDiv.textContent = "❌ Missing AWS connection info. Please reconnect your artist account.";
+    statusDiv.textContent = "❌ Missing AWS info. Please reconnect your artist account.";
     return;
   }
 
-  // 🏷️ Track metadata inputs
+  // 🧠 Pull artist info from profile/config/local
+  const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
+  const artistId = config.artistId || localStorage.getItem("artistId");
+  const artistName =
+    artistProfile.artistName || config.displayName || config.artistName || "Unknown Artist";
+
   const title = document.getElementById("trackTitle").value.trim();
   const genre = document.getElementById("trackGenre").value.trim();
   const price = parseFloat(document.getElementById("trackPrice").value) || 0.01;
 
   try {
-    // ⏳ Show progress
     statusDiv.innerHTML = `<span style="color:#8df;">Preparing upload...</span>`;
 
     // === 1️⃣ Upload Cover Art (optional) ===
@@ -120,11 +119,11 @@ uploadBtn.addEventListener("click", async () => {
 
     console.log("🎵 Uploaded audio:", songKey);
 
-    // === 3️⃣ Create Metadata JSON ===
+    // === 3️⃣ Upload Metadata JSON ===
     statusDiv.innerHTML = `<span style="color:#8df;">Finalizing metadata...</span>`;
     const metadata = {
       title: title || file.name.replace(/\.[^/.]+$/, ""),
-      artist: config.displayName || config.artistId || "Unknown Artist",
+      artist: artistName, // ✅ real artist name from index
       genre: genre ? genre.split(",").map((g) => g.trim()) : [],
       price_per_stream: price,
       art_url: coverUrl,
@@ -156,16 +155,18 @@ uploadBtn.addEventListener("click", async () => {
 
     // === 4️⃣ Update Central Index ===
     statusDiv.innerHTML = `<span style="color:#8df;">Updating global index...</span>`;
+    const updatePayload = {
+      artistId,
+      artistName, // ✅ from index
+      cloudfrontDomain: config.cloudfrontDomain,
+      bucketName: config.bucketName,
+      song: metadata,
+    };
+
     const updateRes = await fetch(`${API_URL}/update-index`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        artistId: config.artistId,
-        artistName: config.displayName || config.artistId,
-        cloudfrontDomain: config.cloudfrontDomain,
-        bucketName: config.bucketName,
-        song: metadata,
-      }),
+      body: JSON.stringify(updatePayload),
     });
 
     if (!updateRes.ok) {
@@ -175,7 +176,7 @@ uploadBtn.addEventListener("click", async () => {
 
     // ✅ Done
     statusDiv.innerHTML = `✅ Uploaded "<strong>${metadata.title}</strong>" successfully!`;
-    console.log("✅ Upload complete and global index updated.");
+    console.log("✅ Upload complete and global index updated:", updatePayload);
   } catch (err) {
     console.error("❌ Upload error:", err);
     statusDiv.innerHTML = `❌ Error: ${err.message}`;

@@ -1,21 +1,14 @@
-import { API_URL } from "./general.js"; // ✅ use shared API endpoint
+import { API_URL, loadAmplyIndex, isArtistProfileComplete } from "./general.js";
 
-// === CONFIGURATION ===
 const region = "eu-north-1";
 const clientId = "2a031n3pf59i2grgkqcd2m6jrj";
 const url = `https://cognito-idp.${region}.amazonaws.com/`;
 
-// === SITE PATH CONFIG (works locally + GitHub Pages) ===
-const BASE_PATH =
-  window.location.origin +
-  (window.location.pathname.includes("Amply-main") ? "/Amply-main" : "");
-
-// ✅ Helper for navigation
 function goTo(path) {
-  window.location.href = `${BASE_PATH}${path}`;
+  if (path.startsWith("/")) path = path.slice(1);
+  window.location.href = `${window.location.origin}/${path}`;
 }
 
-// ✅ JWT decoding helper
 function parseJwt(token) {
   try {
     const base64Url = token.split(".")[1];
@@ -33,12 +26,6 @@ function parseJwt(token) {
   }
 }
 
-// === FORM ELEMENTS ===
-const loginForm = document.getElementById("loginForm");
-const signupForm = document.getElementById("signupForm");
-const container = document.getElementById("loginBox");
-
-// === LOGIN ===
 const loginBtn = document.getElementById("loginBtn");
 const message = document.getElementById("message");
 
@@ -61,8 +48,6 @@ loginBtn?.addEventListener("click", async () => {
   };
 
   try {
-    console.log("🧩 Cognito request payload:", payload);
-
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -72,125 +57,100 @@ loginBtn?.addEventListener("click", async () => {
       body: JSON.stringify(payload),
     });
 
-    console.log("🧩 Cognito response status:", res.status);
     const data = await res.json();
-    console.log("🔹 Login response:", data);
-
     if (data.AuthenticationResult) {
       const { AccessToken, IdToken, RefreshToken } = data.AuthenticationResult;
       localStorage.setItem("amplyAccessToken", AccessToken);
       localStorage.setItem("amplyIdToken", IdToken);
       localStorage.setItem("amplyRefreshToken", RefreshToken);
 
-      message.style.color = "green";
-      message.textContent = "✅ Login successful! Loading account data...";
-
       const userInfo = parseJwt(IdToken);
       console.log("🧠 Decoded user info:", userInfo);
 
       const emailDecoded = (userInfo.email || email).toLowerCase();
+
       const artistId =
         (userInfo["custom:artistId"] ||
+          userInfo["custom:artistID"] || // uppercase fallback
+          userInfo["custom:ArtistId"] || // safety catch
+          (userInfo["email"] ? userInfo["email"].split("@")[0] : "") ||
           userInfo["cognito:username"] ||
-          emailDecoded.split("@")[0]).toLowerCase();
-      const role = userInfo["custom:role"] || "listener";
+          "unknown").toLowerCase();
 
+      const role = userInfo["custom:role"] || "artist"; // ✅ define role before using
+      console.log("🎯 artistId resolved as:", artistId);
+      console.log("🎯 role resolved as:", role);
+
+      // Save to localStorage
       localStorage.setItem("email", emailDecoded);
       localStorage.setItem("artistId", artistId);
       localStorage.setItem("role", role);
 
-      // === 🎵 Try to fetch artist config (by artist ID, fallback to email) ===
+      // === Fetch artist config ===
       try {
-        console.log("🧩 Using API_URL:", API_URL);
-        console.log("🧩 Fetching artist config for:", artistId);
-
-        const fullUrl1 = `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`;
-        console.log("➡️ Fetching:", fullUrl1);
-
-        let res = await fetch(fullUrl1);
-        console.log("🔍 Status for ID fetch:", res.status);
-        const text1 = await res.text();
-        console.log("📦 Raw response (ID):", text1);
+        const fullUrl = `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`;
         let artistConfig = null;
 
-        try {
-          artistConfig = JSON.parse(text1);
-        } catch (e) {
-          console.error("❌ JSON parse error for ID:", e);
+        const configRes = await fetch(fullUrl);
+        if (configRes.ok) {
+          artistConfig = await configRes.json();
+        } else {
+          const altUrl = `${API_URL}/get-artist-config?artist=${encodeURIComponent(emailDecoded)}`;
+          const altRes = await fetch(altUrl);
+          if (altRes.ok) artistConfig = await altRes.json();
         }
 
-        if (!artistConfig || !artistConfig.bucketName) {
-          console.warn(`⚠️ No config found for artistId: ${artistId}, trying email...`);
-
-          const fullUrl2 = `${API_URL}/get-artist-config?artist=${encodeURIComponent(emailDecoded)}`;
-          console.log("➡️ Fetching fallback:", fullUrl2);
-
-          const resEmail = await fetch(fullUrl2);
-          console.log("🔍 Status for email fetch:", resEmail.status);
-          const text2 = await resEmail.text();
-          console.log("📦 Raw response (email):", text2);
-
-          try {
-            artistConfig = JSON.parse(text2);
-          } catch (e) {
-            console.error("❌ JSON parse error (email):", e);
-          }
-        }
-
-        if (artistConfig && artistConfig.bucketName) {
+        if (artistConfig?.bucketName) {
           localStorage.setItem("amplyArtistConfig", JSON.stringify(artistConfig));
           console.log("✅ Artist config loaded:", artistConfig);
         } else {
-          console.warn("⚠️ No artist config found for:", emailDecoded);
+          console.warn("⚠️ No artist config found for:", artistId);
         }
       } catch (err) {
         console.error("❌ Failed to load artist config:", err);
       }
 
-      // === 🎯 Redirect based on role and profile completeness ===
-      const groups = userInfo["cognito:groups"] || [];
-      const isArtist = role === "artist" || groups.includes("artist") || groups.includes("admin");
-      
-      if (isArtist) {
-        try {
-          const artistConfig = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
-          const hasProfile =
-            artistConfig?.artistName && artistConfig?.profilePhoto && artistConfig?.coverPhoto;
-      
-          console.log("🎨 Artist role detected. Profile check:", {
-            hasProfile,
-            artistConfig,
-          });
-      
-          if (!hasProfile) {
-            console.log("🧭 Redirecting to artist setup profile...");
-            setTimeout(() => goTo("/artist/setup-profile.html"), 1000);
-          } else {
-            console.log("🧭 Redirecting to artist dashboard...");
-            setTimeout(() => goTo("/artist/dashboard.html"), 1000);
-          }
-        } catch (err) {
-          console.warn("⚠️ Error checking artist profile:", err);
-          setTimeout(() => goTo("/artist/dashboard.html"), 1000);
+      // === Load artist profile from index ===
+      try {
+        const indexData = await loadAmplyIndex();
+        let artistProfile =
+          indexData?.artists?.find((a) => a.artistId?.toLowerCase() === artistId.toLowerCase()) ||
+          indexData?.artists?.find((a) => a.artistName?.toLowerCase() === artistId.toLowerCase()) ||
+          indexData?.artists?.find((a) => a.artistName?.toLowerCase() === "besethda"); // fallback
+
+        if (artistProfile) {
+          localStorage.setItem("amplyArtistProfile", JSON.stringify(artistProfile));
+          console.log("✅ Artist profile cached:", artistProfile);
+        } else {
+          console.warn("⚠️ No artist profile found for ID:", artistId);
         }
-      } else {
-        console.log("🎧 Listener role detected — redirecting...");
-        setTimeout(() => goTo("/listener/listener.html"), 1000);
+      } catch (err) {
+        console.error("❌ Failed to load artist profile:", err);
       }
 
-      return;
-    }
+      // === Redirect ===
+      const groups = userInfo["cognito:groups"] || [];
+      const isArtist =
+        role === "artist" || groups.includes("artist") || groups.includes("admin");
 
-    if (data.__type?.includes("UserNotConfirmedException")) {
-      message.style.color = "orange";
-      message.textContent = "⚠️ Account not verified. Please check your email.";
-      showVerifyForm(email, true);
-      return;
-    }
+      if (isArtist) {
+        const profileComplete = isArtistProfileComplete();
+        console.log("🎨 Profile completeness:", profileComplete);
 
-    throw new Error(data.message || "Login failed");
+        if (!profileComplete) {
+          console.log("🧭 Redirecting to setup-profile.html...");
+          setTimeout(() => goTo("/artist/setup-profile.html"), 800);
+        } else {
+          console.log("🧭 Redirecting to artist dashboard...");
+          setTimeout(() => goTo("/artist/dashboard.html"), 800);
+        }
+      } else {
+        console.log("🎧 Redirecting listener...");
+        setTimeout(() => goTo("/listener/listener.html"), 800);
+      }
+    }
   } catch (err) {
-    console.error("❌ Login error (outer):", err);
+    console.error("❌ Login error:", err);
     message.style.color = "red";
     message.textContent = "❌ " + (err.message || "Login failed.");
   }

@@ -1,5 +1,5 @@
 import { loadArtistConfig, requireArtistAWS } from "./general.js";
-import { logout } from "../general.js";
+import { logout, loadAmplyIndex } from "../general.js";
 
 window.addEventListener("DOMContentLoaded", async () => {
   requireArtistAWS();
@@ -11,28 +11,61 @@ document.getElementById("refreshBtn").addEventListener("click", displayArtistInf
 
 async function displayArtistInfo() {
   try {
-    const info = await loadArtistConfig();
-    console.log("🎨 Loaded artist config:", info);
+    const artistConfig = await loadArtistConfig();
+    const artistProfile =
+      JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}") || {};
 
-    // Handle missing or invalid config
-    if (!info || (!info.id && !info.email)) {
-      console.warn("⚠️ No artist info found or invalid config:", info);
-      document.getElementById("artistId").textContent = "Not available";
-      document.getElementById("artistName").textContent = "Not available";
-      document.getElementById("bucketName").textContent = "Not available";
-      document.getElementById("cloudfrontDomain").textContent = "Not available";
-      document.getElementById("region").textContent = "Not available";
-      return;
+    console.log("🎨 Loaded artist config:", artistConfig);
+    console.log("🎭 Loaded artist profile:", artistProfile);
+
+    // 🧩 Fallback merge logic — priority order:
+    // profile (public index) > config (private AWS) > local storage
+    const artistId =
+      artistProfile.artistId || artistConfig.id || localStorage.getItem("artistId") || "N/A";
+    const artistName =
+      artistProfile.artistName ||
+      artistConfig.displayName ||
+      artistConfig.artistName ||
+      artistId;
+    const bucketName =
+      artistConfig.bucketName || artistProfile.bucket || "N/A";
+    const cloudfrontDomain =
+      artistConfig.cloudfrontDomain ||
+      artistProfile.cloudfrontDomain ||
+      "N/A";
+    const region = artistConfig.region || "eu-north-1";
+
+    // 🖼️ Optional visual elements (if your HTML includes them)
+    const profileImg = document.getElementById("artistProfilePhoto");
+    const coverImg = document.getElementById("artistCoverPhoto");
+
+    if (profileImg && artistProfile.profilePhoto) {
+      profileImg.src = artistProfile.profilePhoto;
+    }
+    if (coverImg && artistProfile.coverPhoto) {
+      coverImg.src = artistProfile.coverPhoto;
     }
 
-    // ✅ Populate data (matching your API field names)
-    document.getElementById("artistId").textContent = info.id || "N/A";
-    document.getElementById("artistName").textContent = info.displayName || info.id || "N/A";
-    document.getElementById("bucketName").textContent = info.bucketName || "N/A";
-    document.getElementById("cloudfrontDomain").textContent = info.cloudfrontDomain || "N/A";
-    document.getElementById("region").textContent = info.region || "N/A";
+    // ✅ Populate data fields
+    document.getElementById("artistId").textContent = artistId;
+    document.getElementById("artistName").textContent = artistName;
+    document.getElementById("bucketName").textContent = bucketName;
+    document.getElementById("cloudfrontDomain").textContent = cloudfrontDomain;
+    document.getElementById("region").textContent = region;
+
+    console.log("✅ Displaying merged artist info:", {
+      artistId,
+      artistName,
+      bucketName,
+      cloudfrontDomain,
+      region,
+    });
   } catch (err) {
     console.error("❌ Error displaying artist info:", err);
     document.getElementById("artistId").textContent = "Error loading info";
+    document.getElementById("artistName").textContent = "—";
+    document.getElementById("bucketName").textContent = "—";
+    document.getElementById("cloudfrontDomain").textContent = "—";
+    document.getElementById("region").textContent = "—";
   }
 }

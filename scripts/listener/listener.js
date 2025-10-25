@@ -1,5 +1,5 @@
-import { API_URL, loadSongs, $, requireAuth } from "../../scripts/general.js";
-import { playSong, initPlayer } from "./player.js";
+import { API_URL, loadSongs, $, requireAuth } from "../general.js";
+import { playSong, initPlayer } from "../player.js";
 
 requireAuth();
 

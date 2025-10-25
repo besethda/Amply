@@ -4,11 +4,12 @@
 export const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
 export const INDEX_URL =
   "https://amply-central-596430611327.s3.eu-north-1.amazonaws.com/amply-index.json";
-  export const TEMPLATE_URL =
+export const TEMPLATE_URL =
   "https://amply-templates.s3.eu-north-1.amazonaws.com/artist-environment.yml";
 
 export const AMPLY_ACCOUNT_ID = "596430611327";
 export const REGION = "eu-north-1";
+
 // 🧠 Shorthand selectors
 export const $ = (sel) => document.querySelector(sel);
 export const $$ = (sel) => document.querySelectorAll(sel);
@@ -18,7 +19,41 @@ export function getAuthToken() {
   return localStorage.getItem("amplyIdToken");
 }
 
-// 🔐 Require authentication — redirect to login if not logged in
+// === 📦 Load the global Amply index ===
+export async function loadAmplyIndex() {
+  try {
+    const res = await fetch(INDEX_URL + "?v=" + Date.now());
+    if (!res.ok) throw new Error(`Failed to fetch index: ${res.status}`);
+    const indexData = await res.json();
+    localStorage.setItem("amplyIndex", JSON.stringify(indexData));
+    console.log("🎧 Loaded Amply Index:", indexData);
+    return indexData;
+  } catch (err) {
+    console.error("❌ Failed to load index:", err);
+    return null;
+  }
+}
+
+// === 👤 Check if artist profile is complete ===
+export function isArtistProfileComplete() {
+  const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
+  if (!artistProfile) return false;
+
+  const hasName = !!artistProfile.artistName;
+  const hasProfilePhoto = !!artistProfile.profilePhoto;
+  const hasCoverPhoto = !!artistProfile.coverPhoto;
+
+  const complete = hasName && hasProfilePhoto && hasCoverPhoto;
+
+  console.log(
+    `🎨 Profile completeness check: ${complete ? "✅ Complete" : "⚠️ Incomplete"}`,
+    artistProfile
+  );
+
+  return complete;
+}
+
+// === 🔐 Require authentication — redirect to login if not logged in ===
 export function requireAuth() {
   const token = getAuthToken();
 
@@ -38,7 +73,7 @@ export function requireAuth() {
   }
 }
 
-// 📡 Authorized fetch helper (adds token automatically)
+// === 📡 Authorized fetch helper (adds token automatically) ===
 export async function apiFetch(url, options = {}) {
   const token = getAuthToken();
 
@@ -56,7 +91,7 @@ export async function apiFetch(url, options = {}) {
   return res.json();
 }
 
-// 🧩 Decode JWT token (for checking Cognito groups etc.)
+// === 🧩 Decode JWT token (for checking Cognito groups etc.) ===
 export function parseJwt(token) {
   try {
     const base64Url = token.split(".")[1];
@@ -74,7 +109,7 @@ export function parseJwt(token) {
   }
 }
 
-// 🎵 Load songs from the global index file
+// === 🎵 Load songs from the global index file ===
 export async function loadSongs() {
   try {
     const res = await fetch(INDEX_URL + "?v=" + Date.now());
@@ -82,9 +117,9 @@ export async function loadSongs() {
 
     // Flatten artist → songs
     return data.artists.flatMap((artist) =>
-      artist.songs.map((song) => ({
+      (artist.songs || []).map((song) => ({
         ...song,
-        artist: artist.name,
+        artist: artist.artistName || artist.name || "Unknown",
         bucket: artist.bucket,
       }))
     );
@@ -94,6 +129,7 @@ export async function loadSongs() {
   }
 }
 
+// === 🎭 Check if logged-in user is artist or admin ===
 export function checkArtistConnected() {
   const token = localStorage.getItem("amplyIdToken");
   if (!token) {
@@ -124,7 +160,7 @@ export function checkArtistConnected() {
   }
 }
 
-// ✅ Load config.json (optional)
+// === ⚙️ Load config.json (optional local overrides) ===
 export async function loadConfig() {
   try {
     const res = await fetch("../config.json");
@@ -136,12 +172,18 @@ export async function loadConfig() {
   }
 }
 
-// 🚪 Logout helper
+// === 🚪 Logout helper ===
 export function logout() {
-  // 🧹 Clear local storage
+  console.log("🚪 Logging out and clearing session...");
   localStorage.removeItem("amplyIdToken");
   localStorage.removeItem("amplyAccessToken");
   localStorage.removeItem("amplyRefreshToken");
+  localStorage.removeItem("amplyArtistConfig");
+  localStorage.removeItem("amplyArtistProfile");
+  localStorage.removeItem("amplyIndex");
+  localStorage.removeItem("email");
+  localStorage.removeItem("artistId");
+  localStorage.removeItem("role");
 
   // 🔁 Redirect to login
   window.location.href = `${window.location.origin}/index.html`;

@@ -96,8 +96,7 @@
 
 /* ====== MAIN CONTENT ====== */
 .main-content {
-  margin-left: 220px;
-  padding: 2rem;
+  padding: 1rem;
   color: white;
   min-height: 100vh;
   padding-bottom: 8rem; /* space for floating player bar */

@@ -75,15 +75,21 @@ li {
   right: 0;
   bottom: 20px;
   margin: 0 auto;
-  width: calc(100% - 240px);
+  width: calc(100% - 180px);
   max-width: 900px;
-  background: linear-gradient(90deg, #2b4b7a, #5a1e5c);
+  height: fit-content;
+  background: linear-gradient(90deg, #3d3d3d, #454545);
   color: #fff;
   border-radius: 16px;
-  padding: 1rem;
+  padding: 0.6rem 0.8rem;
   box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
   z-index: 9999;
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.player-inner {
+  display: flex;
+  flex-direction: column;
 }
 
 .player-bar.hidden {
@@ -92,58 +98,69 @@ li {
   transform: translateY(120%);
 }
 
-.player-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-/* PLAYER CONTROLS */
-.player-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-/* CENTER: PROGRESS + INFO */
-.player-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
+/* ===== Progress bar (full width) ===== */
 #progressBar {
   width: 100%;
-  max-width: 650px;
-  margin-bottom: 0.4rem;
-  cursor: pointer;
+  margin-bottom: 0.6rem;
   accent-color: var(--accent-color);
+  cursor: pointer;
 }
 
+/* ===== Bottom row (3 zones) ===== */
+.player-bottom {
+  display: flex;
+  width: 100%;
+  height: fit-content;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* LEFT: Title + Artist */
 .track-info {
-  text-align: center;
-  line-height: 1.2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+
+  span {
+    text-align: inherit;
+  }
 }
 
 #currentTrackName {
-  display: block;
-  font-weight: 400;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  display: inline;
 }
 
 #currentTrackArtist {
-  display: block;
-  font-size: 0.85rem;
+  font-size: 1.06rem;
+  font-weight: 600;
+  opacity: 0.8;
+  display: inline;
+}
+
+/* Add “ - ” between title and artist */
+.track-info span:first-child::after {
+  content: " - ";
   opacity: 0.8;
 }
 
-/* RIGHT: SHUFFLE / REPEAT */
+/* CENTER: Play/Pause Controls */
+.player-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 0 0 auto;
+}
+
+/* RIGHT: Shuffle / Repeat */
 .player-options {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.6rem;
 }
 
 /* ICON BUTTONS */
@@ -151,16 +168,11 @@ li {
   background: none;
   border: none;
   color: white;
-  font-size: 1.5rem;
   cursor: pointer;
-  transition: transform 0.2s, color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-button {
-  margin-top: 1.8rem;
+  transition: transform 0.2s, color 0.2s;
 }
 
 .icon-button:hover {
@@ -172,7 +184,7 @@ button {
   pointer-events: none;
 }
 
-/* Active button states */
+/* Active state indicators */
 #repeatBtn.active svg,
 #shuffleBtn.active svg {
   stroke: var(--accent-color);
@@ -180,7 +192,7 @@ button {
   transition: stroke 0.2s ease, transform 0.2s ease;
 }
 
-/* ===== UTILITIES ===== */
+/* ===== Utilities ===== */
 .fade-in {
   animation: fadeIn 0.4s ease;
 }
@@ -196,18 +208,7 @@ button {
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Scrollbar */
+/* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -219,7 +220,7 @@ button {
   background: rgb(248, 133, 0);
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
