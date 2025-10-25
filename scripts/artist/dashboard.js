@@ -1,4 +1,4 @@
-import { loadConfig, checkArtistConnected, API_URL } from "./general.js";
+import { loadConfig, checkArtistConnected, API_URL } from "../general.js";
 
 // On page load, check artist connection
 window.addEventListener("DOMContentLoaded", async () => {

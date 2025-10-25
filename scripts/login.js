@@ -147,11 +147,34 @@ loginBtn?.addEventListener("click", async () => {
         console.error("❌ Failed to load artist config:", err);
       }
 
-      // === 🎯 Redirect based on role ===
+      // === 🎯 Redirect based on role and profile completeness ===
       const groups = userInfo["cognito:groups"] || [];
-      if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
-        setTimeout(() => goTo("/artist/dashboard.html"), 1000);
+      const isArtist = role === "artist" || groups.includes("artist") || groups.includes("admin");
+      
+      if (isArtist) {
+        try {
+          const artistConfig = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
+          const hasProfile =
+            artistConfig?.artistName && artistConfig?.profilePhoto && artistConfig?.coverPhoto;
+      
+          console.log("🎨 Artist role detected. Profile check:", {
+            hasProfile,
+            artistConfig,
+          });
+      
+          if (!hasProfile) {
+            console.log("🧭 Redirecting to artist setup profile...");
+            setTimeout(() => goTo("/artist/setup-profile.html"), 1000);
+          } else {
+            console.log("🧭 Redirecting to artist dashboard...");
+            setTimeout(() => goTo("/artist/dashboard.html"), 1000);
+          }
+        } catch (err) {
+          console.warn("⚠️ Error checking artist profile:", err);
+          setTimeout(() => goTo("/artist/dashboard.html"), 1000);
+        }
       } else {
+        console.log("🎧 Listener role detected — redirecting...");
         setTimeout(() => goTo("/listener/listener.html"), 1000);
       }
 

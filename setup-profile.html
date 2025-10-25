@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎤 Artist Setup – Amply</title>
+  <link rel="stylesheet" href="../Styles/core.css" />
+  <link rel="stylesheet" href="../Styles/artist/setup.css" />
+  <script type="module" src="./setup-profile.js" defer></script>
+</head>
+
+<body>
+  <header class="header">
+    <img class="logo" src="../images/Amply_lgo.png" alt="Amply Logo" />
+  </header>
+
+  <main>
+    <section class="section fade-in">
+      <h1>🎨 Create Your Artist Profile</h1>
+      <p>Set up your artist name and upload your profile images.</p>
+
+      <div class="form">
+        <label>Artist Display Name</label>
+        <input type="text" id="artistDisplayName" placeholder="Your stage name" />
+
+        <label>Profile Photo</label>
+        <input type="file" id="profilePhoto" accept="image/*" />
+
+        <label>Cover Photo</label>
+        <input type="file" id="coverPhoto" accept="image/*" />
+
+        <label>Bio (optional)</label>
+        <textarea id="artistBio" rows="3" placeholder="Tell your listeners about yourself..."></textarea>
+
+        <button id="saveProfileBtn" class="goButton">Save & Continue</button>
+        <p id="statusMessage"></p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -94,33 +94,34 @@ export async function loadSongs() {
   }
 }
 
-// ✅ Check if artist is logged in (for artist pages)
 export function checkArtistConnected() {
   const token = localStorage.getItem("amplyIdToken");
-
   if (!token) {
-    console.warn("⚠️ Artist not logged in — redirecting...");
+    console.warn("⚠️ No token found — redirecting to login...");
     window.location.href = "./../index.html";
     return false;
   }
 
   try {
     const payload = parseJwt(token);
-    const groups = payload["cognito:groups"] || [];
+    console.log("🧠 Decoded token payload:", payload);
 
-    if (!groups.includes("artist") && !groups.includes("admin")) {
-      console.warn("⚠️ Not an artist — redirecting to listener page...");
+    // Prefer Cognito’s custom attribute if present
+    const role = payload["custom:role"] || localStorage.getItem("role") || "listener";
+
+    if (role !== "artist" && role !== "admin") {
+      console.warn(`⚠️ User role is '${role}', not artist — redirecting...`);
       window.location.href = "./../index.html";
       return false;
     }
-  } catch (e) {
-    console.error("JWT parsing failed", e);
+
+    console.log(`✅ Authenticated as ${role}`);
+    return true;
+  } catch (err) {
+    console.error("❌ Failed to parse JWT or validate role:", err);
     window.location.href = "./../index.html";
     return false;
   }
-
-  console.log("✅ Artist authenticated");
-  return true;
 }
 
 // ✅ Load config.json (optional)
