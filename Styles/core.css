@@ -192,6 +192,42 @@ li {
   transition: stroke 0.2s ease, transform 0.2s ease;
 }
 
+.song-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.song-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: background 0.2s ease;
+}
+
+.song-play-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.song-box .pause-icon {
+  display: none;
+}
+
+.play-icon {
+  position: relative;
+  left: 9%;
+}
+
 /* ===== Utilities ===== */
 .fade-in {
   animation: fadeIn 0.4s ease;

@@ -101,8 +101,11 @@ header {
 
 /* ====== MAIN CONTENT ====== */
 .main-content {
-  margin-left: 220px;
+  width: calc(100% - 120px);
+  display: flex;
+  flex-direction: row-reverse;
   padding: 2rem;
+  margin-left: 120px;
   color: white;
   min-height: 100vh;
   padding-bottom: 8rem; /* space for floating player bar */
