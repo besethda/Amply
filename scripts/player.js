@@ -12,6 +12,8 @@ const shuffleBtn = document.getElementById("shuffleBtn");
 const playPauseBtn = document.getElementById("playPause");
 const nextBtn = document.getElementById("nextBtn");
 const prevBtn = document.getElementById("prevBtn");
+const optionsBtn = document.getElementById("optionsBtn");
+const optionsMenu = document.getElementById("playerOptionsMenu");
 
 let isRepeat = false;
 let isShuffle = false;
@@ -128,8 +130,48 @@ function setupEvents() {
       progressBar.value = (audio.currentTime / audio.duration) * 100;
     }
   });
+  optionsBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    optionsMenu.classList.toggle("show");
+  });
+
+  document.addEventListener("click", () => {
+    optionsMenu.classList.remove("show");
+  });
+
+  optionsMenu.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
 
   audio.addEventListener("ended", () => handleEnd());
+}
+
+// Add to playlist (placeholder)
+function addToPlaylist(song) {
+  console.log("🎶 Add to playlist:", song);
+  alert(`Add "${song.title}" to playlist — coming soon!`);
+}
+
+// Add to queue
+function addToQueue(song) {
+  console.log("⏳ Add to queue:", song);
+  alert(`Added "${song.title}" to queue.`);
+}
+
+// Add to library
+function addToLibrary(song) {
+  console.log("❤️ Add to library:", song);
+  alert(`Saved "${song.title}" to your library.`);
+}
+
+// View artist (navigates)
+function viewArtist(song) {
+  if (!song.artist) {
+    alert("Artist not found for this track.");
+    return;
+  }
+  const name = encodeURIComponent(song.artist.toLowerCase());
+  window.location.href = `/artist-profile.html?artist=${name}`;
 }
 
 function handleEnd() {

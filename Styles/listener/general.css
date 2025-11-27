@@ -217,12 +217,59 @@ h2 {
 .song-title.scrolling,
 #currentTrackName.scrolling {
   animation: songMarquee 8s linear infinite;
-  padding-right: 40px;
 }
 
 .song-title.scrolling:hover,
 #currentTrackName.scrolling:hover {
   animation-play-state: paused;
+}
+
+/* =========================================================
+   🎛 PLAYER BAR — THREE DOTS MENU
+   ========================================================= */
+
+.player-options-menu {
+  position: fixed;
+  bottom: 70px;              /* sits above player bar */
+  right: 20px;
+  width: fit-content;
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: all 0.25s ease;
+  z-index: 9999;
+}
+
+.player-options-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.player-options-menu .option {
+  color: #eee;
+  background-color: rgba(36, 36, 36, 0.757);
+  padding: 0.7rem 1rem;
+  margin: 4px 0;
+  border: rgba(255, 255, 255, 0.143) solid 1px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.player-options-menu .option:hover {
+  background: var(--accent-color);
+  color: #111;
+}
+
+/* hide class */
+.hidden {
+  display: none;
 }
 
 /* ===== The Animation ===== */

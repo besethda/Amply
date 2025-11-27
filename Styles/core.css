@@ -69,15 +69,19 @@ li {
 }
 
 /* ====== PLAYER BAR ====== */
-.player-bar {
+.player-container {
   position: fixed;
-  left: 220px;
-  right: 0;
   bottom: 20px;
-  margin: 0 auto;
-  width: calc(100% - 180px);
-  max-width: 900px;
+  left: 180px;
   height: fit-content;
+  width: calc(100% - 180px);
+  display: flex;
+  justify-content: center;
+}
+
+.player-bar {
+  height: fit-content;
+  width: clamp(200px, 90%, 1000px);
   background: linear-gradient(90deg, #3d3d3d, #454545);
   color: #fff;
   border-radius: 16px;
@@ -108,16 +112,14 @@ li {
 
 /* ===== Bottom row (3 zones) ===== */
 .player-bottom {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   width: 100%;
   height: fit-content;
-  align-items: center;
-  justify-content: space-between;
 }
 
 /* LEFT: Title + Artist */
 .track-info {
-  display: flex;
   flex-direction: row;
   align-items: center;
   text-align: left;
