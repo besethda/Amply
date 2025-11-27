@@ -35,6 +35,7 @@ export async function playSong(song, list = playlist) {
 
   currentTrackName.textContent = song.title || "Unknown Track";
   currentTrackArtist.textContent = song.artist || "";
+  updateScrollingTitle();
 
   try {
     let streamUrl = song.url;
@@ -57,6 +58,21 @@ export async function playSong(song, list = playlist) {
     console.error("❌ Playback error:", err);
     alert("Cannot play this track right now.");
   }
+}
+
+function updateScrollingTitle() {
+  const el = currentTrackName;
+
+  el.classList.remove("scrolling");
+
+  // allow DOM to update fully
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (el.scrollWidth > el.clientWidth) {
+        el.classList.add("scrolling");
+      }
+    });
+  });
 }
 
 function setupEvents() {

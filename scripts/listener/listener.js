@@ -30,27 +30,31 @@ function renderSongs(list) {
     const div = document.createElement("div");
     div.className = "song-box";
     div.innerHTML = `
-      <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
-      <div class="song-info">
-        <p class="song-title">${song.title}</p>
-        <p class="song-artist">${song.artist}</p>
-      </div>
+    <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
 
-      <!-- PLAY BUTTON (centered) -->
-      <button class="song-play-btn" aria-label="Play or pause">
-        <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-          width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        </svg>
-        <svg class="pause-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-          width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round" style="display:none">
-          <rect x="6" y="4" width="4" height="16"></rect>
-          <rect x="14" y="4" width="4" height="16"></rect>
-        </svg>
-      </button>
-    `;
+    <div class="song-info">
+      <span class="song-title">${song.title}</span>
+      <span class="song-artist">${song.artist}</span>
+    </div>
+
+    <button class="song-play-btn" aria-label="Play or pause">
+      <svg class="play-icon" xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24" width="40" height="40"
+        fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+
+      <svg class="pause-icon" xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24" width="40" height="40"
+        fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"
+        style="display:none">
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
+    </button>
+  `;
 
     const btn = div.querySelector(".song-play-btn");
     const playIcon = btn.querySelector(".play-icon");

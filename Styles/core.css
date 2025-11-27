@@ -195,6 +195,7 @@ li {
 .song-box {
   position: relative;
   overflow: hidden;
+  border: rgba(255, 255, 255, 0.21) 1px solid;
 }
 
 .song-play-btn {

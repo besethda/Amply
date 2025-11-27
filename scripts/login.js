@@ -59,13 +59,13 @@ function parseJwt(token) {
         .join("")
     );
     return JSON.parse(jsonPayload);
-  } catch (e) {
+  } catch {
     return {};
   }
 }
 
 /* --------------------------------------------------------
-   ENTER submission (TAB allowed)
+   ENTER KEY SUBMISSION
 --------------------------------------------------------- */
 function enableEnterSubmit(inputIds, button) {
   inputIds.forEach((id) => {
@@ -82,7 +82,7 @@ function enableEnterSubmit(inputIds, button) {
 }
 
 /* --------------------------------------------------------
-   ELEMENTS
+   INPUT ELEMENTS
 --------------------------------------------------------- */
 const loginBtn = document.getElementById("loginBtn");
 const message = document.getElementById("message");
@@ -100,22 +100,22 @@ enableEnterSubmit(["signupEmail", "signupPassword", "signupConfirm"], signupBtn)
 enableEnterSubmit(["verifyCode"], verifyButton);
 
 /* --------------------------------------------------------
-   TEMP STORAGE FOR AUTO-LOGIN AFTER VERIFICATION
+   TEMP STORAGE (for auto-login after verification)
 --------------------------------------------------------- */
 let pendingSignupEmail = null;
 let pendingSignupPassword = null;
 
 /* --------------------------------------------------------
-   AUTO LOGIN AFTER SUCCESSFUL VERIFY
+   AUTO LOGIN AFTER EMAIL VERIFICATION
 --------------------------------------------------------- */
-async function autoLoginAfterVerification() {
+function autoLoginAfterVerification() {
   document.getElementById("email").value = pendingSignupEmail;
   document.getElementById("password").value = pendingSignupPassword;
   loginBtn.click();
 }
 
 /* --------------------------------------------------------
-   VERIFY BUTTON (ConfirmSignUp)
+   CONFIRM SIGNUP
 --------------------------------------------------------- */
 verifyButton?.addEventListener("click", async () => {
   const email = verifyEmail.value.trim();
@@ -146,24 +146,25 @@ verifyButton?.addEventListener("click", async () => {
     });
 
     const data = await res.json();
+
     if (data.__type?.includes("Exception")) {
       verifyMessage.style.color = "red";
-      verifyMessage.textContent = "Invalid or expired verification code.";
+      verifyMessage.textContent = "Invalid verification code.";
       return;
     }
 
     verifyMessage.style.color = "white";
     verifyMessage.textContent = "Verified! Logging you in...";
-    setTimeout(autoLoginAfterVerification, 1000);
+    setTimeout(autoLoginAfterVerification, 800);
 
-  } catch (err) {
+  } catch {
     verifyMessage.style.color = "red";
     verifyMessage.textContent = "Verification failed.";
   }
 });
 
 /* --------------------------------------------------------
-   SIGNUP BUTTON — FULL COGNITO SIGNUP
+   SIGNUP — ALWAYS CREATE A LISTENER
 --------------------------------------------------------- */
 signupBtn?.addEventListener("click", async () => {
   const email = document.getElementById("signupEmail").value.trim();
@@ -189,7 +190,7 @@ signupBtn?.addEventListener("click", async () => {
     Password: password,
     UserAttributes: [
       { Name: "email", Value: email },
-      { Name: "custom:role", Value: "artist" }
+      { Name: "custom:role", Value: "listener" } // ⭐ NEW: all signups are listeners
     ]
   };
 
@@ -205,26 +206,10 @@ signupBtn?.addEventListener("click", async () => {
 
     const data = await res.json();
 
-    // 🔥 NEW LOGIC: USER ALREADY EXISTS
+    // If user exists but is unconfirmed → show verify form
     if (data.__type?.includes("UsernameExistsException")) {
       signupMessage.style.color = "red";
-      signupMessage.textContent = "This email already has an account. Please verify.";
-
-      // Show verification form
-      showVerifyForm();
-      verifyEmail.value = email;
-
-      // save creds
-      pendingSignupEmail = email;
-      pendingSignupPassword = password;
-
-      return; // ⛔ stop here — do not continue
-    }
-
-    // 🔥 NEW USER CREATED (needs verification)
-    if (data.userConfirmed === false || data.UserConfirmed === false) {
-      signupMessage.style.color = "white";
-      signupMessage.textContent = "Account created! Check your email to confirm.";
+      signupMessage.textContent = "Account exists. Please verify.";
 
       showVerifyForm();
       verifyEmail.value = email;
@@ -235,6 +220,17 @@ signupBtn?.addEventListener("click", async () => {
       return;
     }
 
+    // New user created → show verify
+    if (data.userConfirmed === false || data.UserConfirmed === false) {
+      showVerifyForm();
+      verifyEmail.value = email;
+
+      pendingSignupEmail = email;
+      pendingSignupPassword = password;
+      signupMessage.textContent = "";
+      return;
+    }
+
   } catch (err) {
     signupMessage.style.color = "red";
     signupMessage.textContent = "❌ Signup failed: " + err.message;
@@ -242,7 +238,7 @@ signupBtn?.addEventListener("click", async () => {
 });
 
 /* --------------------------------------------------------
-   LOGIN BUTTON — ORIGINAL WORKING LOGIC
+   LOGIN — Detect artist or listener
 --------------------------------------------------------- */
 loginBtn?.addEventListener("click", async () => {
   const email = document.getElementById("email").value.trim();
@@ -253,13 +249,13 @@ loginBtn?.addEventListener("click", async () => {
     return;
   }
 
-  message.style.color = "rgb(255, 117, 31)";
+  message.style.color = "rgb(255,117,31)";
   message.textContent = "Signing in...";
 
   const payload = {
     AuthParameters: { USERNAME: email, PASSWORD: password },
     AuthFlow: "USER_PASSWORD_AUTH",
-    ClientId: clientId,
+    ClientId: clientId
   };
 
   try {
@@ -267,9 +263,9 @@ loginBtn?.addEventListener("click", async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/x-amz-json-1.1",
-        "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth"
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
@@ -281,6 +277,7 @@ loginBtn?.addEventListener("click", async () => {
     }
 
     const { AccessToken, IdToken, RefreshToken } = data.AuthenticationResult;
+
     localStorage.setItem("amplyAccessToken", AccessToken);
     localStorage.setItem("amplyIdToken", IdToken);
     localStorage.setItem("amplyRefreshToken", RefreshToken);
@@ -288,64 +285,68 @@ loginBtn?.addEventListener("click", async () => {
     const userInfo = parseJwt(IdToken);
 
     const emailDecoded = (userInfo.email || email).toLowerCase();
+    const userRole = userInfo["custom:role"]?.toLowerCase() || "listener";
+
+    // Store email + role
+    localStorage.setItem("email", emailDecoded);
+    localStorage.setItem("role", userRole);
+
+    /* --------------------------------------------------------
+       If NOT an artist → just go to listener page
+--------------------------------------------------------- */
+    if (userRole !== "artist") {
+      setTimeout(() => goTo("/listener/listener.html"), 400);
+      return;
+    }
+
+    /* --------------------------------------------------------
+       ARTIST LOGIN — load configs ONLY for artists
+--------------------------------------------------------- */
 
     const artistId =
       (userInfo["custom:artistId"] ||
         userInfo["custom:artistID"] ||
         userInfo["custom:ArtistId"] ||
-        (userInfo["email"] ? userInfo["email"].split("@")[0] : "") ||
+        userInfo.email.split("@")[0] ||
         userInfo["cognito:username"] ||
-        "unknown").toLowerCase();
+        "unknown"
+      ).toLowerCase();
 
-    const role = userInfo["custom:role"] || "artist";
-
-    localStorage.setItem("email", emailDecoded);
     localStorage.setItem("artistId", artistId);
-    localStorage.setItem("role", role);
 
+    // Load artist config
     try {
-      const fullUrl = `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`;
-      let artistConfig = null;
+      const configRes = await fetch(
+        `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`
+      );
 
-      const configRes = await fetch(fullUrl);
       if (configRes.ok) {
-        artistConfig = await configRes.json();
-      }
-
-      if (artistConfig?.bucketName) {
+        const artistConfig = await configRes.json();
         localStorage.setItem("amplyArtistConfig", JSON.stringify(artistConfig));
       }
     } catch {}
 
+    // Load artist profile
     try {
       const indexData = await loadAmplyIndex();
-
       const artistProfile =
         indexData?.artists?.find((a) => a.artistId?.toLowerCase() === artistId) ||
-        indexData?.artists?.find((a) => a.artistName?.toLowerCase() === artistId) ||
-        indexData?.artists?.find((a) => a.artistName?.toLowerCase() === "besethda");
+        indexData?.artists?.find((a) => a.artistName?.toLowerCase() === artistId);
 
       if (artistProfile) {
         localStorage.setItem("amplyArtistProfile", JSON.stringify(artistProfile));
       }
     } catch {}
 
-    const groups = userInfo["cognito:groups"] || [];
-    const isArtist =
-      role === "artist" || groups.includes("artist") || groups.includes("admin");
+    const complete = isArtistProfileComplete();
 
-    if (isArtist) {
-      const profileComplete = isArtistProfileComplete();
-      if (!profileComplete) {
-        setTimeout(() => goTo("/artist/setup-profile.html"), 500);
-      } else {
-        setTimeout(() => goTo("/artist/dashboard.html"), 500);
-      }
+    if (!complete) {
+      setTimeout(() => goTo("/artist/setup-profile.html"), 400);
     } else {
-      setTimeout(() => goTo("/listener/listener.html"), 500);
+      setTimeout(() => goTo("/artist/dashboard.html"), 400);
     }
 
-  } catch (err) {
+  } catch {
     message.style.color = "red";
     message.textContent = "❌ Login failed.";
   }
