@@ -1,6 +1,5 @@
-// === GENERAL UTILITIES & AUTH MANAGEMENT ===
 
-// 🌐 API endpoints
+//main links...
 export const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
 export const INDEX_URL =
   "https://amply-central-596430611327.s3.eu-north-1.amazonaws.com/amply-index.json";
@@ -10,16 +9,15 @@ export const TEMPLATE_URL =
 export const AMPLY_ACCOUNT_ID = "596430611327";
 export const REGION = "eu-north-1";
 
-// 🧠 Shorthand selectors
 export const $ = (sel) => document.querySelector(sel);
 export const $$ = (sel) => document.querySelectorAll(sel);
 
-// 🎟️ Get current auth token
+//puts the auth token in localstorage
 export function getAuthToken() {
   return localStorage.getItem("amplyIdToken");
 }
 
-// === 📦 Load the global Amply index ===
+//Load the amply index
 export async function loadAmplyIndex() {
   try {
     const res = await fetch(INDEX_URL + "?v=" + Date.now());
@@ -38,15 +36,12 @@ export async function loadAmplyIndex() {
 export function isArtistProfileComplete() {
   const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
   if (!artistProfile) return false;
-
   const hasName = !!artistProfile.artistName;
   const hasProfilePhoto = !!artistProfile.profilePhoto;
   const hasCoverPhoto = !!artistProfile.coverPhoto;
-
   const complete = hasName && hasProfilePhoto && hasCoverPhoto;
-
   console.log(
-    `🎨 Profile completeness check: ${complete ? "✅ Complete" : "⚠️ Incomplete"}`,
+    `Profile completeness check: ${complete ? "Complete" : "Incomplete"}`,
     artistProfile
   );
 
@@ -109,7 +104,7 @@ export function parseJwt(token) {
   }
 }
 
-// === 🎵 Load songs from the global index file ===
+// loads the songs from amply-index in my account
 export async function loadSongs() {
   try {
     const res = await fetch(INDEX_URL + "?v=" + Date.now());
@@ -129,12 +124,13 @@ export async function loadSongs() {
   }
 }
 
-// === 🎭 Check if logged-in user is artist or admin ===
+//Checks if the user is an artist or an admin
 export function checkArtistConnected() {
+  //if no token is found, redirects to login page
   const token = localStorage.getItem("amplyIdToken");
   if (!token) {
     console.warn("⚠️ No token found — redirecting to login...");
-    window.location.href = "./../index.html";
+    window.location.href = "../index.html";
     return false;
   }
 
@@ -160,7 +156,7 @@ export function checkArtistConnected() {
   }
 }
 
-// === ⚙️ Load config.json (optional local overrides) ===
+//loads .json config file
 export async function loadConfig() {
   try {
     const res = await fetch("../config.json");
@@ -172,7 +168,7 @@ export async function loadConfig() {
   }
 }
 
-// === 🚪 Logout helper ===
+//logs out- removes local storage
 export function logout() {
   console.log("🚪 Logging out and clearing session...");
   localStorage.removeItem("amplyIdToken");

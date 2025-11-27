@@ -32,21 +32,17 @@ const message = document.getElementById("message");
 loginBtn?.addEventListener("click", async () => {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
-
   if (!email || !password) {
     message.textContent = "Please enter your email and password.";
     return;
   }
-
   message.style.color = "rgb(255, 117, 31)";
   message.textContent = "Signing in...";
-
   const payload = {
     AuthParameters: { USERNAME: email, PASSWORD: password },
     AuthFlow: "USER_PASSWORD_AUTH",
     ClientId: clientId,
   };
-
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -63,9 +59,8 @@ loginBtn?.addEventListener("click", async () => {
       localStorage.setItem("amplyAccessToken", AccessToken);
       localStorage.setItem("amplyIdToken", IdToken);
       localStorage.setItem("amplyRefreshToken", RefreshToken);
-
       const userInfo = parseJwt(IdToken);
-      console.log("🧠 Decoded user info:", userInfo);
+      console.log("Decoded user info:", userInfo);
 
       const emailDecoded = (userInfo.email || email).toLowerCase();
 
