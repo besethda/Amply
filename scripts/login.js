@@ -4,6 +4,45 @@ const region = "eu-north-1";
 const clientId = "2a031n3pf59i2grgkqcd2m6jrj";
 const url = `https://cognito-idp.${region}.amazonaws.com/`;
 
+/* --------------------------------------------------------
+   FORM ELEMENTS
+--------------------------------------------------------- */
+const loginForm = document.getElementById("loginForm");
+const signupForm = document.getElementById("signupForm");
+const verifyForm = document.getElementById("verifyForm");
+
+const showSignup = document.getElementById("showSignup");
+const showLogin = document.getElementById("showLogin");
+const verifyBackToLogin = document.getElementById("verifyBackToLogin");
+
+/* --------------------------------------------------------
+   FORM TOGGLING
+--------------------------------------------------------- */
+function showLoginForm() {
+  loginForm.style.display = "block";
+  signupForm.style.display = "none";
+  verifyForm.style.display = "none";
+}
+
+function showSignupForm() {
+  loginForm.style.display = "none";
+  signupForm.style.display = "block";
+  verifyForm.style.display = "none";
+}
+
+function showVerifyForm() {
+  loginForm.style.display = "none";
+  signupForm.style.display = "none";
+  verifyForm.style.display = "block";
+}
+
+showSignup?.addEventListener("click", showSignupForm);
+showLogin?.addEventListener("click", showLoginForm);
+verifyBackToLogin?.addEventListener("click", showLoginForm);
+
+/* --------------------------------------------------------
+   UTILS
+--------------------------------------------------------- */
 function goTo(path) {
   if (path.startsWith("/")) path = path.slice(1);
   window.location.href = `${window.location.origin}/${path}`;
@@ -21,28 +60,208 @@ function parseJwt(token) {
     );
     return JSON.parse(jsonPayload);
   } catch (e) {
-    console.error("JWT decode failed:", e);
     return {};
   }
 }
 
+/* --------------------------------------------------------
+   ENTER submission (TAB allowed)
+--------------------------------------------------------- */
+function enableEnterSubmit(inputIds, button) {
+  inputIds.forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        button.click();
+      }
+    });
+  });
+}
+
+/* --------------------------------------------------------
+   ELEMENTS
+--------------------------------------------------------- */
 const loginBtn = document.getElementById("loginBtn");
 const message = document.getElementById("message");
 
+const signupBtn = document.getElementById("signupButton");
+const signupMessage = document.getElementById("signupMessage");
+
+const verifyButton = document.getElementById("verifyButton");
+const verifyMessage = document.getElementById("verifyMessage");
+const verifyEmail = document.getElementById("verifyEmail");
+const verifyCode = document.getElementById("verifyCode");
+
+enableEnterSubmit(["email", "password"], loginBtn);
+enableEnterSubmit(["signupEmail", "signupPassword", "signupConfirm"], signupBtn);
+enableEnterSubmit(["verifyCode"], verifyButton);
+
+/* --------------------------------------------------------
+   TEMP STORAGE FOR AUTO-LOGIN AFTER VERIFICATION
+--------------------------------------------------------- */
+let pendingSignupEmail = null;
+let pendingSignupPassword = null;
+
+/* --------------------------------------------------------
+   AUTO LOGIN AFTER SUCCESSFUL VERIFY
+--------------------------------------------------------- */
+async function autoLoginAfterVerification() {
+  document.getElementById("email").value = pendingSignupEmail;
+  document.getElementById("password").value = pendingSignupPassword;
+  loginBtn.click();
+}
+
+/* --------------------------------------------------------
+   VERIFY BUTTON (ConfirmSignUp)
+--------------------------------------------------------- */
+verifyButton?.addEventListener("click", async () => {
+  const email = verifyEmail.value.trim();
+  const code = verifyCode.value.trim();
+
+  if (!code) {
+    verifyMessage.textContent = "Enter the verification code.";
+    return;
+  }
+
+  verifyMessage.style.color = "rgb(255,117,31)";
+  verifyMessage.textContent = "Verifying...";
+
+  const payload = {
+    ClientId: clientId,
+    Username: email,
+    ConfirmationCode: code
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-amz-json-1.1",
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.ConfirmSignUp"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (data.__type?.includes("Exception")) {
+      verifyMessage.style.color = "red";
+      verifyMessage.textContent = "Invalid or expired verification code.";
+      return;
+    }
+
+    verifyMessage.style.color = "white";
+    verifyMessage.textContent = "Verified! Logging you in...";
+    setTimeout(autoLoginAfterVerification, 1000);
+
+  } catch (err) {
+    verifyMessage.style.color = "red";
+    verifyMessage.textContent = "Verification failed.";
+  }
+});
+
+/* --------------------------------------------------------
+   SIGNUP BUTTON — FULL COGNITO SIGNUP
+--------------------------------------------------------- */
+signupBtn?.addEventListener("click", async () => {
+  const email = document.getElementById("signupEmail").value.trim();
+  const password = document.getElementById("signupPassword").value.trim();
+  const confirm = document.getElementById("signupConfirm").value.trim();
+
+  if (!email || !password || !confirm) {
+    signupMessage.textContent = "Please fill in all fields.";
+    return;
+  }
+
+  if (password !== confirm) {
+    signupMessage.textContent = "Passwords do not match.";
+    return;
+  }
+
+  signupMessage.style.color = "rgb(255,117,31)";
+  signupMessage.textContent = "Creating account...";
+
+  const payload = {
+    ClientId: clientId,
+    Username: email,
+    Password: password,
+    UserAttributes: [
+      { Name: "email", Value: email },
+      { Name: "custom:role", Value: "artist" }
+    ]
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-amz-json-1.1",
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.SignUp"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    // 🔥 NEW LOGIC: USER ALREADY EXISTS
+    if (data.__type?.includes("UsernameExistsException")) {
+      signupMessage.style.color = "red";
+      signupMessage.textContent = "This email already has an account. Please verify.";
+
+      // Show verification form
+      showVerifyForm();
+      verifyEmail.value = email;
+
+      // save creds
+      pendingSignupEmail = email;
+      pendingSignupPassword = password;
+
+      return; // ⛔ stop here — do not continue
+    }
+
+    // 🔥 NEW USER CREATED (needs verification)
+    if (data.userConfirmed === false || data.UserConfirmed === false) {
+      signupMessage.style.color = "white";
+      signupMessage.textContent = "Account created! Check your email to confirm.";
+
+      showVerifyForm();
+      verifyEmail.value = email;
+
+      pendingSignupEmail = email;
+      pendingSignupPassword = password;
+
+      return;
+    }
+
+  } catch (err) {
+    signupMessage.style.color = "red";
+    signupMessage.textContent = "❌ Signup failed: " + err.message;
+  }
+});
+
+/* --------------------------------------------------------
+   LOGIN BUTTON — ORIGINAL WORKING LOGIC
+--------------------------------------------------------- */
 loginBtn?.addEventListener("click", async () => {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
+
   if (!email || !password) {
     message.textContent = "Please enter your email and password.";
     return;
   }
+
   message.style.color = "rgb(255, 117, 31)";
   message.textContent = "Signing in...";
+
   const payload = {
     AuthParameters: { USERNAME: email, PASSWORD: password },
     AuthFlow: "USER_PASSWORD_AUTH",
     ClientId: clientId,
   };
+
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -54,99 +273,80 @@ loginBtn?.addEventListener("click", async () => {
     });
 
     const data = await res.json();
-    if (data.AuthenticationResult) {
-      const { AccessToken, IdToken, RefreshToken } = data.AuthenticationResult;
-      localStorage.setItem("amplyAccessToken", AccessToken);
-      localStorage.setItem("amplyIdToken", IdToken);
-      localStorage.setItem("amplyRefreshToken", RefreshToken);
-      const userInfo = parseJwt(IdToken);
-      console.log("Decoded user info:", userInfo);
 
-      const emailDecoded = (userInfo.email || email).toLowerCase();
-
-      const artistId =
-        (userInfo["custom:artistId"] ||
-          userInfo["custom:artistID"] || // uppercase fallback
-          userInfo["custom:ArtistId"] || // safety catch
-          (userInfo["email"] ? userInfo["email"].split("@")[0] : "") ||
-          userInfo["cognito:username"] ||
-          "unknown").toLowerCase();
-
-      const role = userInfo["custom:role"] || "artist"; // ✅ define role before using
-      console.log("🎯 artistId resolved as:", artistId);
-      console.log("🎯 role resolved as:", role);
-
-      // Save to localStorage
-      localStorage.setItem("email", emailDecoded);
-      localStorage.setItem("artistId", artistId);
-      localStorage.setItem("role", role);
-
-      // === Fetch artist config ===
-      try {
-        const fullUrl = `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`;
-        let artistConfig = null;
-
-        const configRes = await fetch(fullUrl);
-        if (configRes.ok) {
-          artistConfig = await configRes.json();
-        } else {
-          const altUrl = `${API_URL}/get-artist-config?artist=${encodeURIComponent(emailDecoded)}`;
-          const altRes = await fetch(altUrl);
-          if (altRes.ok) artistConfig = await altRes.json();
-        }
-
-        if (artistConfig?.bucketName) {
-          localStorage.setItem("amplyArtistConfig", JSON.stringify(artistConfig));
-          console.log("✅ Artist config loaded:", artistConfig);
-        } else {
-          console.warn("⚠️ No artist config found for:", artistId);
-        }
-      } catch (err) {
-        console.error("❌ Failed to load artist config:", err);
-      }
-
-      // === Load artist profile from index ===
-      try {
-        const indexData = await loadAmplyIndex();
-        let artistProfile =
-          indexData?.artists?.find((a) => a.artistId?.toLowerCase() === artistId.toLowerCase()) ||
-          indexData?.artists?.find((a) => a.artistName?.toLowerCase() === artistId.toLowerCase()) ||
-          indexData?.artists?.find((a) => a.artistName?.toLowerCase() === "besethda"); // fallback
-
-        if (artistProfile) {
-          localStorage.setItem("amplyArtistProfile", JSON.stringify(artistProfile));
-          console.log("✅ Artist profile cached:", artistProfile);
-        } else {
-          console.warn("⚠️ No artist profile found for ID:", artistId);
-        }
-      } catch (err) {
-        console.error("❌ Failed to load artist profile:", err);
-      }
-
-      // === Redirect ===
-      const groups = userInfo["cognito:groups"] || [];
-      const isArtist =
-        role === "artist" || groups.includes("artist") || groups.includes("admin");
-
-      if (isArtist) {
-        const profileComplete = isArtistProfileComplete();
-        console.log("🎨 Profile completeness:", profileComplete);
-
-        if (!profileComplete) {
-          console.log("🧭 Redirecting to setup-profile.html...");
-          setTimeout(() => goTo("/artist/setup-profile.html"), 800);
-        } else {
-          console.log("🧭 Redirecting to artist dashboard...");
-          setTimeout(() => goTo("/artist/dashboard.html"), 800);
-        }
-      } else {
-        console.log("🎧 Redirecting listener...");
-        setTimeout(() => goTo("/listener/listener.html"), 800);
-      }
+    if (!data.AuthenticationResult) {
+      message.style.color = "red";
+      message.textContent = "Invalid email or password.";
+      return;
     }
+
+    const { AccessToken, IdToken, RefreshToken } = data.AuthenticationResult;
+    localStorage.setItem("amplyAccessToken", AccessToken);
+    localStorage.setItem("amplyIdToken", IdToken);
+    localStorage.setItem("amplyRefreshToken", RefreshToken);
+
+    const userInfo = parseJwt(IdToken);
+
+    const emailDecoded = (userInfo.email || email).toLowerCase();
+
+    const artistId =
+      (userInfo["custom:artistId"] ||
+        userInfo["custom:artistID"] ||
+        userInfo["custom:ArtistId"] ||
+        (userInfo["email"] ? userInfo["email"].split("@")[0] : "") ||
+        userInfo["cognito:username"] ||
+        "unknown").toLowerCase();
+
+    const role = userInfo["custom:role"] || "artist";
+
+    localStorage.setItem("email", emailDecoded);
+    localStorage.setItem("artistId", artistId);
+    localStorage.setItem("role", role);
+
+    try {
+      const fullUrl = `${API_URL}/get-artist-config?artist=${encodeURIComponent(artistId)}`;
+      let artistConfig = null;
+
+      const configRes = await fetch(fullUrl);
+      if (configRes.ok) {
+        artistConfig = await configRes.json();
+      }
+
+      if (artistConfig?.bucketName) {
+        localStorage.setItem("amplyArtistConfig", JSON.stringify(artistConfig));
+      }
+    } catch {}
+
+    try {
+      const indexData = await loadAmplyIndex();
+
+      const artistProfile =
+        indexData?.artists?.find((a) => a.artistId?.toLowerCase() === artistId) ||
+        indexData?.artists?.find((a) => a.artistName?.toLowerCase() === artistId) ||
+        indexData?.artists?.find((a) => a.artistName?.toLowerCase() === "besethda");
+
+      if (artistProfile) {
+        localStorage.setItem("amplyArtistProfile", JSON.stringify(artistProfile));
+      }
+    } catch {}
+
+    const groups = userInfo["cognito:groups"] || [];
+    const isArtist =
+      role === "artist" || groups.includes("artist") || groups.includes("admin");
+
+    if (isArtist) {
+      const profileComplete = isArtistProfileComplete();
+      if (!profileComplete) {
+        setTimeout(() => goTo("/artist/setup-profile.html"), 500);
+      } else {
+        setTimeout(() => goTo("/artist/dashboard.html"), 500);
+      }
+    } else {
+      setTimeout(() => goTo("/listener/listener.html"), 500);
+    }
+
   } catch (err) {
-    console.error("❌ Login error:", err);
     message.style.color = "red";
-    message.textContent = "❌ " + (err.message || "Login failed.");
+    message.textContent = "❌ Login failed.";
   }
 });
