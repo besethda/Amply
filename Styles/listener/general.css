@@ -230,12 +230,12 @@ h2 {
 
 .player-options-menu {
   position: fixed;
-  bottom: 70px;              /* sits above player bar */
-  right: 20px;
+  left: 53%;
+  bottom: 125px;              /* sits above player bar */
   width: fit-content;
   padding: 0.5rem 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 2px;
   opacity: 0;
   transform: translateY(10px);
@@ -250,16 +250,18 @@ h2 {
   pointer-events: auto;
 }
 
-.player-options-menu .option {
+.option {
   color: #eee;
   background-color: rgba(36, 36, 36, 0.757);
   padding: 0.7rem 1rem;
-  margin: 4px 0;
+  margin: 0 4px;
+  width: fit-content;
   border: rgba(255, 255, 255, 0.143) solid 1px;
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s ease;
   font-size: 0.95rem;
+  font-family: "Commissioner", sans-serif;
 }
 
 .player-options-menu .option:hover {

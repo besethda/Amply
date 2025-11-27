@@ -45,6 +45,18 @@ button:hover {
   color: rgb(24, 24, 24);
 }
 
+.profile {
+  width: 50px;
+  height: 50px;
+  fill: var(--accent-color);
+}
+
+.settings {
+  width: 45px;
+  height: 45px;
+  stroke: var(--accent-color);
+}
+
 h2 {
   font-family: "Electrolize";
 }
