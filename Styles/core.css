@@ -45,6 +45,24 @@ button:hover {
   color: rgb(24, 24, 24);
 }
 
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.menu-icons {
+  height: fit-content;
+  width: fit-content;
+  margin-right: 8px;
+}
+
+.menu-icon {
+  margin: 0 5px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
 .profile {
   width: 50px;
   height: 50px;
@@ -52,8 +70,8 @@ button:hover {
 }
 
 .settings {
-  width: 45px;
-  height: 45px;
+  width: 50px;
+  height: 50px;
   stroke: var(--accent-color);
 }
 
