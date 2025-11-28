@@ -36,7 +36,8 @@ button {
   transition: background 0.2s ease;
 }
 
-#searchbar {
+/* FIXED: Correct ID */
+#searchBar {
   background-color: #383838;
 }
 
@@ -73,6 +74,11 @@ button:hover {
   width: 50px;
   height: 50px;
   stroke: var(--accent-color);
+  transition: 0.5s ease-in-out;
+}
+
+.settings:hover {
+  rotate: 34deg;
 }
 
 h2 {
@@ -150,26 +156,25 @@ li {
 
 /* LEFT: Title + Artist */
 .track-info {
+  display: flex;
   flex-direction: row;
   align-items: center;
   text-align: left;
+}
 
-  span {
-    text-align: inherit;
-  }
+.track-info span {
+  text-align: inherit;
 }
 
 #currentTrackName {
   font-size: 1.05rem;
   font-weight: 600;
-  display: inline;
 }
 
 #currentTrackArtist {
   font-size: 1.06rem;
   font-weight: 600;
   opacity: 0.8;
-  display: inline;
 }
 
 /* Add “ - ” between title and artist */
@@ -184,7 +189,6 @@ li {
   justify-content: center;
   align-items: center;
   gap: 0.6rem;
-  flex: 0 0 auto;
 }
 
 /* RIGHT: Shuffle / Repeat */
@@ -224,13 +228,22 @@ li {
   transition: stroke 0.2s ease, transform 0.2s ease;
 }
 
+/* SONG BOXES */
 .song-box {
   position: relative;
   overflow: hidden;
   border: rgba(255, 255, 255, 0.21) 1px solid;
 }
 
-.song-play-btn {
+.song-info,
+.song-info-box {
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.song-play-btn-box {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -248,15 +261,15 @@ li {
   transition: background 0.2s ease;
 }
 
-.song-play-btn:hover {
+.song-play-btn-box:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
-.song-box .pause-icon {
+.song-box .pause-icon-box {
   display: none;
 }
 
-.play-icon {
+.play-icon-box {
   position: relative;
   left: 9%;
 }

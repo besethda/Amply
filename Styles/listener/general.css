@@ -172,14 +172,14 @@ h2 {
 }
 
 /* ----- Song Info Box ----- */
-.song-info {
+.song-info-box {
   background: rgba(0, 0, 0, 0.3);
-  padding: 0.4rem 0.3rem 0.5rem;
+  padding: 1px 1px 2px;
   border-radius: 0 0 10px 10px;
-  height: 48px;
+  height: 51px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
 }
 
 /* =========================================================
@@ -187,7 +187,7 @@ h2 {
    ========================================================= */
 
 /* Used inside song-boxes */
-.song-title {
+.song-title-box {
   color: #fff;
   font-weight: 600;
   font-size: 0.9rem;
@@ -208,12 +208,12 @@ h2 {
 }
 
 /* ----- Shared Scrolling Behaviour ----- */
-.song-title.scrolling,
+.song-title-box.scrolling,
 #currentTrackName.scrolling {
   animation: songMarquee 8s linear infinite;
 }
 
-.song-title.scrolling:hover,
+.song-title-box.scrolling:hover,
 #currentTrackName.scrolling:hover {
   animation-play-state: paused;
 }
@@ -279,9 +279,15 @@ h2 {
 }
 
 /* ----- Artist Label Text ----- */
-.song-artist {
+.song-artist-box {
+  background: transparent;
   color: #aaa;
   font-size: 0.8rem;
+}
+
+.song-artist-box:hover,
+.song-title-box:hover {
+  text-decoration: underline;
 }
 
 /* ----- Play Button on Hover ----- */

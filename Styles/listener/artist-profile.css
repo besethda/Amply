@@ -1,0 +1,65 @@
+.artist-poster {
+  height: 20vh;
+  width: 100%;
+  background: linear-gradient(to right,rgb(82, 82, 82), rgb(147, 147, 147));
+  margin-bottom: 20px;
+  border-radius: 9px;
+  display: flex;
+  justify-content: center;
+}
+
+.artist-photo {
+  position: relative;
+  top: 25%;
+  width: clamp(140px, 18vh, 300px);
+  height: clamp(140px, 18vh, 300px);
+  background-color: blueviolet;
+  border-radius: 34%;
+  box-shadow: 2px 7px 13px 1px black;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.about-artist {
+  display: none;
+  font-size: 1.4rem;
+  font-weight: 300;
+  font-family: "Commissioner", sans-serif;
+  text-align: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.artist-photo:hover {
+  background-blend-mode: darken;
+}
+
+.about-artist:hover {
+  text-decoration: underline;
+}
+
+.about-background {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  background-color: rgba(29, 29, 29, 0.655);
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-artist-text {
+  width: 55%;
+  height: 55%;
+  padding: 12px;
+  font-size: 1.4rem;
+  font-weight: 300;
+  font-family: "Commissioner", sans-serif;
+  text-align: center;
+  background: linear-gradient(to right, rgba(35, 35, 35, 0.867), rgba(77, 77, 77, 0.857));
+  border-radius: 12px;
+  border: rgba(255, 255, 255, 0.263) solid 1px;
+}
