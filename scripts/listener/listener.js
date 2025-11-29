@@ -9,20 +9,21 @@ const searchBar = $("#searchBar");
 let songs = [];
 
 // ===============================
-// LOAD SONGS
+// INITIAL LOAD
 // ===============================
 window.addEventListener("DOMContentLoaded", async () => {
   try {
+    // Load songs from API
     songs = await loadSongs();
 
-    // Default GRID VIEW
+    // Render them in GRID view by default
     renderSongsToDom({
       songs,
       layout: "grid",
       container: "#trackList",
     });
 
-    // Initialize player with loaded list
+    // Initialize global audio player with loaded songs
     initPlayer(songs);
 
   } catch (err) {
@@ -34,35 +35,20 @@ window.addEventListener("DOMContentLoaded", async () => {
 // ===============================
 // SEARCH BAR FILTER
 // ===============================
-searchBar.addEventListener("input", (e) => {
-  const q = e.target.value.toLowerCase();
+if (searchBar) {
+  searchBar.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
 
-  const filtered = songs.filter((s) =>
-    s.title.toLowerCase().includes(q) ||
-    s.artist.toLowerCase().includes(q) ||
-    (s.genre?.join(", ").toLowerCase().includes(q) || false)
-  );
+    const filtered = songs.filter((s) =>
+      s.title.toLowerCase().includes(q) ||
+      s.artist.toLowerCase().includes(q) ||
+      (s.genre?.join(", ").toLowerCase().includes(q) || false)
+    );
 
-  renderSongsToDom({
-    songs: filtered,
-    layout: "grid",
-    container: "#trackList",
+    renderSongsToDom({
+      songs: filtered,
+      layout: "grid",
+      container: "#trackList",
+    });
   });
-});
-
-// ===============================
-// ARTIST CLICK HANDLER
-// ===============================
-document.addEventListener("click", (e) => {
-  if (!e.target.classList.contains("go-artist")) return;
-
-  // Works for BOTH grid + list
-  const wrapper = e.target.closest("[data-artist]");
-  if (!wrapper) return;
-
-  const artist = wrapper.dataset.artist;
-  if (!artist) return;
-
-  window.location.href =
-    `/listener/artist-profile.html?artist=${encodeURIComponent(artist)}`;
-});
+}

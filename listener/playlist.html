@@ -3,19 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Playlist</title>
+    <title>Amply – Discover</title>
 
-    <!-- STYLES -->
-    <link rel="stylesheet" href="../Styles/core.css" />
-    <link rel="stylesheet" href="../Styles/fonts.css" />
-    <link rel="stylesheet" href="../Styles/listener/general.css" />
-    <link rel="stylesheet" href="../Styles/listener/playlist.css" />
-
-    <!-- SCRIPTS -->
+    <!-- ===== STYLES ===== -->
+    <link rel="stylesheet" href="/Styles/fonts.css" />
+    <link rel="stylesheet" href="/Styles/listener/general.css" />
+    <link rel="stylesheet" href="/Styles/listener/listener.css" />
+    <link rel="stylesheet" href="/Styles/core.css" />
+    <!-- ===== SCRIPTS ===== -->
     <script type="module" src="../scripts/general.js" defer></script>
     <script type="module" src="../scripts/player.js" defer></script>
     <script type="module" src="../scripts/listener/playlist.js" defer></script>
-    <script type="module" src="/listener/scripts/general.js" defer></script>
+    <script type="module" src="../scripts/listener/general.js" defer></script>
   </head>
 
   <body>
@@ -24,17 +23,16 @@
       <div class="sidebar-header">
         <img src="../images/Amply_lgo.png" alt="Amply" class="sidebar-logo" />
       </div>
+
       <nav class="menu">
         <ul>
           <li onclick="window.location.href='listener.html'">Home</li>
-          <li class="active">Playlists</li>
+          <li class="active" onclick="window.location.href='playlist.html'">Playlists</li>
           <li onclick="window.location.href='explore.html'">Explore</li>
           <li onclick="window.location.href='library.html'">Library</li>
-          <li onclick="window.location.href='settings.html'">Settings</li>
         </ul>
       </nav>
 
-      <!-- LOGOUT BUTTON -->
       <div class="sidebar-footer">
         <button id="logoutBtn" class="logout-btn">Logout</button>
       </div>
@@ -46,144 +44,210 @@
         <input
           type="text"
           id="searchBar"
-          placeholder="Search for playlists..."
+          placeholder="Search for songs or artists..."
         />
+        <div class="menu-icons">
+          <svg
+            class="profile menu-icon"
+            viewBox="0 0 256 256"
+            id="Flat"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M228,128A100,100,0,1,0,60.71,201.90967a3.97048,3.97048,0,0,0,.842.751,99.79378,99.79378,0,0,0,132.8982-.00195,3.96558,3.96558,0,0,0,.83813-.74756A99.76267,99.76267,0,0,0,228,128ZM36,128a92,92,0,1,1,157.17139,64.87207,75.616,75.616,0,0,0-44.50782-34.04053,44,44,0,1,0-41.32714,0,75.61784,75.61784,0,0,0-44.50782,34.04A91.70755,91.70755,0,0,1,36,128Zm92,28a36,36,0,1,1,36-36A36.04061,36.04061,0,0,1,128,156ZM68.86475,198.417a68.01092,68.01092,0,0,1,118.27.00049,91.80393,91.80393,0,0,1-118.27-.00049Z"
+            />
+          </svg>
+          <svg
+            class="settings menu-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 32 32"
+          >
+            <path
+              class="st0"
+              d="M28.6,13c-1.6,0.2-3.1-0.5-4-2c-0.8-1.4-0.7-3.2,0.3-4.4c-1.5-1.4-3.3-2.4-5.2-3C19.1,5,17.7,6,16,6
+              s-3.1-1-3.7-2.5c-2,0.6-3.8,1.6-5.2,3C8,7.8,8.2,9.6,7.3,11c-0.8,1.4-2.4,2.2-4,2c-0.2,1-0.4,2-0.4,3c0,1,0.1,2.1,0.4,3
+              c1.6-0.2,3.1,0.5,4,2c0.8,1.4,0.7,3.2-0.3,4.4c1.5,1.4,3.3,2.4,5.2,3c0.6-1.4,2-2.5,3.7-2.5s3.1,1,3.7,2.5c2-0.6,3.8-1.6,5.2-3
+              c-0.9-1.2-1.1-3-0.3-4.4c0.8-1.4,2.4-2.2,4-2c0.2-1,0.4-2,0.4-3C29,15,28.9,13.9,28.6,13z"
+            />
+            <circle class="st0" cx="16" cy="16" r="3" />
+          </svg>
+        </div>
       </header>
 
-      <section class="playlist-section fade-in">
-        <h2>🎧 Your Playlists</h2>
-        <div id="playlistGrid" class="playlist-grid"></div>
+      <section class="songs-section fade-in">
+        <h2>Example Playlist</h2>
+        <div id="playlistTrackList"></div>
       </section>
     </main>
 
     <!-- PLAYER BAR -->
-    <div id="playerBar" class="player-bar hidden">
-      <div class="player-inner">
-        <!-- LEFT: Controls -->
-        <div class="player-controls">
-          <button id="prevBtn" class="icon-button" aria-label="Previous">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="28"
-              height="28"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="transform: scaleX(-1)"
-            >
-              <polygon points="5 4 15 12 5 20 5 4"></polygon>
-              <line x1="19" y1="5" x2="19" y2="19"></line>
-            </svg>
-          </button>
-
-          <button id="playPause" class="icon-button" aria-label="Play or pause">
-            <svg
-              id="playIcon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="34"
-              height="34"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-
-            <svg
-              id="pauseIcon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="34"
-              height="34"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="display: none"
-            >
-              <rect x="6" y="4" width="4" height="16"></rect>
-              <rect x="14" y="4" width="4" height="16"></rect>
-            </svg>
-          </button>
-
-          <button id="nextBtn" class="icon-button" aria-label="Next">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="28"
-              height="28"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polygon points="5 4 15 12 5 20 5 4"></polygon>
-              <line x1="19" y1="5" x2="19" y2="19"></line>
-            </svg>
-          </button>
-        </div>
-
-        <!-- CENTER: Progress + Song Info -->
-        <div class="player-center">
+    <div class="player-container">
+      <div id="playerBar" class="player-bar hidden">
+        <div class="player-inner">
+          <!-- PROGRESS BAR (FULL WIDTH) -->
           <input type="range" id="progressBar" value="0" min="0" max="100" />
-          <div class="track-info">
-            <span id="currentTrackName">No track playing</span>
-            <span id="currentTrackArtist"></span>
+
+          <!-- BOTTOM SECTION -->
+          <div class="player-bottom">
+            <!-- LEFT: SONG INFO -->
+            <div class="track-info">
+              <span id="currentTrackName">No track playing</span>
+              <span id="currentTrackArtist">—</span>
+            </div>
+
+            <!-- CENTER: CONTROLS -->
+            <div class="player-controls">
+              <button id="prevBtn" class="icon-button" aria-label="Previous">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="transform: scaleX(-1)"
+                >
+                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                  <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+              </button>
+
+              <button
+                id="playPause"
+                class="icon-button"
+                aria-label="Play or pause"
+              >
+                <svg
+                  id="playIcon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="34"
+                  height="34"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg
+                  id="pauseIcon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="34"
+                  height="34"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: none"
+                >
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+              </button>
+
+              <button id="nextBtn" class="icon-button" aria-label="Next">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                  <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- RIGHT: OPTIONS -->
+            <div class="player-options">
+              <!-- REPEAT -->
+              <button id="repeatBtn" class="icon-button" aria-label="Repeat">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="17 1 21 5 17 9"></polyline>
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                  <polyline points="7 23 3 19 7 15"></polyline>
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                </svg>
+              </button>
+
+              <!-- SHUFFLE -->
+              <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="16 3 21 3 21 8"></polyline>
+                  <line x1="4" y1="20" x2="21" y2="3"></line>
+                  <polyline points="21 16 21 21 16 21"></polyline>
+                  <line x1="15" y1="15" x2="21" y2="21"></line>
+                  <line x1="4" y1="4" x2="9" y2="9"></line>
+                </svg>
+              </button>
+
+              <!-- OPTIONS (THREE DOTS) -->
+              <button
+                id="optionsBtn"
+                class="icon-button"
+                aria-label="More options"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="12" cy="5" r="1.5"></circle>
+                  <circle cx="12" cy="12" r="1.5"></circle>
+                  <circle cx="12" cy="19" r="1.5"></circle>
+                </svg>
+              </button>
+
+              <!-- DROPDOWN MENU -->
+              <div id="playerOptionsMenu" class="player-options-menu">
+                <div class="option" data-action="playlist">Add to playlist</div>
+                <div class="option" data-action="queue">Add to queue</div>
+                <div class="option" data-action="library">Add to library</div>
+                <div class="option" data-action="artist">View artist</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- RIGHT: Shuffle + Repeat -->
-        <div class="player-options">
-          <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="26"
-              height="26"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="16 3 21 3 21 8"></polyline>
-              <line x1="4" y1="20" x2="21" y2="3"></line>
-              <polyline points="21 16 21 21 16 21"></polyline>
-              <line x1="15" y1="15" x2="21" y2="21"></line>
-              <line x1="4" y1="4" x2="9" y2="9"></line>
-            </svg>
-          </button>
-
-          <button id="repeatBtn" class="icon-button" aria-label="Repeat">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="26"
-              height="26"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="17 1 21 5 17 9"></polyline>
-              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-              <polyline points="7 23 3 19 7 15"></polyline>
-              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-            </svg>
-          </button>
-        </div>
+        <audio id="globalAudio" hidden></audio>
       </div>
-
-      <audio id="globalAudio" controls hidden></audio>
     </div>
   </body>
 </html>

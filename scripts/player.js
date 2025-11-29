@@ -1,4 +1,5 @@
 import { API_URL } from "../scripts/general.js";
+import { loadSongs } from "../scripts/listener/general.js";
 
 // ===============================
 // DOM ELEMENTS
@@ -44,21 +45,32 @@ function syncPlayerIcons() {
   const currentId = window.currentSong?.id;
 
   // Reset all icons
-  document.querySelectorAll(".pause-icon, .pause-icon-box, .pause-icon-list")
-    .forEach(el => el.style.display = "none");
+  document
+    .querySelectorAll(".pause-icon, .pause-icon-box, .pause-icon-list")
+    .forEach((el) => (el.style.display = "none"));
 
-  document.querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
-    .forEach(el => el.style.display = "block");
+  document
+    .querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
+    .forEach((el) => (el.style.display = "block"));
 
   if (!currentId) return;
 
   // Activate the correct song card
-  const activeCard = document.querySelector(`[data-song-id="${currentId}"]`);
+  const safeSelector = CSS.escape(currentId);
+  const activeCard = document.querySelector(`[data-song-id="${safeSelector}"]`);
   if (!activeCard) return;
 
   const btn = activeCard.querySelector("button");
-  const cardPlay = btn.querySelector(".play-icon, .play-icon-box, .play-icon-list");
-  const cardPause = btn.querySelector(".pause-icon, .pause-icon-box, .pause-icon-list");
+  if (!btn) return;
+
+  const cardPlay = btn.querySelector(
+    ".play-icon, .play-icon-box, .play-icon-list"
+  );
+  const cardPause = btn.querySelector(
+    ".pause-icon, .pause-icon-box, .pause-icon-list"
+  );
+
+  if (!cardPlay || !cardPause) return;
 
   if (isPaused) {
     cardPlay.style.display = "block";
@@ -75,15 +87,23 @@ function syncPlayerIcons() {
 export async function playSong(song, list = playlist) {
   if (!song) return;
 
-  currentSong = song;
-  window.currentSong = song;
+  const safeId = song.id || song.songId || song.file || song.title;
 
-  playlist = list;
-  currentIndex = list.findIndex((s) => s.id === song.id);
+  // Apply normalized ID to the current song
+  currentSong = { ...song, id: safeId };
+  window.currentSong = currentSong;
+
+  // Normalize playlist IDs before comparing
+  playlist = list.map(s => ({
+    ...s,
+    id: s.id || s.songId || s.file || s.title
+  }));
+
+  currentIndex = playlist.findIndex((s) => s.id === safeId);
 
   playerBar.classList.remove("hidden");
-  currentTrackName.textContent = song.title || "Unknown Track";
-  currentTrackArtist.textContent = song.artist || "";
+  currentTrackName.textContent = currentSong.title || "Unknown Track";
+  currentTrackArtist.textContent = currentSong.artist || "";
   updateScrollingTitle();
 
   try {
@@ -91,7 +111,9 @@ export async function playSong(song, list = playlist) {
 
     if (!streamUrl && song.bucket && song.file) {
       const res = await fetch(
-        `${API_URL}/stream?bucket=${encodeURIComponent(song.bucket)}&file=${encodeURIComponent(song.file)}`
+        `${API_URL}/stream?bucket=${encodeURIComponent(
+          song.bucket
+        )}&file=${encodeURIComponent(song.file)}`
       );
       const data = await res.json();
       streamUrl = data.streamUrl;
@@ -102,16 +124,33 @@ export async function playSong(song, list = playlist) {
     audio.src = streamUrl;
     await audio.play();
 
+    // Update main player bar icons
     playIcon.style.display = "none";
     pauseIcon.style.display = "block";
 
+    // Update all cards
     syncPlayerIcons();
-
   } catch (err) {
     console.error("❌ Playback error:", err);
     alert("Cannot play this track right now.");
   }
 }
+
+// =======================================
+// OPEN ARTIST PROFILE WHEN CLICKING NAMES
+// =======================================
+document.addEventListener("click", (e) => {
+  if (!e.target.classList.contains("go-artist")) return;
+
+  const wrapper = e.target.closest("[data-artist]");
+  if (!wrapper) return;
+
+  const artist = wrapper.dataset.artist;
+  if (!artist) return;
+
+  window.location.href =
+    `/listener/artist-profile.html?artist=${encodeURIComponent(artist)}`;
+});
 
 // ===============================
 // SCROLLING TITLE FIXER
@@ -340,7 +379,8 @@ export function renderSongsToDom({
 
   songs.forEach((song) => {
     const div = document.createElement("div");
-    div.dataset.songId = song.id;
+    const safeId = song.id || song.songId || song.file || song.title;
+    div.dataset.songId = safeId;  
 
     if (layout === "grid") {
       div.className = "song-box";
@@ -389,7 +429,7 @@ export function renderSongsToDom({
             <circle cx="12" cy="5" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>
             <circle cx="12" cy="19" r="1.5"></circle>
-        </svg>
+          </svg>
         </div>
 
         <button class="song-play-btn-list">
@@ -408,7 +448,7 @@ export function renderSongsToDom({
       `;
     }
 
-    setupPlayButton(div, song, songs);
+    setupPlayButton(div, { ...song, id: safeId }, songs);
     trackList.appendChild(div);
   });
 }
@@ -419,29 +459,51 @@ export function renderSongsToDom({
 function setupPlayButton(div, song, fullList) {
   const btn = div.querySelector("button");
 
-  const playIcon = btn.querySelector(".play-icon, .play-icon-box, .play-icon-list");
-  const pauseIcon = btn.querySelector(".pause-icon, .pause-icon-box, .pause-icon-list");
-
   btn.addEventListener("click", () => {
     // Toggle if already playing
     if (window.currentSong && window.currentSong.id === song.id) {
       if (audio.paused) {
+        // Resume playback
         audio.play();
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "block";
       } else {
+        // Pause playback
         audio.pause();
+        playIcon.style.display = "block";
+        pauseIcon.style.display = "none";
       }
 
+      // Sync all cards with the current state
       syncPlayerIcons();
       return;
     }
 
-    // Reset icons
-    document.querySelectorAll(".pause-icon, .pause-icon-box, .pause-icon-list")
-      .forEach(el => el.style.display = "none");
+    // Reset icons on all cards
+    document
+      .querySelectorAll(".pause-icon, .pause-icon-box, .pause-icon-list")
+      .forEach((el) => (el.style.display = "none"));
 
-    document.querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
-      .forEach(el => el.style.display = "block");
+    document
+      .querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
+      .forEach((el) => (el.style.display = "block"));
 
+    // Play the newly selected song
     playSong(song, fullList);
   });
 }
+
+window.addEventListener("DOMContentLoaded", async () => {
+  const trackList = document.querySelector("#trackList");
+  if (!trackList) return;
+
+  const songs = await loadSongs();
+
+  renderSongsToDom({
+    songs,
+    layout: "grid",
+    container: "#trackList",
+  });
+
+  initPlayer(songs);
+});

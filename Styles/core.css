@@ -187,8 +187,10 @@ li {
 
 /* ICON BUTTONS */
 .icon-button {
+  padding: 10px;
   background: none;
   border: none;
+  border-radius: 50%;
   color: white;
   cursor: pointer;
   display: flex;
@@ -198,6 +200,7 @@ li {
 }
 
 .icon-button:hover {
+  background-color: var(--accent-color);
   transform: scale(1.2);
   color: #d9d9d9;
 }
@@ -268,7 +271,7 @@ li {
 
 .play-icon-box {
   position: relative;
-  left: 9%;
+  left: 6%;
 }
 
 /* ===== Utilities ===== */
