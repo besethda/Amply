@@ -466,10 +466,6 @@ li {
     padding: 1rem;
   }
 
-  .sidebar {
-    display: none;
-  }
-
   .player-bar {
     left: 0;
     width: 95%;
