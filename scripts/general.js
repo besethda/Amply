@@ -1,4 +1,3 @@
-
 //main links...
 export const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
 export const INDEX_URL =
@@ -121,6 +120,38 @@ export async function loadSongs() {
   } catch (err) {
     console.error("❌ Failed to load songs:", err);
     return [];
+  }
+}
+
+export async function loadArtistByName(name) {
+  try {
+    const res = await fetch(INDEX_URL + "?v=" + Date.now());
+    const data = await res.json();
+
+    // Find all artists with matching name
+    const matches = data.artists.filter(a =>
+      (a.artistName || "").toLowerCase() === name.toLowerCase()
+    );
+
+    if (!matches.length) return null;
+
+    // Merge multiple entries (your index has duplicates)
+    const merged = {
+      artistName: matches[0].artistName,
+      artistId: matches[0].artistId,
+      bio: matches[0].bio,
+      bucket: matches[0].bucket,
+      cloudfrontDomain: matches[0].cloudfrontDomain,
+      profilePhoto: matches[0].profilePhoto,
+      coverPhoto: matches[0].coverPhoto,
+      songs: matches.flatMap(a => a.songs || [])
+    };
+
+    return merged;
+
+  } catch (err) {
+    console.error("❌ loadArtistByName failed:", err);
+    return null;
   }
 }
 

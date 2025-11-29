@@ -43,6 +43,31 @@ verifyBackToLogin?.addEventListener("click", showLoginForm);
 /* --------------------------------------------------------
    UTILS
 --------------------------------------------------------- */
+/* --------------------------------------------------------
+   PASSWORD VALIDATION
+--------------------------------------------------------- */
+function validatePassword(password) {
+  const errors = [];
+
+  if (password.length < 8)
+    errors.push("At least 8 characters");
+
+  if (!/[A-Z]/.test(password))
+    errors.push("At least one uppercase letter");
+
+  if (!/[a-z]/.test(password))
+    errors.push("At least one lowercase letter");
+
+  if (!/[0-9]/.test(password))
+    errors.push("At least one number");
+
+  // Optional:
+  // if (!/[!@#$%^&*]/.test(password))
+  //   errors.push("At least one special character");
+
+  return errors;
+}
+
 function goTo(path) {
   if (path.startsWith("/")) path = path.slice(1);
   window.location.href = `${window.location.origin}/${path}`;
@@ -172,12 +197,22 @@ signupBtn?.addEventListener("click", async () => {
   const confirm = document.getElementById("signupConfirm").value.trim();
 
   if (!email || !password || !confirm) {
+    signupMessage.style.color = "red";
     signupMessage.textContent = "Please fill in all fields.";
     return;
   }
-
+  
   if (password !== confirm) {
+    signupMessage.style.color = "red";
     signupMessage.textContent = "Passwords do not match.";
+    return;
+  }
+  
+  const issues = validatePassword(password);
+  if (issues.length > 0) {
+    signupMessage.style.color = "red";
+    signupMessage.textContent =
+      "Password must include: " + issues.join(", ");
     return;
   }
 

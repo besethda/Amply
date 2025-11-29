@@ -24,56 +24,42 @@ a {
   text-decoration: none;
 }
 
-button {
-  font-family: "Electrolize";
-  background: var(--accent-color);
-  border: none;
-  border-radius: 6px;
-  padding: 0.6rem 1rem;
-  color: #111;
-  cursor: pointer;
-  font-weight: 400;
-  transition: background 0.2s ease;
-}
-
 /* FIXED: Correct ID */
 #searchBar {
   background-color: #383838;
 }
 
-button:hover {
-  background: rgb(248, 133, 0);
-  color: rgb(24, 24, 24);
-}
-
 .top-bar {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
 }
 
 .menu-icons {
   height: fit-content;
   width: fit-content;
-  margin-right: 8px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
 }
 
 .menu-icon {
-  margin: 0 5px;
+  margin: 0 12px;
   border-radius: 12px;
   cursor: pointer;
 }
 
 .profile {
-  width: 50px;
-  height: 50px;
-  fill: var(--accent-color);
+  width: 45px;
+  height: 45px;
+  fill: var(--text-main-color);
 }
 
 .settings {
-  width: 50px;
-  height: 50px;
-  stroke: var(--accent-color);
+  width: 45px;
+  height: 45px;
+  stroke: var(--text-main-color);
   transition: 0.5s ease-in-out;
 }
 
@@ -231,8 +217,19 @@ li {
 /* SONG BOXES */
 .song-box {
   position: relative;
+  width: 160px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
   overflow: hidden;
-  border: rgba(255, 255, 255, 0.21) 1px solid;
+  border: rgba(255, 255, 255, 0.13) solid 1px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.song-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 20px rgba(108, 255, 255, 0.2);
 }
 
 .song-info,
@@ -279,6 +276,95 @@ li {
   animation: fadeIn 0.4s ease;
 }
 
+/* =========================================================
+   🎧 UNIVERSAL LIST VIEW STYLES
+   ========================================================= */
+
+/* Entire song row */
+.song-list {
+  position: relative;
+  display: grid;
+  grid-template-columns: 70px 0px 1fr 45px;
+  grid-template-areas: "cover-art play-pause info-list options";
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background 0.2s ease;
+}
+
+.song-list:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Cover Art */
+.song-list .cover-art {
+  grid-area: cover-art;
+  width: 55px;
+  height: 55px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+/* Info block */
+.song-info-list {
+  grid-area: info-list;
+  display: grid;
+  grid-template-columns: 1fr 1fr 45px;
+  align-items: center;
+  gap: 3px;
+  padding-left: 0.5rem;
+}
+
+.song-title-list {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.song-artist-list {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.song-title-list:hover,
+.song-artist-list:hover,
+.song-artist-box:hover,
+.song-title-box:hover {
+  text-decoration: underline;
+}
+
+/* Play button */
+.song-play-btn-list {
+  position: absolute;
+  left: 26px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.song-option {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+}
+
+/* Icons */
+.play-icon-list,
+.pause-icon-list {
+  stroke: var(--text-main-color);
+  width: 30px;
+  height: 30px;
+  grid-area: "play-pause";
+}
+
+.pause-icon-list {
+  display: none;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -300,6 +386,77 @@ li {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(248, 133, 0);
+}
+
+/* =========================================================
+   🌍 GLOBAL GRID VIEW — (trackList grid settings)
+   ========================================================= */
+
+#trackList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.5rem;
+  justify-items: center;
+}
+
+/* Grid cover art */
+.cover-art {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+/* Grid info box */
+.song-info-box {
+  background: rgba(0, 0, 0, 0.3);
+  padding-bottom: 6px;
+  border-radius: 0 0 10px 10px;
+  height: 49px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Grid title */
+.song-title-box {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* Grid artist */
+.song-artist-box {
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
+/* =========================================================
+   🔠 GLOBAL SCROLLING TITLE FOR ALL PAGES
+   ========================================================= */
+
+.song-title-box.scrolling,
+#currentTrackName.scrolling {
+  animation: songMarquee 8s linear infinite;
+}
+
+.song-title-box.scrolling:hover,
+#currentTrackName.scrolling:hover {
+  animation-play-state: paused;
+}
+
+@keyframes songMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* ===== Responsive ===== */
@@ -334,5 +491,9 @@ li {
 
   .icon-button {
     font-size: 1.2rem;
+  }
+
+  .song-list {
+    grid-template-columns: 55px 1fr 50px;
   }
 }

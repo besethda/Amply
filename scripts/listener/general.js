@@ -35,3 +35,23 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("Artist check failed:", err);
   }
 });
+
+import { loadAmplyIndex } from "../general.js";
+
+(async function() {
+  const index = await loadAmplyIndex();
+
+  if (!index) {
+    console.log("No index loaded.");
+    return;
+  }
+
+  console.log("🎨 All Artists:", index.artists);
+
+  index.artists.forEach(artist => {
+    console.log("====== Artist ======");
+    console.log("Name:", artist.artistName || artist.name);
+    console.log("Bucket:", artist.bucket);
+    console.log("Songs:", artist.songs);
+  });
+})();
