@@ -256,11 +256,17 @@ h2 {
 
   .menu li {
     margin: 4px;
-    width: calc(24% - 8px);
+    width: calc(22% - 8px);
     height: fit-content;
+    font-size: 1.2rem;
   }
 
   .logout-btn {
     display: none;
+  }
+
+  #searchBar {
+    padding: 0.8rem;
+    font-size: .8rem;
   }
 }

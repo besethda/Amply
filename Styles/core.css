@@ -463,17 +463,29 @@ li {
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 768px) {
+@media (orientation: portrait) {
   .main-content {
     margin-left: 0;
     padding: 1rem;
   }
 
-  .player-bar {
+  .player-container {
     left: 0;
-    width: 95%;
+    bottom: 0;
+    width: 100vw;
+  }
+
+  .player-bar {
+    width: 100%;
     padding: 0.8rem 1.2rem;
     bottom: 10px;
+  }
+
+  .player-bottom {
+    display: grid;
+    grid-template-areas: 
+    'track-info track-info',
+    'player-controls, ';
   }
 
   #progressBar {
