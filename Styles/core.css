@@ -530,7 +530,7 @@ li {
 @media (orientation: portrait) {
   .main-content {
     margin-left: 0;
-    padding: 1rem;
+    padding: 0.3rem;
     padding-bottom: 8rem;
   }
 
@@ -633,12 +633,21 @@ li {
 
   .song-list {
     grid-template-columns: 60px 1fr 15px;
+    padding: 0.3rem 0.5rem;
   }
 
   /* Smaller grid items for mobile */
   #trackList {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 0.8rem;
+  }
+
+  .song-title-box {
+    font-size: 0.8rem;
+  }
+
+  .song-artist-box {
+    font-size: 0.7rem;
   }
 }
 
