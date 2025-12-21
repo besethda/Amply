@@ -92,28 +92,36 @@ export async function initArtistView(artistName) {
     console.error("❌ Failed to load artist songs:", err);
   }
 
-  // Hover + Modal Logic
-  if (profileImg && aboutArtist) {
-    profileImg.addEventListener("mouseover", () => {
-      aboutArtist.style.display = "block";
-    });
+  // === MODAL LOGIC ===
+  const aboutBtn = root.querySelector(".about-btn");
+  const aboutProfileImg = root.querySelector(".about-profile-img");
+  const artistPhotoContainer = root.querySelector(".artist-photo");
 
-    profileImg.addEventListener("mouseout", () => {
-      aboutArtist.style.display = "none";
-    });
-
-    aboutArtist.addEventListener("click", () => {
-      if (aboutBackground) {
-        aboutBackground.style.display = "flex";
+  // Function to open modal
+  const openModal = () => {
+    if (aboutBackground) {
+      aboutBackground.style.display = "flex";
+      // Sync modal profile image
+      if (aboutProfileImg && profileImg) {
+        aboutProfileImg.src = profileImg.src;
       }
-    });
-  }
+    }
+  };
 
+  // 1. Click "About" button
+  aboutBtn?.addEventListener("click", openModal);
+
+  // 2. Click Profile Photo
+  artistPhotoContainer?.addEventListener("click", openModal);
+
+  // 3. Click Cover Photo
+  coverImg?.addEventListener("click", openModal);
+
+  // Close Modal (Click outside)
   if (aboutBackground) {
     aboutBackground.addEventListener("click", (e) => {
       if (e.target === aboutBackground) {
         aboutBackground.style.display = "none";
-        if (aboutArtist) aboutArtist.style.display = "none";
       }
     });
   }

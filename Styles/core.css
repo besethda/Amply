@@ -13,10 +13,13 @@
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   background: var(--background-gradient);
   color: #fff;
   overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 a {
@@ -146,27 +149,77 @@ li {
   flex-direction: row;
   align-items: center;
   text-align: left;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.track-info span {
-  text-align: inherit;
+.track-name-container {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, black 90%, transparent 100%);
 }
 
 #currentTrackName {
+  display: inline-block;
   font-size: 1.05rem;
   font-weight: 600;
+  white-space: nowrap;
+  padding-right: 5px;
 }
 
 #currentTrackArtist {
+  flex-shrink: 0;
   font-size: 1.06rem;
   font-weight: 600;
   opacity: 0.8;
+  padding-left: 0;
+  position: relative;
+  z-index: 2;
+  background: inherit;
 }
 
-/* Add “ - ” between title and artist */
-.track-info span:first-child::after {
+#currentTrackArtist::before {
   content: " - ";
-  opacity: 0.8;
+  white-space: pre;
+}
+
+/* Remove the old " - " separator since we have a flex gap now */
+.track-info span:first-child::after {
+  content: none;
+}
+
+/* Scrolling Animation */
+.song-title-box.scrolling {
+  animation: songMarquee 10s linear infinite;
+}
+
+#currentTrackName.scrolling {
+  animation: songBounce 8s ease-in-out infinite;
+}
+
+@keyframes songMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes songBounce {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  50%,
+  65% {
+    transform: translateX(var(--scroll-distance));
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 /* CENTER: Play/Pause Controls */
@@ -179,6 +232,7 @@ li {
 
 /* RIGHT: Shuffle / Repeat */
 .player-options {
+  position: relative;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -220,7 +274,7 @@ li {
 /* SONG BOXES */
 .song-box {
   position: relative;
-  width: 160px;
+  width: 100%;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   overflow: hidden;
@@ -315,18 +369,27 @@ li {
   display: grid;
   grid-template-columns: 1fr 1fr 45px;
   align-items: center;
-  gap: 3px;
+  gap: 10px;
   padding-left: 0.5rem;
+  min-width: 0; /* Allow grid items to shrink below content size */
 }
 
 .song-title-list {
   font-weight: 600;
   font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .song-artist-list {
   font-size: 0.85rem;
   opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .song-title-list:hover,
@@ -379,16 +442,9 @@ li {
   }
 }
 
-/* ===== Scrollbar ===== */
+/* ===== Scrollbar (Hidden) ===== */
 ::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(248, 133, 0);
+  display: none;
 }
 
 /* =========================================================
@@ -399,7 +455,7 @@ li {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 1.5rem;
-  justify-items: center;
+  justify-items: stretch;
 }
 
 /* Grid cover art */
@@ -443,23 +499,13 @@ li {
    🔠 GLOBAL SCROLLING TITLE FOR ALL PAGES
    ========================================================= */
 
-.song-title-box.scrolling,
-#currentTrackName.scrolling {
+/* Note: #currentTrackName animation is defined earlier with songBounce */
+.song-title-box.scrolling {
   animation: songMarquee 8s linear infinite;
 }
 
-.song-title-box.scrolling:hover,
-#currentTrackName.scrolling:hover {
+.song-title-box.scrolling:hover {
   animation-play-state: paused;
-}
-
-@keyframes songMarquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
 }
 
 /* ===== Responsive ===== */
@@ -467,6 +513,7 @@ li {
   .main-content {
     margin-left: 0;
     padding: 1rem;
+    padding-bottom: 8rem;
   }
 
   .player-container {
@@ -487,7 +534,7 @@ li {
   }
 
   #progressBar {
-    max-width: 260px;
+    max-width: 100%;
   }
 
   #currentTrackName {
@@ -503,6 +550,12 @@ li {
   }
 
   .song-list {
-    grid-template-columns: 55px 1fr 50px;
+    grid-template-columns: 60px 1fr 15px;
+  }
+
+  /* Smaller grid items for mobile */
+  #trackList {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1rem;
   }
 }

@@ -162,14 +162,28 @@ document.addEventListener("click", (e) => {
 // ===============================
 function updateScrollingTitle() {
   const el = currentTrackName;
-  el.classList.remove("scrolling");
+  const container = el.parentElement; // .track-name-container
 
+  el.classList.remove("scrolling");
+  el.style.removeProperty("--scroll-distance");
+
+  // Wait for layout
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      if (el.scrollWidth > el.clientWidth) el.classList.add("scrolling");
+      // Check if text is wider than the container
+      if (el.offsetWidth > container.clientWidth) {
+        const distance = el.offsetWidth - container.clientWidth;
+        el.style.setProperty("--scroll-distance", `-${distance}px`);
+        el.classList.add("scrolling");
+      }
     });
   });
 }
+
+// Listen for resize to re-check scrolling
+window.addEventListener("resize", () => {
+  if (currentSong) updateScrollingTitle();
+});
 
 // ===============================
 // EVENT LISTENERS
@@ -182,6 +196,24 @@ function setupEvents() {
   }
 
   eventsBound = true;
+
+  // Global Spacebar Play/Pause
+  document.addEventListener("keydown", (e) => {
+    // Ignore if typing in an input or textarea
+    if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+
+    if (e.code === "Space") {
+      // Only prevent scrolling if we actually have a song to control
+      if (audio.src) {
+        e.preventDefault(); 
+        if (audio.paused) {
+          audio.play();
+        } else {
+          audio.pause();
+        }
+      }
+    }
+  });
 
   // Play/pause in player bar
   playPauseBtn?.addEventListener("click", () => {
@@ -329,7 +361,7 @@ export function addToLibrary(song) {
 
 export function viewArtist(song) {
   const name = encodeURIComponent(song.artist);
-  window.location.href = `/listener/artist-profile.html?artist=${name}`;
+  window.location.hash = `artist:${name}`;
 }
 
 // ===============================

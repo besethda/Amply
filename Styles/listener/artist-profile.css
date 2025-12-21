@@ -4,13 +4,11 @@
 
 .artist-poster {
   position: relative;
-  height: 26vh;
+  height: 40vh; /* Taller header */
   width: 100%;
   margin-bottom: 30px;
   border-radius: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
+  overflow: hidden;
 }
 
 /* Cover image */
@@ -21,81 +19,153 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.75);
-}
-
-/* ============================
-   ARTIST PROFILE PHOTO
-============================ */
-
-.artist-photo {
-  position: relative;
-  z-index: 10;
-  top: 20%;
-  width: clamp(160px, 20vh, 300px);
-  height: clamp(160px, 20vh, 300px);
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow: 2px 7px 15px rgba(0, 0, 0, 0.55);
+  filter: brightness(0.6); /* Darker for text readability */
   cursor: pointer;
 }
 
-/* Profile image */
+/* ============================
+   HEADER CONTENT (Name, Photo, Button)
+============================ */
+
+.artist-header-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 2rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+}
+
+.artist-identity {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Profile Photo in Header */
+.artist-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.artist-photo:hover {
+  transform: scale(1.05);
+  border-color: white;
+}
+
 .artist-profile-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.about-artist {
-  position: fixed;
-  display: none;
-  font-size: 1.3rem;
-  font-weight: 300;
-  margin-bottom: 14px;
+/* Artist Name */
+#artistPageTitle {
+  font-family: "Electrolize", sans-serif;
+  font-size: 3.5rem;
+  font-weight: 700;
   color: white;
-  text-shadow: 0px 0px 6px black;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+/* About Button */
+.about-btn {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 10px; /* Align with text baseline */
 }
 
-.artist-photo:hover .about-artist {
-  display: block;
+.about-btn:hover {
+  background: white;
+  color: black;
 }
 
-.about-artist:hover {
-  text-decoration: underline;
-}
+/* ============================
+   ABOUT MODAL
+============================ */
 
 .about-background {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.6);
   display: none;
   justify-content: center;
   align-items: center;
   z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.about-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 600px;
+  width: 90%;
+  background: #222;
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.about-profile-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .about-artist-text {
-  width: 40vw;
-  height: 40vh;
-  padding: 24px;
-  font-size: 1.3rem;
-  font-weight: 300;
-  color: white;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #ddd;
   text-align: center;
-  line-height: 1.4;
-  background: linear-gradient(
-    to right,
-    rgba(29, 29, 29, 0.759),
-    rgba(95, 94, 94, 0.77)
-  );
-  border: rgba(255, 255, 255, 0.2) solid 1px;
-  border-radius: 14px;
-  box-shadow: 0px 0px 18px rgba(0, 0, 0, 0.6);
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .artist-header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .artist-identity {
+    flex-direction: column;
+  }
+
+  #artistPageTitle {
+    font-size: 2rem;
+  }
+
+  .about-btn {
+    width: 100%;
+    margin-bottom: 0;
+  }
 }

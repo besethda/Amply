@@ -85,6 +85,7 @@ const routes = {
 
 function getRouteFromHash() {
   const hash = window.location.hash.replace("#", "").trim();
+  if (hash.startsWith("artist:")) return "artist";
   return hash && routes[hash] ? hash : "home";
 }
 

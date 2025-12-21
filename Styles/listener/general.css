@@ -105,7 +105,7 @@
   margin-left: 180px;
   color: white;
   min-height: 100vh;
-  padding-bottom: 8rem; /* space for floating player bar */
+  padding-bottom: 9rem; /* space for floating player bar */
   transition: margin-left 0.3s ease;
 }
 
@@ -172,19 +172,23 @@ h2 {
    ========================================================= */
 
 .player-options-menu {
-  position: fixed;
-  left: 53%;
-  bottom: 125px; /* sits above player bar */
-  width: fit-content;
-  padding: 0.5rem 0;
+  position: absolute;
+  right: -10px;
+  bottom: 180%; /* sits above player bar */
+  width: max-content;
+  padding: 6px;
   display: flex;
-  flex-direction: row;
-  gap: 2px;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #222;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   opacity: 0;
   transform: translateY(10px);
   pointer-events: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .player-options-menu.show {
@@ -195,16 +199,18 @@ h2 {
 
 .option {
   color: #eee;
-  background-color: rgba(36, 36, 36, 0.757);
-  padding: 0.7rem 1rem;
-  margin: 0 4px;
-  width: fit-content;
-  border: rgba(255, 255, 255, 0.143) solid 1px;
-  border-radius: 12px;
+  background-color: transparent;
+  padding: 0.6rem 1rem;
+  margin: 0;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s ease;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: "Commissioner", sans-serif;
+  white-space: nowrap;
+  text-align: left;
 }
 
 .player-options-menu .option:hover {
@@ -249,7 +255,7 @@ h2 {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    padding: 0.5rem 0;
+    padding: 0;
     margin-bottom: 1rem;
   }
 
@@ -257,30 +263,38 @@ h2 {
     display: none;
   }
 
-  #artistDashboardBtn {
+  .sidebar-footer {
     display: none;
   }
 
-  .logout-btn {
-    display: none;
+  .menu {
+    width: 100%;
   }
 
   .menu ul {
-    margin: 0;
-    padding: 0 0.5rem;
+    margin: 4px;
+    padding: 0;
     width: 100%;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.5rem;
   }
 
   .menu li {
-    margin: 0;
-    flex: 0 1 auto;
-    padding: 0.5rem 0.8rem;
-    height: fit-content;
-    font-size: 1.2rem;
+    width: 100%;
+    padding: 1rem 0;
+    height: 100%;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    font-weight: 400;
+  }
+
+  .menu li:last-child {
+    border-right: none;
   }
 
   .top-bar {
