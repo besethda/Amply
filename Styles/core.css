@@ -153,6 +153,18 @@ li {
   overflow: hidden;
 }
 
+.player-art {
+  display: none; /* Hidden by default on desktop */
+}
+
+.track-text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .track-name-container {
   flex: 0 1 auto;
   min-width: 0;
@@ -305,14 +317,20 @@ li {
   background: rgba(0, 0, 0, 0.6);
   border: none;
   border-radius: 50%;
-  width: 70px;
-  height: 70px;
+  width: 40%;
+  aspect-ratio: 1/1;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: white;
   transition: background 0.2s ease;
+}
+
+.song-play-btn-box svg {
+  width: 50%;
+  height: 50%;
 }
 
 .song-play-btn-box:hover {
@@ -325,7 +343,7 @@ li {
 
 .play-icon-box {
   position: relative;
-  left: 6%;
+  left: 2px; /* Adjusted for visual centering */
 }
 
 /* ===== Utilities ===== */
@@ -453,7 +471,7 @@ li {
 
 #trackList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 1.5rem;
   justify-items: stretch;
 }
@@ -531,40 +549,72 @@ li {
   }
 
   .player-bottom {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .track-info {
-    min-width: 0;
-    margin-right: 0;
-  }
-
-  .player-controls {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+
+  /* Show Art */
+  .player-art {
+    display: block;
+    width: 42px;
+    height: 42px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  /* Text Section */
+  .track-info {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    gap: 0.8rem; /* Gap between art and text */
+  }
+
+  .track-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: center;
-    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  #currentTrackName {
+    font-size: 0.9rem;
+    width: 100%;
+    padding-right: 0;
+  }
+
+  #currentTrackArtist {
+    font-size: 0.75rem;
+    width: 100%;
+    opacity: 0.7;
+  }
+
+  #currentTrackArtist::before {
+    content: none;
+  }
+
+  /* Controls - Hide everything except Play/Pause */
+  .player-controls {
+    flex-shrink: 0;
+    gap: 0;
+  }
+
+  #prevBtn,
+  #nextBtn {
+    display: none;
   }
 
   .player-options {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.2rem;
+    display: none;
   }
 
   #progressBar {
     max-width: 100%;
     margin-bottom: 0.4rem;
-  }
-
-  #currentTrackName {
-    font-size: 0.85rem;
-  }
-
-  #currentTrackArtist {
-    font-size: 0.75rem;
   }
 
   .icon-button {
@@ -587,7 +637,181 @@ li {
 
   /* Smaller grid items for mobile */
   #trackList {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.8rem;
   }
+}
+
+/* =========================================================
+   📱 FULL SCREEN PLAYER OVERLAY
+   ========================================================= */
+.full-player {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #1a1a1a, #000);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem;
+  box-sizing: border-box; /* Ensure padding doesn't overflow width */
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+@media (max-width: 480px) {
+  .full-player {
+    padding: 1.5rem;
+  }
+
+  .full-player-header {
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+
+  .full-player-art-container {
+    margin-bottom: 1rem;
+    flex: 1;
+    min-height: 0;
+    max-height: 45vh;
+  }
+
+  .full-player-info {
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .full-player-progress-container {
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .full-player-controls {
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+.full-player.hidden {
+  transform: translateY(100%);
+  display: flex !important; /* Override generic hidden class but keep transform */
+  pointer-events: none;
+}
+
+.full-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.full-player-title-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.full-player-art-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+#fullPlayerArt {
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.full-player-info {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+#fullPlayerTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+#fullPlayerArtist {
+  font-size: 1.1rem;
+  color: #aaa;
+}
+
+.full-player-progress-container {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+#fullProgressBar {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  accent-color: var(--accent-color);
+}
+
+.time-stamps {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.full-player-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.play-button-large {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: transparent;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.play-button-large:active {
+  transform: scale(0.95);
+}
+
+.play-button-large svg {
+  fill: none;
+  stroke: white;
+  width: 48px;
+  height: 48px;
+}
+
+/* Make mini player clickable */
+.player-bar {
+  cursor: pointer;
+}
+
+/* Prevent clicks on buttons from bubbling to player bar */
+.player-bar button {
+  cursor: pointer;
 }

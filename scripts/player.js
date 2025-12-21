@@ -10,6 +10,7 @@ const pauseIcon = document.getElementById("pauseIcon");
 const progressBar = document.getElementById("progressBar");
 const currentTrackName = document.getElementById("currentTrackName");
 const currentTrackArtist = document.getElementById("currentTrackArtist");
+const currentTrackArt = document.getElementById("currentTrackArt");
 const repeatBtn = document.getElementById("repeatBtn");
 const shuffleBtn = document.getElementById("shuffleBtn");
 const playPauseBtn = document.getElementById("playPause");
@@ -17,6 +18,23 @@ const nextBtn = document.getElementById("nextBtn");
 const prevBtn = document.getElementById("prevBtn");
 const optionsBtn = document.getElementById("optionsBtn");
 const optionsMenu = document.getElementById("playerOptionsMenu");
+
+// Full Player Elements
+const fullPlayer = document.getElementById("fullPlayer");
+const closeFullPlayerBtn = document.getElementById("closeFullPlayer");
+const fullPlayerArt = document.getElementById("fullPlayerArt");
+const fullPlayerTitle = document.getElementById("fullPlayerTitle");
+const fullPlayerArtist = document.getElementById("fullPlayerArtist");
+const fullProgressBar = document.getElementById("fullProgressBar");
+const fullCurrentTime = document.getElementById("fullCurrentTime");
+const fullTotalTime = document.getElementById("fullTotalTime");
+const fullPlayPauseBtn = document.getElementById("fullPlayPauseBtn");
+const fullPlayIcon = document.getElementById("fullPlayIcon");
+const fullPauseIcon = document.getElementById("fullPauseIcon");
+const fullNextBtn = document.getElementById("fullNextBtn");
+const fullPrevBtn = document.getElementById("fullPrevBtn");
+const fullShuffleBtn = document.getElementById("fullShuffleBtn");
+const fullRepeatBtn = document.getElementById("fullRepeatBtn");
 
 // ===============================
 // PLAYER STATE
@@ -110,7 +128,11 @@ export async function playSong(song, list = playlist) {
   playerBar.classList.remove("hidden");
   currentTrackName.textContent = currentSong.title || "Unknown Track";
   currentTrackArtist.textContent = currentSong.artist || "";
+  if (currentTrackArt) {
+    currentTrackArt.src = currentSong.art_url || "../images/default-art.jpg";
+  }
   updateScrollingTitle();
+  updateFullPlayerUI();
 
   try {
     let streamUrl = song.url;
@@ -133,6 +155,7 @@ export async function playSong(song, list = playlist) {
     // Update main player bar icons
     playIcon.style.display = "none";
     pauseIcon.style.display = "block";
+    updateFullPlayerPlayPause(true);
 
     // Update all cards
     syncPlayerIcons();
@@ -276,8 +299,14 @@ function setupEvents() {
 
   // Progress bar update
   audio.addEventListener("timeupdate", () => {
-    if (audio.duration && progressBar) {
-      progressBar.value = (audio.currentTime / audio.duration) * 100;
+    if (audio.duration) {
+      const progress = (audio.currentTime / audio.duration) * 100;
+      if (progressBar) progressBar.value = progress;
+      if (fullProgressBar) fullProgressBar.value = progress;
+      
+      // Update time stamps
+      if (fullCurrentTime) fullCurrentTime.textContent = formatTime(audio.currentTime);
+      if (fullTotalTime) fullTotalTime.textContent = formatTime(audio.duration);
     }
   });
 
@@ -290,12 +319,14 @@ function setupEvents() {
   audio.addEventListener("play", () => {
     playIcon.style.display = "none";
     pauseIcon.style.display = "block";
+    updateFullPlayerPlayPause(true);
     syncPlayerIcons();
   });
 
   audio.addEventListener("pause", () => {
     playIcon.style.display = "block";
     pauseIcon.style.display = "none";
+    updateFullPlayerPlayPause(false);
     syncPlayerIcons();
   });
 
@@ -315,6 +346,90 @@ function setupEvents() {
   optionsMenu?.querySelectorAll(".option").forEach((opt) => {
     opt.addEventListener("click", () => handleOptionClick(opt.dataset.action));
   });
+
+  setupFullPlayerEvents();
+}
+
+// ===============================
+// FULL PLAYER LOGIC
+// ===============================
+function setupFullPlayerEvents() {
+  // Open Full Player
+  playerBar?.addEventListener("click", (e) => {
+    // Don't open if clicking buttons or progress bar
+    if (e.target.closest("button") || e.target.closest("input")) return;
+    
+    // Only open in portrait mode (mobile)
+    if (!window.matchMedia("(orientation: portrait)").matches) return;
+
+    fullPlayer.classList.remove("hidden");
+    updateFullPlayerUI();
+  });
+
+  // Close Full Player
+  closeFullPlayerBtn?.addEventListener("click", () => {
+    fullPlayer.classList.add("hidden");
+  });
+
+  // Full Player Controls
+  fullPlayPauseBtn?.addEventListener("click", () => {
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  });
+
+  fullNextBtn?.addEventListener("click", () => nextBtn?.click());
+  fullPrevBtn?.addEventListener("click", () => prevBtn?.click());
+  
+  fullShuffleBtn?.addEventListener("click", () => {
+    shuffleBtn?.click();
+    fullShuffleBtn.classList.toggle("active", isShuffle);
+  });
+  
+  fullRepeatBtn?.addEventListener("click", () => {
+    repeatBtn?.click();
+    fullRepeatBtn.classList.toggle("active", isRepeat);
+  });
+
+  // Full Progress Bar
+  fullProgressBar?.addEventListener("input", () => {
+    if (audio.duration) {
+      audio.currentTime = (fullProgressBar.value / 100) * audio.duration;
+    }
+  });
+
+  // Close on orientation change to landscape
+  window.addEventListener("resize", () => {
+    if (!window.matchMedia("(orientation: portrait)").matches) {
+      fullPlayer.classList.add("hidden");
+    }
+  });
+}
+
+function updateFullPlayerUI() {
+  if (!currentSong) return;
+
+  fullPlayerTitle.textContent = currentSong.title || "Unknown Track";
+  fullPlayerArtist.textContent = currentSong.artist || "";
+  fullPlayerArt.src = currentSong.art_url || "../images/default-art.jpg";
+  
+  updateFullPlayerPlayPause(!audio.paused);
+  
+  // Sync shuffle/repeat state
+  fullShuffleBtn?.classList.toggle("active", isShuffle);
+  fullRepeatBtn?.classList.toggle("active", isRepeat);
+}
+
+function updateFullPlayerPlayPause(isPlaying) {
+  if (isPlaying) {
+    fullPlayIcon.style.display = "none";
+    fullPauseIcon.style.display = "block";
+  } else {
+    fullPlayIcon.style.display = "block";
+    fullPauseIcon.style.display = "none";
+  }
 }
 
 // ===============================
@@ -557,4 +672,14 @@ function setupPlayButton(div, song, fullList) {
     // Play the newly selected song
     playSong(song, fullList);
   });
+}
+
+// ===============================
+// HELPER: FORMAT TIME
+// ===============================
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
