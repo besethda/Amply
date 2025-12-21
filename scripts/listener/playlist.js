@@ -1,36 +1,31 @@
 import { loadSongs, $, requireAuth } from "../general.js";
-import { renderSongsToDom } from "../player.js";
+import { initPlayer, renderSongsToDom } from "../player.js";
 
 requireAuth();
 
-(async function () {
+export async function initPlaylistView() {
+  const root = document.getElementById("viewRoot") || document;
+  const container = root.querySelector("#playlistTrackList");
+  if (!container) return;
+
   try {
-    // Load all songs
     const songs = await loadSongs();
 
     if (!songs || songs.length === 0) {
       console.error("❌ No songs available.");
-      const container = document.querySelector("#playlistTrackList");
-      if (container) {
-        container.innerHTML = "<p>No songs available.</p>";
-      }
+      container.innerHTML = "<p>No songs available.</p>";
       return;
     }
 
-    console.log("🎵 Loaded All Songs:", songs);
-
-    // Render as LIST VIEW
     renderSongsToDom({
       songs,
       layout: "list",
       container: "#playlistTrackList"
     });
 
+    initPlayer(songs);
   } catch (err) {
     console.error("❌ Failed to load playlist songs:", err);
-    const container = document.querySelector("#playlistTrackList");
-    if (container) {
-      container.innerHTML = "<p>Error loading songs.</p>";
-    }
+    container.innerHTML = "<p>Error loading songs.</p>";
   }
-})();
+}

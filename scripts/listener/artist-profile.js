@@ -1,21 +1,20 @@
 import { loadArtistByName, loadSongs, $, requireAuth } from "../general.js";
-import { renderSongsToDom } from "../player.js";
+import { initPlayer, renderSongsToDom } from "../player.js";
 
 requireAuth();
 
-// Select elements
-const aboutArtist = $(".about-artist");
-const aboutBackground = $(".about-background");
-const aboutText = $(".about-artist-text");
-const profileImg = $(".artist-profile-img");
-const coverImg = $(".artist-cover-img");
+export async function initArtistView(artistName) {
+  const root = document.getElementById("viewRoot") || document;
 
-(async function () {
-  const params = new URLSearchParams(window.location.search);
-  const artistName = params.get("artist");
+  const aboutArtist = root.querySelector(".about-artist");
+  const aboutBackground = root.querySelector(".about-background");
+  const aboutText = root.querySelector(".about-artist-text");
+  const profileImg = root.querySelector(".artist-profile-img");
+  const coverImg = root.querySelector(".artist-cover-img");
+  const artistPageTitle = root.querySelector("#artistPageTitle");
 
   if (!artistName) {
-    console.error("❌ No artist name passed in URL.");
+    console.error("❌ No artist name provided.");
     return;
   }
 
@@ -30,34 +29,31 @@ const coverImg = $(".artist-cover-img");
 
   console.log("🎨 Full Artist Data:", artistData);
 
-  const poster = document.querySelector(".artist-poster");
+  const poster = root.querySelector(".artist-poster");
 
-  // ---------------------------------------
-  // 1. COVER PHOTO with fallback
-  // ---------------------------------------
+  // Cover photo with fallback
   if (artistData.coverPhoto) {
     coverImg.src = artistData.coverPhoto;
     coverImg.style.display = "block";
-
     coverImg.onerror = () => {
       coverImg.style.display = "none";
-      poster.style.background =
-        "linear-gradient(to right, rgb(82, 82, 82), rgb(147, 147, 147))";
+      if (poster) {
+        poster.style.background =
+          "linear-gradient(to right, rgb(82, 82, 82), rgb(147, 147, 147))";
+      }
     };
   } else {
     coverImg.style.display = "none";
-    poster.style.background =
-      "linear-gradient(to right, rgb(82, 82, 82), rgb(147, 147, 147))";
+    if (poster) {
+      poster.style.background =
+        "linear-gradient(to right, rgb(82, 82, 82), rgb(147, 147, 147))";
+    }
   }
 
-  // ---------------------------------------
-  // 2. PROFILE PHOTO with fallback SVG
-  // ---------------------------------------
+  // Profile photo with fallback
   const defaultProfile = "../images/default-profile.svg";
-
   if (artistData.profilePhoto) {
     profileImg.src = artistData.profilePhoto;
-
     profileImg.onerror = () => {
       profileImg.src = defaultProfile;
     };
@@ -65,21 +61,18 @@ const coverImg = $(".artist-cover-img");
     profileImg.src = defaultProfile;
   }
 
-  // ---------------------------------------
-  // 3. BIO TEXT
-  // ---------------------------------------
-  aboutText.textContent =
-    artistData.bio || "This artist has no biography yet.";
+  // Bio text
+  if (aboutText) {
+    aboutText.textContent =
+      artistData.bio || "This artist has no biography yet.";
+  }
 
-  // ---------------------------------------
-  // 4. PAGE TITLE
-  // ---------------------------------------
-  const headerTitle = document.querySelector("h2");
-  if (headerTitle) headerTitle.textContent = artistData.artistName;
+  // Page title
+  if (artistPageTitle) {
+    artistPageTitle.textContent = artistData.artistName;
+  }
 
-  // ---------------------------------------
-  // 5. LOAD AND DISPLAY ARTIST SONGS
-  // ---------------------------------------
+  // Load and display artist songs
   try {
     const allSongs = await loadSongs();
 
@@ -88,40 +81,40 @@ const coverImg = $(".artist-cover-img");
         song.artist.toLowerCase() === artistData.artistName.toLowerCase()
     );
 
-    console.log("🎵 Artist Songs:", artistSongs);
-
     renderSongsToDom({
       songs: artistSongs,
-      layout: "list",               // <— LIST VIEW
-      container: "#artistTrackList" // <— Your HTML section
+      layout: "list",
+      container: "#artistTrackList"
     });
 
+    initPlayer(artistSongs);
   } catch (err) {
     console.error("❌ Failed to load artist songs:", err);
   }
-})();
 
-// =======================================
-// Hover + Modal Logic
-// =======================================
+  // Hover + Modal Logic
+  if (profileImg && aboutArtist) {
+    profileImg.addEventListener("mouseover", () => {
+      aboutArtist.style.display = "block";
+    });
 
-profileImg.addEventListener("mouseover", () => {
-  aboutArtist.style.display = "block";
-});
+    profileImg.addEventListener("mouseout", () => {
+      aboutArtist.style.display = "none";
+    });
 
-profileImg.addEventListener("mouseout", () => {
-  aboutArtist.style.display = "none";
-});
-
-// Open modal
-aboutArtist.addEventListener("click", () => {
-  aboutBackground.style.display = "flex";
-});
-
-// Close on background click ONLY
-aboutBackground.addEventListener("click", (e) => {
-  if (e.target === aboutBackground) {
-    aboutBackground.style.display = "none";
-    aboutArtist.style.display = "none";
+    aboutArtist.addEventListener("click", () => {
+      if (aboutBackground) {
+        aboutBackground.style.display = "flex";
+      }
+    });
   }
-});
+
+  if (aboutBackground) {
+    aboutBackground.addEventListener("click", (e) => {
+      if (e.target === aboutBackground) {
+        aboutBackground.style.display = "none";
+        if (aboutArtist) aboutArtist.style.display = "none";
+      }
+    });
+  }
+}

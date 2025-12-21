@@ -8,18 +8,13 @@
   font-weight: 400;
 }
 
-/* Grid layout */
+/* Grid layout - responsive */
 #trackList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(clamp(130px, 20vw, 200px), 1fr)
+  );
+  gap: clamp(0.8rem, 2vw, 2rem);
   justify-items: center;
-}
-
-/* Responsive tweak */
-@media (max-width: 768px) {
-  #trackList {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 1rem;
-  }
 }

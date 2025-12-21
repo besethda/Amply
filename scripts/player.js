@@ -1,5 +1,4 @@
 import { API_URL } from "../scripts/general.js";
-import { loadSongs } from "../scripts/listener/general.js";
 
 // ===============================
 // DOM ELEMENTS
@@ -27,12 +26,19 @@ let isShuffle = false;
 let currentSong = null;
 let playlist = [];
 let currentIndex = 0;
+let eventsBound = false;
 
 // ===============================
 // INIT PLAYER
 // ===============================
 export function initPlayer(songs = []) {
-  playlist = songs;
+  if (songs?.length) {
+    playlist = songs.map((s) => ({
+      ...s,
+      id: s.id || s.songId || s.file || s.title,
+    }));
+  }
+
   restoreSettings();
   setupEvents();
 }
@@ -148,8 +154,7 @@ document.addEventListener("click", (e) => {
   const artist = wrapper.dataset.artist;
   if (!artist) return;
 
-  window.location.href =
-    `/listener/artist-profile.html?artist=${encodeURIComponent(artist)}`;
+  window.location.hash = `artist:${encodeURIComponent(artist)}`;
 });
 
 // ===============================
@@ -170,6 +175,14 @@ function updateScrollingTitle() {
 // EVENT LISTENERS
 // ===============================
 function setupEvents() {
+  if (eventsBound) return;
+  if (!audio) {
+    console.warn("⚠️ globalAudio element missing; player controls disabled.");
+    return;
+  }
+
+  eventsBound = true;
+
   // Play/pause in player bar
   playPauseBtn?.addEventListener("click", () => {
     if (!audio.src) return;
@@ -231,7 +244,7 @@ function setupEvents() {
 
   // Progress bar update
   audio.addEventListener("timeupdate", () => {
-    if (audio.duration) {
+    if (audio.duration && progressBar) {
       progressBar.value = (audio.currentTime / audio.duration) * 100;
     }
   });
@@ -242,20 +255,32 @@ function setupEvents() {
     syncPlayerIcons();
   });
 
+  audio.addEventListener("play", () => {
+    playIcon.style.display = "none";
+    pauseIcon.style.display = "block";
+    syncPlayerIcons();
+  });
+
+  audio.addEventListener("pause", () => {
+    playIcon.style.display = "block";
+    pauseIcon.style.display = "none";
+    syncPlayerIcons();
+  });
+
   // Options menu
   optionsBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
-    optionsMenu.classList.toggle("show");
+    optionsMenu?.classList.toggle("show");
   });
 
   document.addEventListener("click", () => {
-    optionsMenu.classList.remove("show");
+    optionsMenu?.classList.remove("show");
   });
 
-  optionsMenu.addEventListener("click", (e) => e.stopPropagation());
+  optionsMenu?.addEventListener("click", (e) => e.stopPropagation());
 
   // Options menu actions
-  optionsMenu.querySelectorAll(".option").forEach((opt) => {
+  optionsMenu?.querySelectorAll(".option").forEach((opt) => {
     opt.addEventListener("click", () => handleOptionClick(opt.dataset.action));
   });
 }
@@ -281,7 +306,7 @@ function handleOptionClick(action) {
       break;
   }
 
-  optionsMenu.classList.remove("show");
+  optionsMenu?.classList.remove("show");
 }
 
 // ===============================
@@ -337,12 +362,12 @@ function handleEnd() {
 function restoreSettings() {
   if (localStorage.getItem("amplyRepeat") === "true") {
     isRepeat = true;
-    repeatBtn.classList.add("active");
+    repeatBtn?.classList.add("active");
   }
 
   if (localStorage.getItem("amplyShuffle") === "true") {
     isShuffle = true;
-    shuffleBtn.classList.add("active");
+    shuffleBtn?.classList.add("active");
   }
 }
 
@@ -377,10 +402,17 @@ export function renderSongsToDom({
     return;
   }
 
+  const currentSongId = window.currentSong?.id;
+  const isPaused = audio.paused;
+
   songs.forEach((song) => {
     const div = document.createElement("div");
     const safeId = song.id || song.songId || song.file || song.title;
     div.dataset.songId = safeId;  
+
+    // Check if this song is currently playing
+    const isCurrentlyPlaying = currentSongId === safeId && !isPaused;
+    const isCurrentSong = currentSongId === safeId;
 
     if (layout === "grid") {
       div.className = "song-box";
@@ -394,13 +426,14 @@ export function renderSongsToDom({
 
         <button class="song-play-btn-box">
           <svg class="play-icon-box" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="display:${isCurrentlyPlaying ? 'none' : 'block'}">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
 
           <svg class="pause-icon-box" width="40" height="40"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            style="display:none">
+            style="display:${isCurrentlyPlaying ? 'block' : 'none'}">
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>
           </svg>
@@ -434,13 +467,14 @@ export function renderSongsToDom({
 
         <button class="song-play-btn-list">
           <svg class="play-icon-list" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="display:${isCurrentlyPlaying ? 'none' : 'block'}">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
 
           <svg class="pause-icon-list" width="40" height="40"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            style="display:none">
+            style="display:${isCurrentlyPlaying ? 'block' : 'none'}">
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>
           </svg>
@@ -492,18 +526,3 @@ function setupPlayButton(div, song, fullList) {
     playSong(song, fullList);
   });
 }
-
-window.addEventListener("DOMContentLoaded", async () => {
-  const trackList = document.querySelector("#trackList");
-  if (!trackList) return;
-
-  const songs = await loadSongs();
-
-  renderSongsToDom({
-    songs,
-    layout: "grid",
-    container: "#trackList",
-  });
-
-  initPlayer(songs);
-});

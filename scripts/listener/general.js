@@ -62,24 +62,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// === Log All Artists (Dev Only) ===
-(async function () {
-  const index = await loadAmplyIndex();
-
-  if (!index) {
-    console.log("No index loaded.");
-    return;
+// === Settings Icon Handler ===
+function setupSettingsIcon() {
+  const settingsIcon = document.querySelector(".settings");
+  if (settingsIcon && !settingsIcon.hasSettingsListener) {
+    settingsIcon.addEventListener("click", () => {
+      window.location.hash = "settings";
+    });
+    settingsIcon.hasSettingsListener = true;
   }
+}
 
-  console.log("🎨 All Artists:", index.artists);
-
-  index.artists.forEach(artist => {
-    console.log("====== Artist ======");
-    console.log("Name:", artist.artistName || artist.name);
-    console.log("Bucket:", artist.bucket);
-    console.log("Songs:", artist.songs);
-  });
-})();
-
-const settingsIcon = document.querySelector('.settings')
-settingsIcon.addEventListener('click', () => {window.location.href= 'settings.html'})
+// Set up initially
+document.addEventListener("DOMContentLoaded", setupSettingsIcon);
+setupSettingsIcon(); // Also try immediately in case DOM is already ready

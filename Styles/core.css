@@ -287,10 +287,10 @@ li {
 .song-list {
   position: relative;
   display: grid;
-  grid-template-columns: 70px 0px 1fr 45px;
-  grid-template-areas: "cover-art play-pause info-list options";
+  grid-template-columns: 70px 1fr 45px;
+  grid-template-areas: "cover-art info-list options";
   align-items: center;
-  justify-content: center;
+  justify-content: start;
   padding: 0.6rem 0.8rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   transition: background 0.2s ease;
@@ -483,9 +483,7 @@ li {
 
   .player-bottom {
     display: grid;
-    grid-template-areas: 
-    'track-info track-info',
-    'player-controls, ';
+    grid-template-areas: "track-info track-info", "player-controls, ";
   }
 
   #progressBar {
