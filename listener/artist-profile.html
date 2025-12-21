@@ -13,7 +13,11 @@
     <!-- ===== SCRIPTS ===== -->
     <script type="module" src="/scripts/general.js" defer></script>
     <script type="module" src="/scripts/player.js" defer></script>
-    <script type="module" src="/scripts/listener/artist-profile.js" defer></script>
+    <script
+      type="module"
+      src="/scripts/listener/artist-profile.js"
+      defer
+    ></script>
     <script type="module" src="/scripts/listener/general.js" defer></script>
   </head>
 
@@ -77,13 +81,19 @@
         </div>
       </header>
       <div class="artist-poster">
-        <img class="artist-cover-img"/>
-        <div class="artist-photo">
-          <img class="artist-profile-img" alt="Artist Profile" />
-          <div class="about-artist"> About </div>
-          <div class="about-background">
-            <div class="about-artist-text"></div>
+        <img class="artist-cover-img" />
+
+        <div class="artist-header-content">
+          <div class="artist-identity">
+            <h1 id="artistPageTitle">Artist Name</h1>
+            <div class="artist-photo">
+              <img class="artist-profile-img" alt="Artist Profile" />
+              <div class="about-background">
+                <div class="about-artist-text"></div>
+              </div>
+            </div>
           </div>
+          <button class="about-btn">About</button>
         </div>
       </div>
 

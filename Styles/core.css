@@ -649,6 +649,20 @@ li {
   .song-artist-box {
     font-size: 0.7rem;
   }
+
+  .song-title-list {
+    font-size: 0.85rem;
+  }
+
+  .song-artist-list {
+    font-size: 0.7rem;
+  }
+
+  /* Hide play buttons in mobile, make box clickable instead */
+  .song-play-btn-box,
+  .song-play-btn-list {
+    display: none !important;
+  }
 }
 
 /* =========================================================

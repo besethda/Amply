@@ -640,7 +640,8 @@ export function renderSongsToDom({
 function setupPlayButton(div, song, fullList) {
   const btn = div.querySelector("button");
 
-  btn.addEventListener("click", () => {
+  // Click handler for the play button
+  const handlePlay = () => {
     // Toggle if already playing
     if (window.currentSong && window.currentSong.id === song.id) {
       if (audio.paused) {
@@ -671,6 +672,28 @@ function setupPlayButton(div, song, fullList) {
 
     // Play the newly selected song
     playSong(song, fullList);
+  };
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation(); // Prevent bubbling if we add listener to div
+    handlePlay();
+  });
+
+  // Click on the box itself (for mobile)
+  div.addEventListener("click", (e) => {
+    // Only in portrait (mobile)
+    if (!window.matchMedia("(orientation: portrait)").matches) return;
+
+    // Ignore if clicking the button directly (handled above)
+    if (e.target.closest("button")) return;
+
+    // Ignore if clicking artist name (user request)
+    if (e.target.closest(".song-artist-box") || e.target.closest(".song-artist-list")) return;
+    
+    // Also ignore if clicking options
+    if (e.target.closest(".song-option")) return;
+
+    handlePlay();
   });
 }
 
