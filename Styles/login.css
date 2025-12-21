@@ -3,7 +3,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 95vh;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
   font-family: "Inter", sans-serif;
   color: #fff;
 }
@@ -84,4 +86,18 @@ button:hover {
 
 #verifyForm {
   color: var(--text-main-color);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .indexlogo {
+    width: 20vw; /* Bigger logo */
+    max-width: 200px;
+  }
+
+  .login-container {
+    width: 85%; /* Smaller/Responsive container */
+    padding: 1.5rem;
+    max-width: 320px;
+  }
 }

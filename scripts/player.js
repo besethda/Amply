@@ -77,12 +77,18 @@ function syncPlayerIcons() {
     .querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
     .forEach((el) => (el.style.display = "block"));
 
+  // Reset playing class
+  document.querySelectorAll(".song-list, .song-box").forEach(el => el.classList.remove("playing"));
+
   if (!currentId) return;
 
   // Activate the correct song card
   const safeSelector = CSS.escape(currentId);
   const activeCard = document.querySelector(`[data-song-id="${safeSelector}"]`);
   if (!activeCard) return;
+
+  // Add playing class
+  activeCard.classList.add("playing");
 
   const btn = activeCard.querySelector("button");
   if (!btn) return;
@@ -562,7 +568,7 @@ export function renderSongsToDom({
     const isCurrentSong = currentSongId === safeId;
 
     if (layout === "grid") {
-      div.className = "song-box";
+      div.className = `song-box ${isCurrentSong ? 'playing' : ''}`;
       div.innerHTML = `
         <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
 
@@ -573,13 +579,13 @@ export function renderSongsToDom({
 
         <button class="song-play-btn-box">
           <svg class="play-icon-box" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
             style="display:${isCurrentlyPlaying ? 'none' : 'block'}">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
 
           <svg class="pause-icon-box" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
             style="display:${isCurrentlyPlaying ? 'block' : 'none'}">
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>
@@ -587,7 +593,7 @@ export function renderSongsToDom({
         </button>
       `;
     } else {
-      div.className = "song-list";
+      div.className = `song-list ${isCurrentSong ? 'playing' : ''}`;
       div.innerHTML = `
         <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
 
@@ -601,7 +607,7 @@ export function renderSongsToDom({
             height="26"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
+            stroke-width="1.2"
             stroke-linecap="round"
             stroke-linejoin="round"
             viewBox="0 0 24 24"
@@ -614,13 +620,13 @@ export function renderSongsToDom({
 
         <button class="song-play-btn-list">
           <svg class="play-icon-list" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
             style="display:${isCurrentlyPlaying ? 'none' : 'block'}">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
 
           <svg class="pause-icon-list" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
             style="display:${isCurrentlyPlaying ? 'block' : 'none'}">
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>

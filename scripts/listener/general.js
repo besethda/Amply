@@ -39,23 +39,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const groups = payload["cognito:groups"] || [];
     const role = payload["custom:role"] || "";
 
+    // Check if the user is an artist
     if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
+      
+      // 1. Handle the new sidebar menu item (icon only)
+      const artistMenuItem = document.getElementById("artistDashboardBtn");
+      if (artistMenuItem) {
+        artistMenuItem.style.display = "flex"; // Ensure it's visible
+        artistMenuItem.addEventListener("click", () => {
+          window.location.href = "/artist/dashboard.html";
+        });
+      }
+
+      // 2. Handle the old footer button (if it still exists or is dynamically added)
       const sidebarFooter = document.querySelector(".sidebar-footer");
-      if (!sidebarFooter) return;
-      if (document.getElementById("artistDashboardBtn")) return;
-
-      const artistBtn = document.createElement("button");
-      artistBtn.id = "artistDashboardBtn";
-      artistBtn.textContent = "Artist→";
-      artistBtn.className = "logout-btn";
-      artistBtn.style.marginBottom = "10px";
-
-      artistBtn.addEventListener("click", () => {
-        window.location.href = "/artist/dashboard.html";
-      });
-
-      const logoutBtn = sidebarFooter.querySelector("#logoutBtn");
-      sidebarFooter.insertBefore(artistBtn, logoutBtn);
+      if (sidebarFooter) {
+        // Check if we need to add a button here (legacy support or mobile view if needed)
+        // For now, we'll assume the menu item is the primary way.
+        // If you want to keep the footer button logic, we can leave it, 
+        // but ensure it doesn't duplicate if the ID is reused.
+        
+        // The previous code created a button with ID "artistDashboardBtn".
+        // Since we now have an LI with that ID in the HTML, we should avoid conflict.
+        // Let's rename the dynamic button if we still want it, or remove this block if the menu item is sufficient.
+        
+        // Given the user request to "make sure the artist icon href is still working",
+        // and we added an LI with id="artistDashboardBtn" in the HTML,
+        // we should prioritize that LI.
+      }
+    } else {
+      // Hide the menu item if not an artist
+      const artistMenuItem = document.getElementById("artistDashboardBtn");
+      if (artistMenuItem) {
+        artistMenuItem.style.display = "none";
+      }
     }
   } catch (err) {
     console.warn("Artist check failed:", err);
@@ -76,3 +93,34 @@ function setupSettingsIcon() {
 // Set up initially
 document.addEventListener("DOMContentLoaded", setupSettingsIcon);
 setupSettingsIcon(); // Also try immediately in case DOM is already ready
+// === Sidebar Logic ===
+document.addEventListener("DOMContentLoaded", () => {
+  const hamburgerBtn = document.getElementById("hamburgerBtn");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  if (hamburgerBtn && sidebar && overlay) {
+    function toggleSidebar() {
+      sidebar.classList.toggle("open");
+      overlay.classList.toggle("active");
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("active");
+    }
+
+    hamburgerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSidebar();
+    });
+
+    overlay.addEventListener("click", closeSidebar);
+
+    // Close when clicking a menu item
+    const menuItems = sidebar.querySelectorAll(".menu li");
+    menuItems.forEach(item => {
+      item.addEventListener("click", closeSidebar);
+    });
+  }
+});

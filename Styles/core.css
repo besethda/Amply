@@ -265,12 +265,6 @@ li {
   transition: transform 0.2s, color 0.2s;
 }
 
-.icon-button:hover {
-  background-color: var(--accent-color);
-  transform: scale(1.2);
-  color: #d9d9d9;
-}
-
 #playPause svg {
   pointer-events: none;
 }
@@ -531,7 +525,7 @@ li {
   .main-content {
     margin-left: 0;
     padding: 0.3rem;
-    padding-bottom: 8rem;
+    padding-bottom: 6rem;
   }
 
   .player-container {
@@ -662,6 +656,18 @@ li {
   .song-play-btn-box,
   .song-play-btn-list {
     display: none !important;
+  }
+
+  /* Show play button for the currently playing song */
+  .song-list.playing .song-play-btn-list {
+    display: flex !important;
+    left: 36px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .song-box.playing .song-play-btn-box {
+    display: flex !important;
   }
 }
 
