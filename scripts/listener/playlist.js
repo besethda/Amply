@@ -29,3 +29,8 @@ export async function initPlaylistView() {
     container.innerHTML = "<p>Error loading songs.</p>";
   }
 }
+
+// Auto-init if we are on the standalone playlist page
+if (document.getElementById("playlistTrackList")) {
+  initPlaylistView();
+}

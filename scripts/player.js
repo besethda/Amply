@@ -293,6 +293,7 @@ function setupEvents() {
   repeatBtn?.addEventListener("click", () => {
     isRepeat = !isRepeat;
     repeatBtn.classList.toggle("active", isRepeat);
+    fullRepeatBtn?.classList.toggle("active", isRepeat);
     localStorage.setItem("amplyRepeat", isRepeat);
   });
 
@@ -300,6 +301,7 @@ function setupEvents() {
   shuffleBtn?.addEventListener("click", () => {
     isShuffle = !isShuffle;
     shuffleBtn.classList.toggle("active", isShuffle);
+    fullShuffleBtn?.classList.toggle("active", isShuffle);
     localStorage.setItem("amplyShuffle", isShuffle);
   });
 
@@ -391,12 +393,10 @@ function setupFullPlayerEvents() {
   
   fullShuffleBtn?.addEventListener("click", () => {
     shuffleBtn?.click();
-    fullShuffleBtn.classList.toggle("active", isShuffle);
   });
   
   fullRepeatBtn?.addEventListener("click", () => {
     repeatBtn?.click();
-    fullRepeatBtn.classList.toggle("active", isRepeat);
   });
 
   // Full Progress Bar
@@ -516,11 +516,13 @@ function restoreSettings() {
   if (localStorage.getItem("amplyRepeat") === "true") {
     isRepeat = true;
     repeatBtn?.classList.add("active");
+    fullRepeatBtn?.classList.add("active");
   }
 
   if (localStorage.getItem("amplyShuffle") === "true") {
     isShuffle = true;
     shuffleBtn?.classList.add("active");
+    fullShuffleBtn?.classList.add("active");
   }
 }
 
@@ -573,8 +575,8 @@ export function renderSongsToDom({
         <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
 
         <div class="song-info-box" data-artist="${song.artist}">
-          <span class="song-title-box go-artist">${song.title}</span>
-          <span class="song-artist-box go-artist">${song.artist}</span>
+          <span class="song-title-box">${song.title}</span>
+          <span class="song-artist-box"><span class="go-artist">${song.artist}</span></span>
         </div>
 
         <button class="song-play-btn-box">
@@ -598,8 +600,8 @@ export function renderSongsToDom({
         <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
 
         <div class="song-info-list" data-artist="${song.artist}">
-          <span class="song-title-list go-artist">${song.title}</span>
-          <span class="song-artist-list go-artist">${song.artist}</span>
+          <span class="song-title-list">${song.title}</span>
+          <span class="song-artist-list"><span class="go-artist">${song.artist}</span></span>
           <svg
             class="song-option"
             xmlns="http://www.w3.org/2000/svg"

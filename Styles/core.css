@@ -97,9 +97,9 @@ li {
 .player-container {
   position: fixed;
   bottom: 20px;
-  left: 180px;
+  left: 80px;
   height: fit-content;
-  width: calc(100% - 180px);
+  width: calc(100% - 80px);
   display: flex;
   justify-content: center;
 }
@@ -262,7 +262,15 @@ li {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, color 0.2s;
+  transition: transform 0.1s, color 0.2s;
+}
+
+.icon-button:hover {
+  transform: scale(1.1);
+}
+
+.icon-button:active {
+  transform: scale(0.95);
 }
 
 #playPause svg {
@@ -271,10 +279,13 @@ li {
 
 /* Active state indicators */
 #repeatBtn.active svg,
-#shuffleBtn.active svg {
+#shuffleBtn.active svg,
+#fullRepeatBtn.active svg,
+#fullShuffleBtn.active svg {
   stroke: var(--accent-color);
   transform: scale(1.1);
-  transition: stroke 0.2s ease, transform 0.2s ease;
+  filter: drop-shadow(0 0 3px var(--accent-color));
+  transition: stroke 0.2s ease, transform 0.2s ease, filter 0.2s ease;
 }
 
 /* SONG BOXES */
@@ -297,7 +308,8 @@ li {
 
 .song-info,
 .song-info-box {
-  padding: 0.4rem;
+  padding: 0.2rem;
+  padding-top: 0.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -404,11 +416,9 @@ li {
   min-width: 0;
 }
 
-.song-title-list:hover,
-.song-artist-list:hover,
-.song-artist-box:hover,
-.song-title-box:hover {
+.go-artist:hover {
   text-decoration: underline;
+  cursor: pointer;
 }
 
 /* Play button */
@@ -482,9 +492,8 @@ li {
 /* Grid info box */
 .song-info-box {
   background: rgba(0, 0, 0, 0.3);
-  padding-bottom: 6px;
   border-radius: 0 0 10px 10px;
-  height: 49px;
+  height: 41px; /* Increased height to prevent text cutoff */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -494,17 +503,22 @@ li {
 .song-title-box {
   color: #fff;
   font-weight: 600;
+  height: fit-content;
   font-size: 0.9rem;
   white-space: nowrap;
   overflow: hidden;
   display: inline-block;
   max-width: 100%;
+  position: relative;
+  z-index: 10;
+  padding-bottom: 4px; /* Prevent descenders (g, y, p) from being cut off */
 }
 
 /* Grid artist */
 .song-artist-box {
   color: #aaa;
   font-size: 0.8rem;
+  background: transparent;
 }
 
 /* =========================================================
@@ -525,6 +539,7 @@ li {
   .main-content {
     margin-left: 0;
     padding: 0.3rem;
+    padding-top: 0.6rem;
     padding-bottom: 6rem;
   }
 
