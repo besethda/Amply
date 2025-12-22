@@ -7,7 +7,7 @@ body {
 }
 
 .main {
-  margin-right: 220px; /* Space for right sidebar */
+  margin-right: 80px; /* Space for right sidebar */
   display: flex;
   justify-content: center;
   align-items: flex-start;

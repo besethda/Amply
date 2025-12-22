@@ -543,6 +543,14 @@ li {
     padding-bottom: 6rem;
   }
 
+  .menu-icons {
+    margin-right: 0;
+  }
+
+  .menu-icon {
+    margin: 0 8px;
+  }
+
   .player-container {
     left: 0;
     bottom: 0;

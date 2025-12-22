@@ -6,7 +6,7 @@
    ========================================================= */
 
 header {
-  width: calc(100% - 220px);
+  width: calc(100% - 80px);
   display: flex;
   justify-content: center;
   padding-top: 4vh;
@@ -22,7 +22,7 @@ header {
   position: fixed;
   top: 0;
   right: 0;
-  width: 220px;
+  width: 80px;
   height: 100vh;
   background: linear-gradient(to bottom, #111, #2b2b2b);
   color: #ccc;
@@ -30,44 +30,94 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 1rem 0;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
   z-index: 10;
+  align-items: center;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 17px;
-  padding-bottom: 9px;
-  padding-right: 18px;
+  padding: 10px 0;
+  width: 100%;
 }
 
 .sidebar-logo {
-  width: 50%;
+  width: 40px;
   height: auto;
   border-radius: 6px;
+}
+
+.menu {
+  width: 100%;
 }
 
 .menu ul {
   list-style: none;
   padding: 0;
   margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .menu li {
-  padding: 0.7rem 0.5rem;
-  border-radius: 6px;
-  margin: 4px 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  position: relative;
+  color: #888;
 }
 
 .menu li:hover,
 .menu li.active {
   background: var(--accent-color);
   color: #111;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
+}
+
+.menu-icon-svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+}
+
+/* Tooltips */
+.menu li::after,
+.sidebar-footer button::after {
+  content: attr(data-title);
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: #333;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  margin-right: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid #444;
+  z-index: 100;
+}
+
+.menu li:hover::after,
+.sidebar-footer button:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 /* ===== SIDEBAR FOOTER ===== */
@@ -76,50 +126,55 @@ header {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding-bottom: 20px;
 }
 
 .logout-btn,
 .toPlayer-btn {
-  background: #333;
-  color: #eee;
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 0.6rem 1.2rem;
-  font-size: 1.5rem;
-  font-weight: 400;
+  background: transparent;
+  color: #888;
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.25s ease;
-  width: 100%;
-}
-
-.toPlayer-btn {
-  margin: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  margin: 0;
 }
 
 .toPlayer-btn:hover {
-  background: linear-gradient(90deg, #6cf, #a4e);
-  border: none;
+  background: linear-gradient(135deg, #6cf, #a4e);
   color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.3);
 }
 
 .logout-btn:hover {
-  background: var(--accent-color);
-  color: #111;
-  border-color: var(--accent-color);
-  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ff4444;
+  transform: scale(1.05);
 }
+/* Removed old hover styles as they are now included in the main block */
 
 /* ====== MAIN CONTENT ====== */
 .main-content {
-  width: calc(100% - 120px);
+  width: calc(100% - 80px);
   display: flex;
   flex-direction: row-reverse;
   padding: 2rem;
-  margin-left: 120px;
+  margin-right: 80px; /* Sidebar is on the right */
+  margin-left: 0;
   color: white;
   min-height: 100vh;
   padding-bottom: 8rem; /* space for floating player bar */
-  transition: margin-left 0.3s ease;
+  transition: margin-right 0.3s ease;
 }
 
 .top-bar {
