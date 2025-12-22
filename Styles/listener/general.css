@@ -188,7 +188,6 @@
 
 h2 {
   margin: 0;
-  margin-left: 7px;
   padding: 0;
 }
 
@@ -341,8 +340,10 @@ h2 {
   }
 
   .main-content {
-    margin-left: 80px;
+    margin-left: 0;
     padding: 0.5rem;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .hamburger-btn {
@@ -352,7 +353,7 @@ h2 {
     color: white;
     cursor: pointer;
     padding: 0;
-    margin-right: 0.5rem;
+    margin-right: 0.3rem;
   }
 
   .sidebar {
@@ -418,15 +419,17 @@ h2 {
   .top-bar {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
     margin-bottom: 1rem;
+    width: 100%;
   }
 
   #searchBar {
-    padding: 0.6rem 0.8rem;
+    padding: 0.6rem 0.5rem;
     font-size: 0.9rem;
     flex: 1;
-    width: auto;
+    width: 100%;
+    min-width: 0; /* Allow shrinking */
   }
 
   .menu-icons {
@@ -442,5 +445,26 @@ h2 {
 
   .menu-icon-svg {
     display: block;
+  }
+
+  /* Hide tooltips on mobile */
+  .menu li::after,
+  .logout-btn::after {
+    display: none !important;
+  }
+
+  /* Adjust list view layout for mobile */
+  .song-info-list {
+    grid-template-columns: 1.4fr 0.6fr 30px !important; /* Give more space to title */
+    gap: 5px !important;
+  }
+
+  .song-artist-list {
+    text-align: left; /* Revert to left align, but in the second column */
+    opacity: 0.7;
+  }
+
+  .song-option {
+    justify-self: end; /* Push dots to the far right */
   }
 }
