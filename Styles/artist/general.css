@@ -1,5 +1,3 @@
-@import url("../core.css");
-
 /* =========================================================
    🎧 GENERAL LISTENER STYLES
    Shared by listener.html, playlist.html, explore.html, etc.
@@ -17,151 +15,23 @@ header {
   }
 }
 
-/* ====== SIDEBAR ====== */
+/* ====== SIDEBAR (Artist Specific) ====== */
 .sidebar {
-  position: fixed;
-  top: 0;
   right: 0;
-  width: 80px;
-  height: 100vh;
-  background: linear-gradient(to bottom, #111, #2b2b2b);
-  color: #ccc;
-  font-size: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1rem 0;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-  z-index: 10;
-  align-items: center;
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 0;
-  width: 100%;
-}
-
-.sidebar-logo {
-  width: 40px;
-  height: auto;
-  border-radius: 6px;
-}
-
-.menu {
-  width: 100%;
-}
-
-.menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.menu li {
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  color: #888;
-}
-
-.menu li:hover,
-.menu li.active {
-  background: var(--accent-color);
-  color: #111;
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
-}
-
-.menu-icon-svg {
-  width: 24px;
-  height: 24px;
-  stroke-width: 2;
-}
-
-/* Tooltips */
-.menu li::after,
+/* Tooltips (Artist Specific - Left Side) */
+.menu-item::after,
 .sidebar-footer button::after {
-  content: attr(data-title);
-  position: absolute;
   right: 100%;
-  top: 50%;
-  transform: translateY(-50%) translateX(10px);
-  background: #333;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.2s ease;
   margin-right: 15px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border: 1px solid #444;
-  z-index: 100;
+  transform: translateY(-50%) translateX(10px);
 }
 
-.menu li:hover::after,
+.menu-item:hover::after,
 .sidebar-footer button:hover::after {
-  opacity: 1;
   transform: translateY(-50%) translateX(0);
 }
-
-/* ===== SIDEBAR FOOTER ===== */
-.sidebar-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  gap: 10px;
-  padding-bottom: 20px;
-}
-
-.logout-btn,
-.toPlayer-btn {
-  background: transparent;
-  color: #888;
-  border: none;
-  border-radius: 12px;
-  padding: 0;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  margin: 0;
-}
-
-.toPlayer-btn:hover {
-  background: linear-gradient(135deg, #6cf, #a4e);
-  color: white;
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.3);
-}
-
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ff4444;
-  transform: scale(1.05);
-}
-/* Removed old hover styles as they are now included in the main block */
 
 /* ====== MAIN CONTENT ====== */
 .main-content {

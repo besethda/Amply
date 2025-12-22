@@ -3,17 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Playlist</title>
+    <title>Amply – Library</title>
 
     <!-- PWA Support -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <meta name="apple-mobile-web-app-title" content="Amply" />
-    <link rel="apple-touch-icon" href="/images/Amply_lgo.png" />
+    <link rel="icon" type="image/png" href="/images/Amply_lgofav.png" />
+    <link rel="icon" type="image/png" href="../images/Amply-fav.png" />
+    <link rel="apple-touch-icon" href="../images/Amply.png" />
 
     <!-- STYLES -->
     <link rel="stylesheet" href="../Styles/core.css" />
@@ -36,7 +32,11 @@
 
       <nav class="menu">
         <ul>
-          <li onclick="window.location.href='listener.html'" data-title="Home">
+          <li
+            class="menu-item"
+            onclick="window.location.href='listener.html'"
+            data-title="Home"
+          >
             <svg
               class="menu-icon-svg"
               viewBox="0 0 24 24"
@@ -49,6 +49,7 @@
             </svg>
           </li>
           <li
+            class="menu-item"
             onclick="window.location.href='playlist.html'"
             data-title="Playlists"
           >
@@ -90,6 +91,7 @@
             </svg>
           </li>
           <li
+            class="menu-item"
             onclick="window.location.href='explore.html'"
             data-title="Explore"
           >
@@ -110,7 +112,7 @@
             </svg>
           </li>
           <li
-            class="active"
+            class="active menu-item"
             onclick="window.location.href='library.html'"
             data-title="Library"
           >
@@ -159,6 +161,7 @@
             </svg>
           </li>
           <li
+            class="menu-item"
             onclick="window.location.href='settings.html'"
             data-title="Settings"
           >
@@ -181,6 +184,26 @@
       </nav>
 
       <div class="sidebar-footer">
+        <button
+          id="artistDashboardBtn"
+          class="toArtist-btn"
+          data-title="Artist Dashboard"
+          onclick="window.location.href='../artist/dashboard.html'"
+        >
+          <svg
+            class="menu-icon-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+            />
+          </svg>
+        </button>
         <button id="logoutBtn" class="logout-btn" data-title="Logout">
           <svg
             class="menu-icon-svg"

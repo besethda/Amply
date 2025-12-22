@@ -4,17 +4,26 @@
   "start_url": "/listener/listener.html",
   "display": "standalone",
   "background_color": "#111111",
-  "theme_color": "#00ff88",
+  "theme_color": "#ff7517",
   "icons": [
     {
-      "src": "/images/Amply_lgo.png",
+      "src": "/images/Amply.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/images/Amply_lgo.png",
+      "src": "/images/Amply.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/Amply.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
+

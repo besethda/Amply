@@ -137,3 +137,92 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+// === PROFILE MODAL ===
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🔍 Profile Modal: DOMContentLoaded fired");
+  
+  const profileIcon = document.getElementById("profileIcon");
+  const profileModal = document.getElementById("profileModal");
+  const profileBackdrop = document.getElementById("profileBackdrop");
+  const closeBtn = document.getElementById("closeProfileModal");
+  const tabButtons = document.querySelectorAll(".profile-tab-btn");
+  const tabContents = document.querySelectorAll(".profile-tab");
+
+  console.log("🔍 Profile Modal Elements:", {
+    profileIcon: profileIcon ? "✅ Found" : "❌ NOT FOUND",
+    profileModal: profileModal ? "✅ Found" : "❌ NOT FOUND",
+    profileBackdrop: profileBackdrop ? "✅ Found" : "❌ NOT FOUND",
+    closeBtn: closeBtn ? "✅ Found" : "❌ NOT FOUND",
+    tabButtons: tabButtons.length,
+    tabContents: tabContents.length
+  });
+
+  // Load user data
+  const token = localStorage.getItem("amplyIdToken");
+  if (token) {
+    try {
+      const payload = parseJwt(token);
+      const username = payload["cognito:username"] || payload["email"] || "User";
+      console.log("✅ Username loaded:", username);
+      document.getElementById("displayUsername").textContent = username;
+    } catch (err) {
+      console.error("❌ Error parsing token:", err);
+    }
+  }
+
+  // Open modal on profile icon click
+  if (profileIcon) {
+    profileIcon.addEventListener("click", (e) => {
+      console.log("✅ Profile icon clicked");
+      e.stopPropagation();
+      profileModal.classList.remove("hidden");
+      profileBackdrop.classList.add("active");
+      document.body.classList.add("modal-open");
+      console.log("✅ Modal and backdrop shown");
+    });
+  } else {
+    console.error("❌ profileIcon not found - click listener NOT attached");
+  }
+
+  // Close modal on close button click
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      console.log("✅ Close button clicked");
+      profileModal.classList.add("hidden");
+      profileBackdrop.classList.remove("active");
+      document.body.classList.remove("modal-open");
+    });
+  }
+
+  // Close modal on backdrop click
+  if (profileBackdrop) {
+    profileBackdrop.addEventListener("click", (e) => {
+      console.log("✅ Backdrop clicked");
+      profileModal.classList.add("hidden");
+      profileBackdrop.classList.remove("active");
+      document.body.classList.remove("modal-open");
+    });
+  }
+
+  // Tab switching functionality
+  tabButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const tabName = button.getAttribute("data-tab");
+      console.log("✅ Tab clicked:", tabName);
+
+      // Remove active class from all buttons and contents
+      tabButtons.forEach(btn => btn.classList.remove("active"));
+      tabContents.forEach(content => content.classList.remove("active"));
+
+      // Add active class to clicked button and corresponding content
+      button.classList.add("active");
+      const activeTab = document.getElementById(`${tabName}-tab`);
+      if (activeTab) {
+        activeTab.classList.add("active");
+        console.log("✅ Tab activated:", tabName);
+      }
+    });
+  });
+
+  console.log("🔍 Profile Modal: Setup complete");
+});

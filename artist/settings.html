@@ -3,13 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Artist Dashboard</title>
+    <title>Amply – Artist Settings</title>
+    <link rel="icon" type="image/png" href="../images/Amply_lgofav.png" />
+    <link rel="apple-touch-icon" href="../images/Amply.png" />
 
     <!-- STYLES -->
-    <link rel="stylesheet" href="/Styles/core.css" />
-    <link rel="stylesheet" href="/Styles/fonts.css" />
-    <link rel="stylesheet" href="/Styles/artist/general.css" />
-    <link rel="stylesheet" href="/Styles/artist/settings.css" />
+    <link rel="stylesheet" href="../Styles/core.css" />
+    <link rel="stylesheet" href="../Styles/fonts.css" />
+    <link rel="stylesheet" href="../Styles/artist/general.css" />
+    <link rel="stylesheet" href="../Styles/artist/settings.css" />
 
     <!-- SCRIPTS -->
     <script type="module" src="/scripts/general.js" defer></script>
@@ -59,7 +61,11 @@
 
       <nav class="menu">
         <ul>
-          <li onclick="location.href='dashboard.html'" data-title="Dashboard">
+          <li
+            class="menu-item"
+            onclick="location.href='dashboard.html'"
+            data-title="Dashboard"
+          >
             <svg
               class="menu-icon-svg"
               viewBox="0 0 24 24"
@@ -75,7 +81,11 @@
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
           </li>
-          <li onclick="location.href='upload.html'" data-title="Upload Song">
+          <li
+            class="menu-item"
+            onclick="location.href='upload.html'"
+            data-title="Upload Song"
+          >
             <svg
               class="menu-icon-svg"
               viewBox="0 0 24 24"
@@ -90,7 +100,11 @@
               <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
           </li>
-          <li onclick="location.href='songs.html'" data-title="My Songs">
+          <li
+            class="menu-item"
+            onclick="location.href='songs.html'"
+            data-title="My Songs"
+          >
             <svg
               class="menu-icon-svg"
               viewBox="0 0 24 24"
@@ -105,7 +119,11 @@
               <circle cx="18" cy="16" r="3"></circle>
             </svg>
           </li>
-          <li onclick="location.href='payments.html'" data-title="Payments">
+          <li
+            class="menu-item"
+            onclick="location.href='payments.html'"
+            data-title="Payments"
+          >
             <svg
               class="menu-icon-svg"
               viewBox="0 0 24 24"
@@ -120,7 +138,7 @@
             </svg>
           </li>
           <li
-            class="active"
+            class="active menu-item"
             onclick="location.href='settings.html'"
             data-title="Settings"
           >

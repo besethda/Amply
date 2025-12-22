@@ -48,7 +48,7 @@ a {
 }
 
 .menu-icon {
-  margin: 0 12px;
+  margin: 0 6px;
   border-radius: 12px;
   cursor: pointer;
 }
@@ -77,6 +77,176 @@ h2 {
 li {
   font-family: "Electrolize";
   text-align: center;
+}
+
+/* ====== SIDEBAR MENU ITEMS ====== */
+.menu {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 1;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.menu ul {
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.menu-item {
+  width: 56px;
+  height: 56px;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  list-style: none;
+  background: transparent;
+  border: none;
+}
+
+.menu-item:hover {
+  background: rgb(255, 117, 31);
+  transform: scale(1.05);
+}
+
+.menu-item.active {
+  background: rgb(255, 117, 31);
+}
+
+.menu-icon-svg {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: #c3c3c3;
+  stroke-width: 1.2;
+  pointer-events: none;
+}
+
+/* ====== SIDEBAR FOOTER BUTTONS ====== */
+.logout-btn,
+.toArtist-btn,
+.toPlayer-btn {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.logout-btn:hover,
+.toArtist-btn:hover,
+.toPlayer-btn:hover {
+  transform: scale(1.05);
+}
+
+.logout-btn:hover {
+  background: white;
+}
+
+.toArtist-btn:hover,
+.toPlayer-btn:hover {
+  background: linear-gradient(90deg, #00ccff, #a855f7);
+}
+
+.logout-btn svg {
+  stroke: currentColor;
+}
+
+.logout-btn:hover svg {
+  stroke: currentColor;
+}
+
+.logout-btn:hover svg polyline {
+  stroke: #ff4444;
+}
+
+.logout-btn:hover svg path,
+.logout-btn:hover svg line {
+  stroke: #000;
+}
+
+.toArtist-btn svg,
+.toPlayer-btn svg {
+  stroke: currentColor;
+}
+
+.toArtist-btn:hover svg,
+.toPlayer-btn:hover svg {
+  stroke: #a855f7;
+}
+
+.logout-btn svg,
+.toArtist-btn svg,
+.toPlayer-btn svg {
+  width: 40px;
+  height: 40px;
+  stroke-width: 1.2;
+  flex-shrink: 0;
+}
+
+/* ====== SIDEBAR BASE STYLES ====== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  width: 80px;
+  height: 100vh;
+  background: #1a1a1a;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem 0.5rem;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  gap: 1rem;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 1rem;
+  width: 56px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 /* Common utility classes */
@@ -203,12 +373,8 @@ li {
 }
 
 /* Scrolling Animation */
-.song-title-box.scrolling {
-  animation: songMarquee 10s linear infinite;
-}
-
 #currentTrackName.scrolling {
-  animation: songBounce 8s ease-in-out infinite;
+  animation: songBounce 8s ease-in-out infinite !important;
 }
 
 @keyframes songMarquee {
@@ -222,13 +388,13 @@ li {
 
 @keyframes songBounce {
   0%,
-  15% {
+  20% {
     transform: translateX(0);
   }
-  50%,
-  65% {
+  50% {
     transform: translateX(var(--scroll-distance));
   }
+  70%,
   100% {
     transform: translateX(0);
   }
@@ -510,7 +676,6 @@ li {
   display: inline-block;
   max-width: 100%;
   position: relative;
-  z-index: 10;
   padding-bottom: 4px; /* Prevent descenders (g, y, p) from being cut off */
 }
 
@@ -526,13 +691,6 @@ li {
    ========================================================= */
 
 /* Note: #currentTrackName animation is defined earlier with songBounce */
-.song-title-box.scrolling {
-  animation: songMarquee 8s linear infinite;
-}
-
-.song-title-box.scrolling:hover {
-  animation-play-state: paused;
-}
 
 /* ===== Responsive ===== */
 @media (orientation: portrait) {
@@ -548,7 +706,7 @@ li {
   }
 
   .menu-icon {
-    margin: 0 8px;
+    margin: 0 4px;
   }
 
   .player-container {
@@ -866,4 +1024,175 @@ li {
 /* Prevent clicks on buttons from bubbling to player bar */
 .player-bar button {
   cursor: pointer;
+}
+/* PROFILE MODAL */
+.profile-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(26, 26, 26, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  z-index: 1001;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+.profile-modal.hidden {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  .profile-modal {
+    width: 95%;
+    max-width: 90vw;
+    max-height: 80vh;
+    top: 50%;
+  }
+}
+
+/* Backdrop overlay */
+.profile-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: none;
+}
+
+.profile-modal-backdrop.active {
+  display: block;
+}
+
+/* Blur effect when modal is open */
+body.modal-open {
+  overflow: hidden;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.profile-modal-content {
+  position: relative;
+  padding: 32px;
+  color: var(--text-main-color);
+}
+
+@media (orientation: portrait) {
+  .profile-modal-content {
+    padding: 24px;
+  }
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--text-main-color);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-btn:hover {
+  color: var(--accent-color);
+}
+
+.profile-modal-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border-color, #444);
+}
+
+.profile-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-main-color);
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  margin-bottom: -2px;
+}
+
+.profile-tab-btn:hover {
+  color: var(--accent-color);
+}
+
+.profile-tab-btn.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+.profile-tab-content {
+  position: relative;
+  min-height: 150px;
+}
+
+.profile-tab {
+  display: none;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.profile-tab.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.profile-tab h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: var(--text-main-color);
+}
+
+.account-info,
+.payments-placeholder,
+.settings-placeholder {
+  color: var(--text-secondary-color, #aaa);
+  line-height: 1.6;
+}
+
+.account-info p,
+.payments-placeholder p,
+.settings-placeholder p {
+  margin: 8px 0;
+}
+
+.account-info strong {
+  color: var(--text-main-color);
 }

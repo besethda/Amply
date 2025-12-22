@@ -3,23 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Discover</title>
+    <title>Amply – Playlists</title>
 
     <!-- PWA Support -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <meta name="apple-mobile-web-app-title" content="Amply" />
-    <link rel="apple-touch-icon" href="/images/Amply_lgo.png" />
+    <link rel="icon" type="image/png" href="/images/Amply_lgofav.png" />
+    <link rel="icon" type="image/png" href="../images/Amply-fav.png" />
+    <link rel="apple-touch-icon" href="../images/Amply.png" />
 
     <!-- ===== STYLES ===== -->
-    <link rel="stylesheet" href="/Styles/fonts.css" />
-    <link rel="stylesheet" href="/Styles/listener/general.css" />
-    <link rel="stylesheet" href="/Styles/listener/listener.css" />
-    <link rel="stylesheet" href="/Styles/core.css" />
+    <link rel="stylesheet" href="../Styles/core.css" />
+    <link rel="stylesheet" href="../Styles/fonts.css" />
+    <link rel="stylesheet" href="../Styles/listener/general.css" />
+    <link rel="stylesheet" href="../Styles/listener/listener.css" />
     <!-- ===== SCRIPTS ===== -->
     <script type="module" src="../scripts/general.js" defer></script>
     <script type="module" src="../scripts/player.js" defer></script>
@@ -36,7 +32,11 @@
 
       <nav class="menu">
         <ul>
-          <li onclick="window.location.href='listener.html'" data-title="Home">
+          <li
+            class="menu-item"
+            onclick="window.location.href='listener.html'"
+            data-title="Home"
+          >
             <svg
               class="menu-icon-svg"
               viewBox="0 0 24 24"
@@ -49,7 +49,7 @@
             </svg>
           </li>
           <li
-            class="active"
+            class="active menu-item"
             onclick="window.location.href='playlist.html'"
             data-title="Playlists"
           >
@@ -91,6 +91,7 @@
             </svg>
           </li>
           <li
+            class="menu-item"
             onclick="window.location.href='explore.html'"
             data-title="Explore"
           >
@@ -111,6 +112,7 @@
             </svg>
           </li>
           <li
+            class="menu-item"
             onclick="window.location.href='library.html'"
             data-title="Library"
           >
@@ -159,6 +161,7 @@
             </svg>
           </li>
           <li
+            class="menu-item"
             onclick="window.location.href='settings.html'"
             data-title="Settings"
           >
@@ -181,6 +184,26 @@
       </nav>
 
       <div class="sidebar-footer">
+        <button
+          id="artistDashboardBtn"
+          class="toArtist-btn"
+          data-title="Artist Dashboard"
+          onclick="window.location.href='../artist/dashboard.html'"
+        >
+          <svg
+            class="menu-icon-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+            />
+          </svg>
+        </button>
         <button id="logoutBtn" class="logout-btn" data-title="Logout">
           <svg
             class="menu-icon-svg"
@@ -211,29 +234,65 @@
           <svg
             class="profile menu-icon"
             viewBox="0 0 256 256"
-            id="Flat"
             xmlns="http://www.w3.org/2000/svg"
+            id="profileIcon"
           >
             <path
               d="M228,128A100,100,0,1,0,60.71,201.90967a3.97048,3.97048,0,0,0,.842.751,99.79378,99.79378,0,0,0,132.8982-.00195,3.96558,3.96558,0,0,0,.83813-.74756A99.76267,99.76267,0,0,0,228,128ZM36,128a92,92,0,1,1,157.17139,64.87207,75.616,75.616,0,0,0-44.50782-34.04053,44,44,0,1,0-41.32714,0,75.61784,75.61784,0,0,0-44.50782,34.04A91.70755,91.70755,0,0,1,36,128Zm92,28a36,36,0,1,1,36-36A36.04061,36.04061,0,0,1,128,156ZM68.86475,198.417a68.01092,68.01092,0,0,1,118.27.00049,91.80393,91.80393,0,0,1-118.27-.00049Z"
             />
           </svg>
-          <svg
-            class="settings menu-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            xmlns:xlink="http://www.w3.org/1999/xlink"
-            viewBox="0 0 32 32"
-          >
-            <path
-              class="st0"
-              d="M28.6,13c-1.6,0.2-3.1-0.5-4-2c-0.8-1.4-0.7-3.2,0.3-4.4c-1.5-1.4-3.3-2.4-5.2-3C19.1,5,17.7,6,16,6
-              s-3.1-1-3.7-2.5c-2,0.6-3.8,1.6-5.2,3C8,7.8,8.2,9.6,7.3,11c-0.8,1.4-2.4,2.2-4,2c-0.2,1-0.4,2-0.4,3c0,1,0.1,2.1,0.4,3
-              c1.6-0.2,3.1,0.5,4,2c0.8,1.4,0.7,3.2-0.3,4.4c1.5,1.4,3.3,2.4,5.2,3c0.6-1.4,2-2.5,3.7-2.5s3.1,1,3.7,2.5c2-0.6,3.8-1.6,5.2-3
-              c-0.9-1.2-1.1-3-0.3-4.4c0.8-1.4,2.4-2.2,4-2c0.2-1,0.4-2,0.4-3C29,15,28.9,13.9,28.6,13z"
-            />
-            <circle class="st0" cx="16" cy="16" r="3" />
-          </svg>
         </div>
+
+        <!-- PROFILE MODAL -->
+        <div id="profileModal" class="profile-modal hidden">
+          <div class="profile-modal-content">
+            <button class="modal-close-btn" id="closeProfileModal">×</button>
+
+            <div class="profile-modal-tabs">
+              <button class="profile-tab-btn active" data-tab="account">
+                Account
+              </button>
+              <button class="profile-tab-btn" data-tab="payments">
+                Payments
+              </button>
+              <button class="profile-tab-btn" data-tab="settings">
+                Settings
+              </button>
+            </div>
+
+            <div class="profile-tab-content">
+              <!-- ACCOUNT TAB -->
+              <div id="account-tab" class="profile-tab active">
+                <h3>Account</h3>
+                <div class="account-info">
+                  <p>
+                    <strong>Username:</strong>
+                    <span id="displayUsername">User</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- PAYMENTS TAB -->
+              <div id="payments-tab" class="profile-tab">
+                <h3>Payments</h3>
+                <div class="payments-placeholder">
+                  <p>Payment information placeholder</p>
+                </div>
+              </div>
+
+              <!-- SETTINGS TAB -->
+              <div id="settings-tab" class="profile-tab">
+                <h3>Settings</h3>
+                <div class="settings-placeholder">
+                  <p>Settings placeholder</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROFILE MODAL BACKDROP -->
+        <div id="profileBackdrop" class="profile-modal-backdrop"></div>
       </header>
 
       <section class="songs-section fade-in">

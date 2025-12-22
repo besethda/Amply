@@ -1,162 +1,24 @@
-@import url("../core.css");
-
 /* =========================================================
    🎧 GENERAL LISTENER STYLES
    Shared by listener.html, playlist.html, explore.html, etc.
    ========================================================= */
 
-/* ====== SIDEBAR ====== */
+/* ====== SIDEBAR (Listener Specific) ====== */
 .sidebar {
-  position: fixed;
-  top: 0;
   left: 0;
-  width: 80px;
-  height: 100vh;
-  background: linear-gradient(to bottom, #111, #2b2b2b);
-  color: #ccc;
-  font-size: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1rem 0.5rem;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-  z-index: 10;
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 17px;
-  padding-bottom: 9px;
-  padding-right: 0;
+/* Tooltips (Listener Specific - Right Side) */
+.menu-item::after,
+.sidebar-footer button::after {
+  left: 100%;
+  margin-left: 15px;
+  transform: translateY(-50%) translateX(10px);
 }
 
-.sidebar-logo {
-  width: 70%;
-  height: auto;
-  border-radius: 6px;
-}
-
-.menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.menu li {
-  padding: 1rem 0;
-  border-radius: 6px;
-  margin: 0;
-  cursor: pointer;
-  transition: 0.3s;
-  text-align: center;
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-}
-
-.menu li::after {
-  content: attr(data-title);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #222;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-  pointer-events: none;
-  z-index: 1000;
-  border: 1px solid #444;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.menu li:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-.menu li:hover,
-.menu li.active {
-  background: var(--accent-color);
-  color: #111;
-}
-
-/* ===== SIDEBAR FOOTER ===== */
-.sidebar-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-#artistDashboardBtn:hover {
-  background: linear-gradient(90deg, #6cf, #a4e);
-  border: none;
-  color: white;
-}
-
-.logout-btn {
-  background: #333;
-  margin-top: 10px;
-  color: #eee;
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 0.6rem 1.2rem;
-  font-size: 1.5rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.logout-btn::after {
-  content: attr(data-title);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #222;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-  pointer-events: none;
-  z-index: 1000;
-  border: 1px solid #444;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.logout-btn:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-.logout-btn:hover {
-  background: var(--accent-color);
-  color: #111;
-  border-color: var(--accent-color);
-  transform: scale(1.03);
+.menu-item:hover::after,
+.sidebar-footer button:hover::after {
+  transform: translateY(-50%) translateX(0);
 }
 
 /* ====== MAIN CONTENT ====== */
@@ -300,13 +162,6 @@ h2 {
   margin-left: 10px;
 }
 
-.menu-icon-svg {
-  width: 35px;
-  height: 35px;
-  margin-right: 0;
-  color: var(--text-main-color);
-}
-
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -380,40 +235,51 @@ h2 {
 
   .sidebar-header {
     display: flex;
-    padding: 0 0 2rem 0;
+    padding: 0;
   }
 
   .sidebar-footer {
     display: flex;
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: auto;
   }
 
   .menu {
-    width: 100%;
+    width: 100% !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
   }
 
   .menu ul {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
-    margin: 0;
+    gap: 10px;
+    margin: 0.5rem 0 !important;
+    padding: 0 !important;
   }
 
   .menu li {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    font-size: 1.1rem;
+    width: 56px !important;
+    height: 56px !important;
+    padding: 0 !important;
+    margin: 0 !important;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     background: transparent;
-    border-radius: 8px;
-    font-weight: 500;
+    border-radius: 12px;
   }
 
   .menu li:hover,
   .menu li.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--accent-color);
+    color: #111;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
   }
 
   .top-bar {
@@ -441,10 +307,6 @@ h2 {
   .settings {
     width: 35px;
     height: 35px;
-  }
-
-  .menu-icon-svg {
-    display: block;
   }
 
   /* Hide tooltips on mobile */
