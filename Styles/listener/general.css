@@ -190,9 +190,9 @@ h2 {
 
 @media (orientation: portrait) {
   #trackList {
-    grid-template-columns: repeat(4, minmax(60px, 1fr));
-    gap: 0.4rem;
-    padding: 0;
+    grid-template-columns: repeat(3, minmax(60px, 1fr));
+    gap: 0.6rem;
+    padding: 0 0.4rem;
   }
 
   .songs-section h2 {
@@ -203,7 +203,7 @@ h2 {
 
   .main-content {
     margin-left: 0;
-    padding: 0.2rem;
+    padding: 0.5rem 0.2rem 0.2rem 0.2rem;
     width: 100%;
     overflow-x: hidden;
   }
