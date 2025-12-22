@@ -27,6 +27,13 @@ a {
   text-decoration: none;
 }
 
+/* Prevent zoom on input focus (iOS/mobile) */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
 /* FIXED: Correct ID */
 #searchBar {
   background-color: #383838;
@@ -813,16 +820,29 @@ li {
 
   /* Smaller grid items for mobile */
   #trackList {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 0.8rem;
+    grid-template-columns: repeat(4, minmax(60px, 1fr)) !important;
+    gap: 0.4rem !important;
+  }
+
+  .cover-art {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .song-info-box {
+    height: clamp(28px, 7.6vw, 42px);
+    padding: 2px 0;
   }
 
   .song-title-box {
-    font-size: 0.8rem;
+    font-size: clamp(0.55rem, 2.5vw, 0.8rem);
+    padding: 1px 0 1px 0;
+    line-height: 1.2;
   }
 
   .song-artist-box {
-    font-size: 0.7rem;
+    font-size: clamp(0.45rem, 2vw, 0.7rem);
+    line-height: 1.1;
   }
 
   .song-title-list {
