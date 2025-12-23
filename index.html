@@ -4,20 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Amply – Login</title>
+
+    <!-- STYLES -->
     <link rel="stylesheet" href="./Styles/core.css" />
     <link rel="stylesheet" href="./Styles/login.css" />
-    <script type="module" src="./scripts/login.js" defer></script>
+
+    <!-- SECURITY + SCRIPT -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
     />
-    <script src="/scripts/login.js" type="module" defer></script>
+    <script type="module" src="./scripts/login.js" defer></script>
   </head>
 
   <body>
     <div class="imgcont">
-      <img src="../images/Amply_lgo.png" alt="Amply" class="indexlogo" />
+      <img src="../images/Amply_lgo.png" alt="Amply Logo" class="indexlogo" />
     </div>
+
     <div class="login-container" id="loginBox">
       <h2>Welcome to Amply</h2>
 
@@ -53,6 +57,29 @@
         <p class="toggle-text">
           Already have an account?
           <span id="showLogin">Sign in</span>
+        </p>
+      </div>
+
+      <!-- CONFIRMATION FORM -->
+      <div id="confirmForm" style="display: none">
+        <p>Please check your email for a 6-digit code.</p>
+        <input
+          type="email"
+          id="confirmEmail"
+          placeholder="Email"
+          required
+        />
+        <input
+          type="text"
+          id="confirmCode"
+          placeholder="Verification Code"
+          required
+        />
+        <button id="confirmButton">Verify Account</button>
+        <p id="confirmMessage"></p>
+        <p class="toggle-text">
+          Already verified?
+          <span id="showLogin2">Sign in</span>
         </p>
       </div>
     </div>

@@ -78,27 +78,6 @@ header {
   align-items: center;
 }
 
-.logout-btn,
-.toPlayer-btn {
-  background: #333;
-  color: #eee;
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 0.6rem 1.2rem;
-  font-size: 1.5rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  width: 100%;
-}
-
-.logout-btn:hover {
-  background: var(--accent-color);
-  color: #111;
-  border-color: var(--accent-color);
-  transform: scale(1.03);
-}
-
 /* ====== MAIN CONTENT ====== */
 .main-content {
   width: calc(100% - 120px);

@@ -25,6 +25,7 @@ a {
 }
 
 button {
+  margin-top: 20px;
   font-family: "Electrolize";
   background: var(--accent-color);
   border: none;
@@ -136,19 +137,24 @@ li {
 #currentTrackArtist {
   font-size: 1.06rem;
   font-weight: 600;
-  opacity: 0.8;
+  opacity: 0.5;
   display: inline;
+  text-overflow: ellipsis;
 }
 
 /* Add “ - ” between title and artist */
 .track-info span:first-child::after {
-  content: " - ";
+  content: "-";
+  margin: 0 8px;
   opacity: 0.8;
 }
 
 /* CENTER: Play/Pause Controls */
 .player-controls {
   display: flex;
+  position: absolute;
+  left: 40%;
+
   justify-content: center;
   align-items: center;
   gap: 0.6rem;
@@ -195,6 +201,11 @@ li {
 .song-box {
   position: relative;
   overflow: hidden;
+  border: #3d3d3d solid 1px;
+}
+
+.song-info {
+  white-space: nowrap;
 }
 
 .song-play-btn {
@@ -254,6 +265,28 @@ li {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(248, 133, 0);
+}
+
+.logout-btn,
+.toPlayer-btn {
+  margin-top: 12px;
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1.5rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: 100%;
+}
+
+.logout-btn:hover {
+  background: var(--accent-color);
+  color: #111;
+  border-color: var(--accent-color);
+  transform: scale(1.03);
 }
 
 /* ===== Responsive ===== */
