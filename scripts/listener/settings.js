@@ -2,28 +2,29 @@ import { requireAuth, parseJwt, getAuthToken } from "../../scripts/general.js";
 
 requireAuth();
 
-window.addEventListener("DOMContentLoaded", () => {
+export function initSettingsView() {
   const token = getAuthToken();
   const user = parseJwt(token);
 
-  // Fill user info
-  document.getElementById("userEmail").textContent = user?.email || "Unknown";
-  document.getElementById("userId").textContent = user?.sub || "N/A";
+  const email = document.getElementById("userEmail");
+  const userId = document.getElementById("userId");
+  const amount = document.getElementById("paymentAmount");
+  const plan = document.getElementById("planName");
 
-  // Example placeholder payment data
-  document.getElementById("paymentAmount").textContent = "49 SEK";
-  document.getElementById("planName").textContent = "Listener Premium";
+  if (email) email.textContent = user?.email || "Unknown";
+  if (userId) userId.textContent = user?.sub || "N/A";
+  if (amount) amount.textContent = "49 SEK";
+  if (plan) plan.textContent = "Listener Premium";
 
-  // Toggles
-  document.getElementById("darkModeToggle").addEventListener("change", (e) => {
+  document.getElementById("darkModeToggle")?.addEventListener("change", (e) => {
     document.body.classList.toggle("dark-mode", e.target.checked);
   });
 
-  document.getElementById("becomeArtistBtn").addEventListener("click", () => {
-    window.location.href = "../artist/setup.html"; // future page
+  document.getElementById("becomeArtistBtn")?.addEventListener("click", () => {
+    window.location.href = "../artist/setup.html";
   });
 
-  document.getElementById("managePayments").addEventListener("click", () => {
+  document.getElementById("managePayments")?.addEventListener("click", () => {
     alert("Opening payment settings (future integration)");
   });
-});
+}

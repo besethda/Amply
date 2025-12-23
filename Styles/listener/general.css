@@ -1,92 +1,41 @@
-@import url("../core.css");
-
 /* =========================================================
    🎧 GENERAL LISTENER STYLES
    Shared by listener.html, playlist.html, explore.html, etc.
    ========================================================= */
 
-/* ====== SIDEBAR ====== */
+/* ====== SIDEBAR (Listener Specific) ====== */
 .sidebar {
-  position: fixed;
-  top: 0;
   left: 0;
-  width: 180px;
-  height: 100vh;
-  background: linear-gradient(to bottom, #111, #2b2b2b);
-  color: #ccc;
-  font-size: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1rem;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-  z-index: 10;
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 17px;
-  padding-bottom: 9px;
-  padding-right: 18px;
+/* Tooltips (Listener Specific - Right Side) */
+.menu-item::after,
+.sidebar-footer button::after {
+  left: 100%;
+  margin-left: 15px;
+  transform: translateY(-50%) translateX(10px);
 }
 
-.sidebar-logo {
-  width: 50%;
-  height: auto;
-  border-radius: 6px;
-}
-
-.menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-}
-
-.menu li {
-  padding: 0.7rem 0.5rem;
-  border-radius: 6px;
-  margin: 4px 0;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.menu li:hover,
-.menu li.active {
-  background: var(--accent-color);
-  color: #111;
-}
-
-/* ===== SIDEBAR FOOTER ===== */
-.sidebar-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-#artistDashboardBtn:hover {
-  background: linear-gradient(90deg, #6cf, #a4e);
-  border: none;
-  color: white;
+.menu-item:hover::after,
+.sidebar-footer button:hover::after {
+  transform: translateY(-50%) translateX(0);
 }
 
 /* ====== MAIN CONTENT ====== */
 .main-content {
   padding: 1rem;
-  margin-left: 180px;
+  margin-left: 80px;
   color: white;
   min-height: 100vh;
-  padding-bottom: 8rem; /* space for floating player bar */
+  padding-bottom: 9rem; /* space for floating player bar */
   transition: margin-left 0.3s ease;
 }
 
-.top-bar {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 2rem;
+@media (orientation: portrait) {
+  .main-content {
+    margin-left: 0;
+    padding: 0.2rem;
+  }
 }
 
 #searchBar {
@@ -109,4 +58,287 @@
 h2 {
   margin: 0;
   padding: 0;
+}
+
+/* =========================================================
+   🎵 UNIVERSAL SONG CARD + SCROLLING TITLE STYLES
+   Applies to: listener.html, playlists, search results, etc.
+   ========================================================= */
+
+/* ----- Section Headers ----- */
+.songs-section h2 {
+  color: var(--text-main-color);
+  margin-bottom: 1rem;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+/* ----- Song Grid Layout ----- */
+#trackList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.5rem;
+  justify-items: center;
+}
+
+/* =========================================================
+   🔠 SCROLLING TEXT (Song titles + Global player title)
+   ========================================================= */
+
+/* ----- Shared Scrolling Behaviour ----- */
+.song-title-box.scrolling,
+#currentTrackName.scrolling {
+  animation: songMarquee 8s linear infinite;
+}
+
+.song-title-box.scrolling:hover,
+#currentTrackName.scrolling:hover {
+  animation-play-state: paused;
+}
+
+/* =========================================================
+   🎛 PLAYER BAR — THREE DOTS MENU
+   ========================================================= */
+
+.player-options-menu {
+  position: absolute;
+  right: -10px;
+  bottom: 180%; /* sits above player bar */
+  width: max-content;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #222;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.player-options-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.option {
+  color: #eee;
+  background-color: transparent;
+  padding: 0.6rem 1rem;
+  margin: 0;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 0.9rem;
+  font-family: "Commissioner", sans-serif;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.player-options-menu .option:hover {
+  background: var(--accent-color);
+  color: #111;
+}
+
+/* hide class */
+.hidden {
+  display: none;
+}
+
+/* ===== The Animation ===== */
+@keyframes songMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ----- Responsive ----- */
+/* Global additions */
+.hamburger-btn {
+  display: none;
+  margin-left: 10px;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+@media (orientation: portrait) {
+  #trackList {
+    grid-template-columns: repeat(3, minmax(60px, 1fr));
+    gap: 0.6rem;
+    padding: 0 0.4rem;
+  }
+
+  .songs-section h2 {
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+    margin-left: 0;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 0.5rem 0.2rem 0.2rem 0.2rem;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .hamburger-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    margin-right: 0.3rem;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 100vh;
+    background: #1a1a1a;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem 0.3rem;
+    margin: 0;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    display: flex;
+    padding: 0;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: auto;
+  }
+
+  .menu {
+    width: 100% !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .menu ul {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0.5rem 0 !important;
+    padding: 0 !important;
+  }
+
+  .menu li {
+    width: 46px !important;
+    height: 46px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border-radius: 12px;
+  }
+
+  .menu li:hover,
+  .menu li.active {
+    background: var(--accent-color);
+    color: #111;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
+  }
+
+  .menu-icon-svg {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+
+  #searchBar {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.9rem;
+    flex: 1;
+    width: 100%;
+    min-width: 0; /* Allow shrinking */
+  }
+
+  .menu-icons {
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+
+  .profile,
+  .settings {
+    width: 35px;
+    height: 35px;
+  }
+
+  /* Hide tooltips on mobile */
+  .menu li::after,
+  .logout-btn::after {
+    display: none !important;
+  }
+
+  /* Adjust list view layout for mobile */
+  .song-info-list {
+    grid-template-columns: 1.4fr 0.6fr 30px !important; /* Give more space to title */
+    gap: 5px !important;
+  }
+
+  .song-artist-list {
+    text-align: left; /* Revert to left align, but in the second column */
+    opacity: 0.7;
+  }
+
+  .song-option {
+    justify-self: end; /* Push dots to the far right */
+  }
 }

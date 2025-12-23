@@ -1,12 +1,10 @@
-@import url("../core.css");
-
 /* =========================================================
    🎧 GENERAL LISTENER STYLES
    Shared by listener.html, playlist.html, explore.html, etc.
    ========================================================= */
 
 header {
-  width: calc(100% - 220px);
+  width: calc(100% - 80px);
   display: flex;
   justify-content: center;
   padding-top: 4vh;
@@ -17,78 +15,36 @@ header {
   }
 }
 
-/* ====== SIDEBAR ====== */
+/* ====== SIDEBAR (Artist Specific) ====== */
 .sidebar {
-  position: fixed;
-  top: 0;
   right: 0;
-  width: 220px;
-  height: 100vh;
-  background: linear-gradient(to bottom, #111, #2b2b2b);
-  color: #ccc;
-  font-size: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1rem;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-  z-index: 10;
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 17px;
-  padding-bottom: 9px;
-  padding-right: 18px;
+/* Tooltips (Artist Specific - Left Side) */
+.menu-item::after,
+.sidebar-footer button::after {
+  right: 100%;
+  margin-right: 15px;
+  transform: translateY(-50%) translateX(10px);
 }
 
-.sidebar-logo {
-  width: 50%;
-  height: auto;
-  border-radius: 6px;
-}
-
-.menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-}
-
-.menu li {
-  padding: 0.7rem 0.5rem;
-  border-radius: 6px;
-  margin: 4px 0;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.menu li:hover,
-.menu li.active {
-  background: var(--accent-color);
-  color: #111;
-}
-
-/* ===== SIDEBAR FOOTER ===== */
-.sidebar-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.menu-item:hover::after,
+.sidebar-footer button:hover::after {
+  transform: translateY(-50%) translateX(0);
 }
 
 /* ====== MAIN CONTENT ====== */
 .main-content {
-  width: calc(100% - 120px);
+  width: calc(100% - 80px);
   display: flex;
   flex-direction: row-reverse;
   padding: 2rem;
-  margin-left: 120px;
+  margin-right: 80px; /* Sidebar is on the right */
+  margin-left: 0;
   color: white;
   min-height: 100vh;
   padding-bottom: 8rem; /* space for floating player bar */
-  transition: margin-left 0.3s ease;
+  transition: margin-right 0.3s ease;
 }
 
 .top-bar {

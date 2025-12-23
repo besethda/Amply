@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "append_js",
+			"type": "shell",
+			"command": "echo '\n// === Sidebar Logic ===\ndocument.addEventListener(\"DOMContentLoaded\", () => {\n  const hamburgerBtn = document.getElementById(\"hamburgerBtn\");\n  const sidebar = document.getElementById(\"sidebar\");\n  const overlay = document.getElementById(\"sidebarOverlay\");\n\n  if (hamburgerBtn && sidebar && overlay) {\n    function toggleSidebar() {\n      sidebar.classList.toggle(\"open\");\n      overlay.classList.toggle(\"active\");\n    }\n\n    function closeSidebar() {\n      sidebar.classList.remove(\"open\");\n      overlay.classList.remove(\"active\");\n    }\n\n    hamburgerBtn.addEventListener(\"click\", (e) => {\n      e.stopPropagation();\n      toggleSidebar();\n    });\n\n    overlay.addEventListener(\"click\", closeSidebar);\n\n    // Close when clicking a menu item\n    const menuItems = sidebar.querySelectorAll(\".menu li\");\n    menuItems.forEach(item => {\n      item.addEventListener(\"click\", closeSidebar);\n    });\n  }\n});' >> \"/Volumes/Seth's SSD/Github code/Amply/Amply-main/scripts/listener/general.js\"",
+			"args": [],
+			"group": "none"
+		}
+	]
+}

@@ -1,0 +1,188 @@
+/* ============================
+   ARTIST POSTER (Cover Photo)
+============================ */
+
+.artist-poster {
+  position: relative;
+  height: 40vh; /* Taller header */
+  width: 100%;
+  margin-bottom: 60px; /* Increased to account for overlapping profile pic */
+  border-radius: 12px;
+  /* overflow: hidden;  <-- Removed to allow profile pic to overlap */
+}
+
+/* Cover image */
+.artist-cover-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.6); /* Darker for text readability */
+  cursor: pointer;
+  border-radius: 12px; /* Added radius here since parent isn't clipping */
+}
+
+/* ============================
+   HEADER CONTENT (Name, Photo, Button)
+============================ */
+
+.artist-header-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 2rem;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  border-radius: 12px;
+  pointer-events: none; /* Let clicks pass through to cover image if needed, but buttons need pointer-events: auto */
+}
+
+.artist-identity {
+  display: contents; /* Remove layout impact of this wrapper */
+}
+
+/* Profile Photo in Header */
+.artist-photo {
+  position: absolute;
+  bottom: -40px; /* Overlap the bottom edge */
+  left: 2rem;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  pointer-events: auto; /* Re-enable clicks */
+  z-index: 20;
+}
+
+.artist-photo:hover {
+  transform: scale(1.05);
+  border-color: white;
+}
+
+.artist-profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Artist Name */
+#artistPageTitle {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  font-family: "Electrolize", sans-serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  pointer-events: auto;
+}
+
+/* About Button */
+.about-btn {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.4rem 1rem; /* Smaller padding */
+  border-radius: 20px;
+  font-size: 0.9rem; /* Smaller font */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.about-btn:hover {
+  background: white;
+  color: black;
+}
+
+/* ============================
+   ABOUT MODAL
+============================ */
+
+.about-background {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.about-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 600px;
+  width: 90%;
+  background: #222;
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.about-profile-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.about-artist-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #ddd;
+  text-align: center;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .artist-header-content {
+    padding: 1rem;
+  }
+
+  #artistPageTitle {
+    font-size: 2rem;
+    top: 1rem;
+    left: 1rem;
+  }
+
+  .about-btn {
+    width: auto;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    margin-bottom: 0;
+  }
+
+  .artist-photo {
+    width: 110px;
+    height: 110px;
+    left: 1rem;
+    bottom: -30px;
+  }
+}

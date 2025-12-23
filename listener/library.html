@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Settings</title>
+    <title>Amply – Library</title>
 
     <!-- PWA Support -->
     <link rel="manifest" href="/manifest.json" />
@@ -17,11 +17,12 @@
     <link rel="stylesheet" href="../Styles/core.css" />
     <link rel="stylesheet" href="../Styles/fonts.css" />
     <link rel="stylesheet" href="../Styles/listener/general.css" />
-    <link rel="stylesheet" href="../Styles/listener/settings.css" />
+    <link rel="stylesheet" href="../Styles/listener/playlist.css" />
 
     <!-- SCRIPTS -->
     <script type="module" src="../scripts/general.js" defer></script>
-    <script type="module" src="../scripts/listener/settings.js" defer></script>
+    <script type="module" src="../scripts/player.js" defer></script>
+    <script type="module" src="../scripts/listener/playlist.js" defer></script>
   </head>
 
   <body>
@@ -113,7 +114,7 @@
             </svg>
           </li>
           <li
-            class="menu-item"
+            class="active menu-item"
             onclick="window.location.href='library.html'"
             data-title="Library"
           >
@@ -162,7 +163,7 @@
             </svg>
           </li>
           <li
-            class="active menu-item"
+            class="menu-item"
             onclick="window.location.href='settings.html'"
             data-title="Settings"
           >
@@ -224,52 +225,25 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="main-content fade-in">
+    <main class="main-content">
       <header class="top-bar">
-        <h2 class="head">Settings & Account</h2>
+        <input
+          type="text"
+          id="searchBar"
+          placeholder="Search for playlists..."
+        />
       </header>
 
-      <section class="settings-section">
-        <div class="settings-card">
-          <h3>Account Details</h3>
-          <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
-          <p><strong>User ID:</strong> <span id="userId">Loading...</span></p>
-        </div>
-
-        <div class="settings-card">
-          <h3>Payment Summary</h3>
-          <p>Plan: <span id="planName">Free Tier</span></p>
-          <p>This Month: <span id="paymentAmount">0 SEK</span></p>
-          <button id="managePayments" class="primary-btn">
-            Manage Payments
-          </button>
-        </div>
-
-        <div class="settings-card">
-          <h3>Preferences</h3>
-          <label>
-            <input type="checkbox" id="darkModeToggle" />
-            Enable dark mode
-          </label>
-          <label>
-            <input type="checkbox" id="notificationsToggle" checked />
-            Email notifications
-          </label>
-        </div>
-
-        <div class="settings-card highlight">
-          <h3>Become an Artist</h3>
-          <p>Ready to upload your own music and reach listeners worldwide?</p>
-          <button id="becomeArtistBtn" class="accent-btn">
-            Become an Artist
-          </button>
-        </div>
+      <section class="playlist-section fade-in">
+        <h2>Library</h2>
+        <div id="playlistGrid" class="playlist-grid"></div>
       </section>
     </main>
 
-    <!-- GLOBAL PLAYER BAR -->
+    <!-- PLAYER BAR -->
     <div id="playerBar" class="player-bar hidden">
       <div class="player-inner">
+        <!-- LEFT: Controls -->
         <div class="player-controls">
           <button id="prevBtn" class="icon-button" aria-label="Previous">
             <svg
@@ -304,6 +278,7 @@
             >
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
+
             <svg
               id="pauseIcon"
               xmlns="http://www.w3.org/2000/svg"
@@ -340,6 +315,7 @@
           </button>
         </div>
 
+        <!-- CENTER: Progress + Song Info -->
         <div class="player-center">
           <input type="range" id="progressBar" value="0" min="0" max="100" />
           <div class="track-info">
@@ -348,6 +324,7 @@
           </div>
         </div>
 
+        <!-- RIGHT: Shuffle + Repeat -->
         <div class="player-options">
           <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
             <svg

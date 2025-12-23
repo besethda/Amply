@@ -7,7 +7,7 @@ body {
 }
 
 .main {
-  margin-right: 280px; /* Space for right sidebar */
+  margin-right: 80px; /* Space for right sidebar */
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -16,7 +16,6 @@ body {
 
 .upload {
   width: 100%;
-  max-width: 700px;
   display: flex;
   justify-content: center;
 }
@@ -127,12 +126,13 @@ input[type="file"]::file-selector-button:hover {
   transform: translateY(-1px);
 }
 
-button {
+uploadBtn {
   border: none;
   color: #111;
   font-weight: bold;
   border-radius: 10px;
   padding: 1rem 1.2rem;
+  margin: 20px 0;
   width: 100%;
   cursor: pointer;
   font-size: 1.6rem;
@@ -141,7 +141,7 @@ button {
 }
 
 /* 🆕 Hover button color */
-button:hover {
+uploadBtn:hover {
   background: linear-gradient(90deg, #6cf, #a4e);
   transform: translateY(-2px);
 }

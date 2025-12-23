@@ -3,25 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Login</title>
-
-    <!-- STYLES -->
+    <title>Amply – Music Platform</title>
+    <link rel="icon" type="image/png" href="./images/Amply_lgofav.png" />
+    <link rel="apple-touch-icon" href="./images/Amply.png" />
     <link rel="stylesheet" href="./Styles/core.css" />
     <link rel="stylesheet" href="./Styles/login.css" />
-
-    <!-- SECURITY + SCRIPT -->
+    <script type="module" src="./scripts/login.js" defer></script>
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
     />
-    <script type="module" src="./scripts/login.js" defer></script>
+    <script src="/scripts/login.js" type="module" defer></script>
   </head>
 
   <body>
     <div class="imgcont">
-      <img src="../images/Amply_lgo.png" alt="Amply Logo" class="indexlogo" />
+      <img src="../images/Amply_lgo.png" alt="Amply" class="indexlogo" />
     </div>
-
     <div class="login-container" id="loginBox">
       <h2>Welcome to Amply</h2>
 
@@ -59,28 +57,23 @@
           <span id="showLogin">Sign in</span>
         </p>
       </div>
-
-      <!-- CONFIRMATION FORM -->
-      <div id="confirmForm" style="display: none">
-        <p>Please check your email for a 6-digit code.</p>
-        <input
-          type="email"
-          id="confirmEmail"
-          placeholder="Email"
-          required
-        />
-        <input
-          type="text"
-          id="confirmCode"
-          placeholder="Verification Code"
-          required
-        />
-        <button id="confirmButton">Verify Account</button>
-        <p id="confirmMessage"></p>
+      <!-- VERIFICATION FORM -->
+      <div id="verifyForm" style="display:none;">
+        <h3>Email Verification</h3>
+        <p>Enter the 6-digit code sent to your email.</p>
+      
+        <input type="text" id="verifyEmail" placeholder="Email" readonly />
+        <input type="text" id="verifyCode" placeholder="Verification Code" />
+      
+        <button id="verifyButton">Verify</button>
+      
+        <p id="verifyMessage"></p>
+      
         <p class="toggle-text">
           Already verified?
-          <span id="showLogin2">Sign in</span>
+          <span id="verifyBackToLogin">Sign in</span>
         </p>
+      </div>
       </div>
     </div>
   </body>
