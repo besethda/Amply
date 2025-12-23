@@ -234,7 +234,7 @@ function setupEvents() {
     if (e.code === "Space") {
       // Only prevent scrolling if we actually have a song to control
       if (audio.src) {
-        e.preventDefault(); 
+        e.preventDefault();
         if (audio.paused) {
           audio.play();
         } else {
@@ -311,7 +311,7 @@ function setupEvents() {
       const progress = (audio.currentTime / audio.duration) * 100;
       if (progressBar) progressBar.value = progress;
       if (fullProgressBar) fullProgressBar.value = progress;
-      
+
       // Update time stamps
       if (fullCurrentTime) fullCurrentTime.textContent = formatTime(audio.currentTime);
       if (fullTotalTime) fullTotalTime.textContent = formatTime(audio.duration);
@@ -366,7 +366,7 @@ function setupFullPlayerEvents() {
   playerBar?.addEventListener("click", (e) => {
     // Don't open if clicking buttons or progress bar
     if (e.target.closest("button") || e.target.closest("input")) return;
-    
+
     // Only open in portrait mode (mobile)
     if (!window.matchMedia("(orientation: portrait)").matches) return;
 
@@ -390,11 +390,11 @@ function setupFullPlayerEvents() {
 
   fullNextBtn?.addEventListener("click", () => nextBtn?.click());
   fullPrevBtn?.addEventListener("click", () => prevBtn?.click());
-  
+
   fullShuffleBtn?.addEventListener("click", () => {
     shuffleBtn?.click();
   });
-  
+
   fullRepeatBtn?.addEventListener("click", () => {
     repeatBtn?.click();
   });
@@ -420,9 +420,9 @@ function updateFullPlayerUI() {
   fullPlayerTitle.textContent = currentSong.title || "Unknown Track";
   fullPlayerArtist.textContent = currentSong.artist || "";
   fullPlayerArt.src = currentSong.art_url || "../images/default-art.jpg";
-  
+
   updateFullPlayerPlayPause(!audio.paused);
-  
+
   // Sync shuffle/repeat state
   fullShuffleBtn?.classList.toggle("active", isShuffle);
   fullRepeatBtn?.classList.toggle("active", isRepeat);
@@ -563,7 +563,7 @@ export function renderSongsToDom({
   songs.forEach((song) => {
     const div = document.createElement("div");
     const safeId = song.id || song.songId || song.file || song.title;
-    div.dataset.songId = safeId;  
+    div.dataset.songId = safeId;
 
     // Check if this song is currently playing
     const isCurrentlyPlaying = currentSongId === safeId && !isPaused;
@@ -581,13 +581,13 @@ export function renderSongsToDom({
 
         <button class="song-play-btn-box">
           <svg class="play-icon-box" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
-            style="display:${isCurrentlyPlaying ? 'none' : 'block'}">
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+            style="display:${isCurrentlyPlaying ? 'none' : 'block'}" transform="translate(2, 0)">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
 
           <svg class="pause-icon-box" width="40" height="40"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
             style="display:${isCurrentlyPlaying ? 'block' : 'none'}">
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>
@@ -697,7 +697,7 @@ function setupPlayButton(div, song, fullList) {
 
     // Ignore if clicking artist name (user request)
     if (e.target.closest(".song-artist-box") || e.target.closest(".song-artist-list")) return;
-    
+
     // Also ignore if clicking options
     if (e.target.closest(".song-option")) return;
 
@@ -713,4 +713,65 @@ function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s < 10 ? "0" : ""}${s}`;
+}
+
+// ===============================
+// MOBILE SWIPE CONTROLS
+// ===============================
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+function handleSwipe() {
+  const diffX = touchStartX - touchEndX; // positive = swiped left, negative = swiped right
+  const diffY = touchEndY - touchStartY; // positive = swiped down, negative = swiped up
+
+  // Minimum swipe distance (30px)
+  const minSwipeDistance = 30;
+
+  // Check for vertical swipe (down) to close full player
+  if (diffY > minSwipeDistance && fullPlayer && !fullPlayer.classList.contains("hidden")) {
+    fullPlayer.classList.add("hidden");
+    return;
+  }
+
+  // Check for horizontal swipes (left = next, right = previous)
+  if (Math.abs(diffX) > minSwipeDistance) {
+    if (diffX > 0) {
+      // Swiped left - next track
+      nextBtn?.click();
+    } else {
+      // Swiped right - previous track
+      prevBtn?.click();
+    }
+  }
+}
+
+// Add swipe listeners to full player
+if (fullPlayer) {
+  fullPlayer.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, false);
+
+  fullPlayer.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+  }, false);
+}
+
+// Add swipe listeners to player bar
+if (playerBar) {
+  playerBar.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, false);
+
+  playerBar.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+  }, false);
 }

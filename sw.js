@@ -1,4 +1,7 @@
-const CACHE_NAME = 'amply-v1';
+const CACHE_NAME = 'amply-v2';
+const STREAM_CACHE_NAME = 'amply-streams-v1'; // Never used, but named for clarity
+
+// Cache essential UI assets ONLY - NO audio files
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,8 +9,11 @@ const urlsToCache = [
   '/Styles/core.css',
   '/Styles/fonts.css',
   '/Styles/variables.css',
+  '/Styles/listener/general.css',
+  '/Styles/listener/listener.css',
   '/images/Amply_lgo.png',
-  '/images/Amply-fav.png'
+  '/images/Amply_lgofav.png',
+  '/images/amply.png'
 ];
 
 // Install event
@@ -45,6 +51,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  const url = event.request.url;
+
+  // ===== NEVER CACHE: Audio/Media Streams =====
+  // These should ALWAYS stream fresh from the network
+  if (url.includes('/stream') ||
+    url.includes('.mp3') ||
+    url.includes('.wav') ||
+    url.includes('.m4a') ||
+    url.includes('amazonaws.com') ||
+    url.includes('cloudfront.net')) {
+    // Pass through to network without caching
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // ===== CACHE EVERYTHING ELSE =====
+  // CSS, JS, HTML, images, fonts, API calls for user data
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -73,8 +96,12 @@ self.addEventListener('fetch', event => {
             return response;
           })
           .catch(() => {
-            // Return a fallback offline page if needed
-            return caches.match('/index.html');
+            // For HTML requests, return the offline page
+            if (event.request.destination === 'document') {
+              return caches.match('/index.html');
+            }
+            // For other requests, return nothing
+            return undefined;
           });
       })
   );

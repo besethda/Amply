@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Check if the user is an artist
     if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {
-      
+
       // 1. Handle the new sidebar menu item (icon only)
       const artistMenuItem = document.getElementById("artistDashboardBtn");
       if (artistMenuItem) {
@@ -58,11 +58,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // For now, we'll assume the menu item is the primary way.
         // If you want to keep the footer button logic, we can leave it, 
         // but ensure it doesn't duplicate if the ID is reused.
-        
+
         // The previous code created a button with ID "artistDashboardBtn".
         // Since we now have an LI with that ID in the HTML, we should avoid conflict.
         // Let's rename the dynamic button if we still want it, or remove this block if the menu item is sufficient.
-        
+
         // Given the user request to "make sure the artist icon href is still working",
         // and we added an LI with id="artistDashboardBtn" in the HTML,
         // we should prioritize that LI.
@@ -126,21 +126,22 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // === PWA Service Worker Registration ===
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
-      });
-  });
-}
+// Disabled for now - causing issues with audio streaming on localhost
+// if ('serviceWorker' in navigator) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('/sw.js')
+//       .then(registration => {
+//         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+//       })
+//       .catch(err => {
+//         console.log('ServiceWorker registration failed: ', err);
+//       });
+//   });
+// }
 // === PROFILE MODAL ===
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🔍 Profile Modal: DOMContentLoaded fired");
-  
+
   const profileIcon = document.getElementById("profileIcon");
   const profileModal = document.getElementById("profileModal");
   const profileBackdrop = document.getElementById("profileBackdrop");

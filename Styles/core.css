@@ -465,67 +465,103 @@ li {
 .song-box {
   position: relative;
   width: 100%;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  background: #1a1a1a;
   overflow: hidden;
-  border: rgba(255, 255, 255, 0.13) solid 1px;
-  text-align: center;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.3s ease, background 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .song-box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 20px rgba(108, 255, 255, 0.2);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 40px rgba(255, 255, 255, 0.15);
+}
+
+.song-box.playing {
+  background: #d6d6d6;
 }
 
 @media (hover: none) {
   .song-box:hover {
     transform: none;
-    box-shadow: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
 }
 
 .song-info,
 .song-info-box {
-  padding: 0.2rem;
-  padding-top: 0.1rem;
+  padding: 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.3rem;
+  background: #0a0a0a;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 60px;
+}
+
+.song-box.playing .song-info-box {
+  background: #c5c5c5;
+  color: #000;
+}
+
+.song-box.playing .song-title-box {
+  color: #000;
+}
+
+.song-box.playing .song-artist-box {
+  color: #333;
 }
 
 .song-play-btn-box {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%) scale(0.8);
+  background: rgba(255, 255, 255, 0.7);
   border: none;
   border-radius: 50%;
-  width: 40%;
-  aspect-ratio: 1/1;
-  height: auto;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: white;
-  transition: background 0.2s ease;
+  color: #000;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+}
+
+.song-box:hover .song-play-btn-box {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.song-box.playing .song-play-btn-box {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .song-play-btn-box svg {
-  width: 50%;
-  height: 50%;
+  width: 60%;
+  height: 60%;
+  stroke-width: 1.5;
 }
 
-.song-play-btn-box:hover {
-  background: rgba(255, 255, 255, 0.3);
+.song-play-btn-box:active {
+  transform: translate(-50%, -50%) scale(0.95);
 }
 
 @media (hover: none) {
-  .song-play-btn-box:hover {
-    background: rgba(0, 0, 0, 0.6);
+  .song-play-btn-box {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  
+  .song-box:hover .song-play-btn-box {
+    transform: translate(-50%, -50%) scale(0.9);
   }
 }
 
@@ -533,9 +569,16 @@ li {
   display: none;
 }
 
+.song-box.playing .pause-icon-box {
+  display: block;
+}
+
+.song-box.playing .play-icon-box {
+  display: none;
+}
+
 .play-icon-box {
   position: relative;
-  left: 2px; /* Adjusted for visual centering */
 }
 
 /* ===== Utilities ===== */
@@ -641,6 +684,10 @@ li {
   grid-area: "play-pause";
 }
 
+.play-icon-list {
+  transform: translateX(2px);
+}
+
 .pause-icon-list {
   display: none;
 }
@@ -677,39 +724,36 @@ li {
   width: 100%;
   aspect-ratio: 1/1;
   object-fit: cover;
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  display: block;
 }
 
 /* Grid info box */
-.song-info-box {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 0 0 10px 10px;
-  height: 41px; /* Increased height to prevent text cutoff */
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
 
 /* Grid title */
 .song-title-box {
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   height: fit-content;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
-  display: inline-block;
-  max-width: 100%;
-  position: relative;
-  padding-bottom: 4px; /* Prevent descenders (g, y, p) from being cut off */
+  text-overflow: ellipsis;
 }
 
 /* Grid artist */
 .song-artist-box {
-  color: #aaa;
-  font-size: 0.8rem;
+  color: #ccc;
+  font-size: 0.75rem;
   background: transparent;
+  font-weight: 400;
+  opacity: 0.7;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* =========================================================
@@ -724,7 +768,7 @@ li {
     margin-left: 0;
     padding: 0.3rem;
     padding-top: 0.6rem;
-    padding-bottom: 6rem;
+    padding-bottom: var(--player-bar-spacing);
   }
 
   .menu-icons {
@@ -833,8 +877,10 @@ li {
   }
 
   .song-list {
-    grid-template-columns: 60px 1fr 15px;
-    padding: 0.3rem 0.5rem;
+    grid-template-columns: 50px 1fr 12px;
+    padding: 0.15rem 0.3rem;
+    gap: 0.5rem;
+    min-height: 45px;
   }
 
   /* Smaller grid items for mobile */
@@ -850,27 +896,32 @@ li {
   }
 
   .song-info-box {
-    height: clamp(28px, 7.6vw, 42px);
-    padding: 2px 0;
+    height: clamp(29px, 6.5vw, 39px);
+    min-height: auto;
+    padding: 0;
   }
 
   .song-title-box {
-    font-size: clamp(0.55rem, 2.5vw, 0.8rem);
-    padding: 1px 0 1px 0;
-    line-height: 1.2;
-  }
-
-  .song-artist-box {
-    font-size: clamp(0.45rem, 2vw, 0.7rem);
+    font-size: clamp(0.7rem, 3vw, .85rem);
+    padding: 0.3rem 0.5rem 0.5rem 0.6rem;
     line-height: 1.1;
   }
 
+  .song-artist-box {
+    display: none;
+  }
+
   .song-title-list {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
   }
 
   .song-artist-list {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
+  }
+
+  .song-option {
+    width: 16px;
+    height: 16px;
   }
 
   /* Hide play buttons in mobile, make box clickable instead */
@@ -882,9 +933,26 @@ li {
   /* Show play button for the currently playing song */
   .song-list.playing .song-play-btn-list {
     display: flex !important;
-    left: 36px;
+    left: 30px;
     top: 50%;
     transform: translate(-50%, -50%);
+  }
+
+  .song-list.playing {
+    background: rgba(199, 199, 199, 0.733);
+  }
+
+  .song-list.playing .song-title-list {
+    color: #000;
+  }
+
+  .song-list.playing .song-artist-list {
+    color: #222222;
+  }
+
+  .song-list.playing .song-option {
+    stroke: #333;
+    color: #333;
   }
 
   .song-box.playing .song-play-btn-box {

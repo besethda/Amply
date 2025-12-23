@@ -3,4 +3,11 @@
   --accent-color: rgb(255, 117, 31);
   --text-main-color: #eee;
   --text-second-color: rgb(255, 117, 31);
+  --player-bar-spacing: 75px;
+}
+
+@media (orientation: portrait) {
+  :root {
+    --player-bar-spacing: 98px;
+  }
 }

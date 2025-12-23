@@ -34,7 +34,8 @@
 @media (orientation: portrait) {
   .main-content {
     margin-left: 0;
-    padding: 0.2rem;
+    padding: 0.2rem 0.2rem;
+    padding-bottom: var(--player-bar-spacing);
   }
 }
 
@@ -76,7 +77,7 @@ h2 {
 /* ----- Song Grid Layout ----- */
 #trackList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 1.5rem;
   justify-items: center;
 }
@@ -190,9 +191,9 @@ h2 {
 
 @media (orientation: portrait) {
   #trackList {
-    grid-template-columns: repeat(3, minmax(60px, 1fr));
-    gap: 0.6rem;
-    padding: 0 0.4rem;
+    grid-template-columns: repeat(3, minmax(60px, 1fr)) !important;
+    gap: 0.6rem !important;
+    padding: 0 0.4rem !important;
   }
 
   .songs-section h2 {
@@ -203,7 +204,8 @@ h2 {
 
   .main-content {
     margin-left: 0;
-    padding: 0.5rem 0.2rem 0.2rem 0.2rem;
+    padding: 0.5rem 0.2rem;
+    padding-bottom: var(--player-bar-spacing);
     width: 100%;
     overflow-x: hidden;
   }
