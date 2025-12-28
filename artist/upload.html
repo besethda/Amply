@@ -26,29 +26,205 @@
           <div id="warningBanner" class="hidden"></div>
           <div id="artistStatus" class="hidden"></div>
 
-          <h2>Upload a New Track</h2>
-          <div id="status"></div>
+          <!-- STEP 1: Choose Upload Type -->
+          <div id="step1" class="upload-step">
+            <h2>What would you like to upload?</h2>
+            <div class="upload-choice-grid">
+              <button class="upload-choice-btn" data-choice="single">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 18V5l12-2v13"></path>
+                  <ellipse cx="6" cy="18" rx="2.5" ry="1.5"></ellipse>
+                  <ellipse cx="19" cy="16" rx="2.5" ry="1.5"></ellipse>
+                </svg>
+                <span>Single Song</span>
+                <p>Upload one song with cover art and metadata</p>
+              </button>
+              <button class="upload-choice-btn" data-choice="album">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                >
+                  <rect
+                    x="2"
+                    y="2"
+                    width="20"
+                    height="20"
+                    rx="2.18"
+                    ry="2.18"
+                  ></rect>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>Album</span>
+                <p>Upload multiple songs as one album</p>
+              </button>
+            </div>
+          </div>
 
-          <label for="fileInput">Song File</label>
-          <input type="file" id="fileInput" accept="audio/*" />
+          <!-- STEP 2: Single Song Upload -->
+          <div id="step2Single" class="upload-step hidden">
+            <h2>Upload a Single Song</h2>
+            <div id="status"></div>
 
-          <label for="coverArt">Cover Art</label>
-          <input type="file" id="coverArt" accept="image/*" />
+            <label for="fileInput">Audio File</label>
+            <input type="file" id="fileInput" accept="audio/*" />
 
-          <label for="trackTitle">Title</label>
-          <input type="text" id="trackTitle" placeholder="e.g. Sunset Drive" />
+            <label for="coverArt">Cover Art</label>
+            <input type="file" id="coverArt" accept="image/*" />
 
-          <label for="trackGenre">Genre(s)</label>
-          <input
-            type="text"
-            id="trackGenre"
-            placeholder="e.g. chillwave, synthpop"
-          />
+            <label for="trackTitle">Song Title</label>
+            <input
+              type="text"
+              id="trackTitle"
+              placeholder="e.g. Sunset Drive"
+            />
 
-          <label for="trackPrice">Price per stream ($)</label>
-          <input type="number" id="trackPrice" step="0.001" value="0.01" />
+            <label for="trackGenre">Genre(s)</label>
+            <input
+              type="text"
+              id="trackGenre"
+              placeholder="e.g. chillwave, synthpop"
+            />
 
-          <button id="uploadBtn">Upload Track</button>
+            <div class="flat-rate-notice">
+              <p>
+                💡 <strong>Your Stream Rate:</strong> You'll set a flat rate per
+                stream for all your songs in your account settings.
+              </p>
+            </div>
+
+            <div class="button-group">
+              <button id="backBtn1" class="back-btn">← Back</button>
+              <button id="uploadBtn">Upload to Platform</button>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSection" class="preview-section hidden">
+              <h3>Preview</h3>
+
+              <div class="preview-controls">
+                <button class="view-toggle active" data-view="list">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                  >
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                </button>
+                <button class="view-toggle" data-view="box">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                  >
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                </button>
+              </div>
+
+              <div id="previewContent" class="preview-content"></div>
+            </div>
+          </div>
+
+          <!-- STEP 2: Album Upload -->
+          <div id="step2Album" class="upload-step hidden">
+            <h2>Upload an Album</h2>
+            <div id="statusAlbum"></div>
+
+            <label for="albumTitle">Album Title</label>
+            <input type="text" id="albumTitle" placeholder="e.g. Neon Dreams" />
+
+            <label for="albumCoverArt">Album Cover Art</label>
+            <input type="file" id="albumCoverArt" accept="image/*" />
+
+            <div class="flat-rate-notice">
+              <p>
+                💡 <strong>Your Stream Rate:</strong> You'll set a flat rate per
+                stream for all your songs in your account settings.
+              </p>
+            </div>
+
+            <!-- Songs Container -->
+            <div class="songs-section">
+              <div class="songs-header">
+                <h3>Songs</h3>
+                <button id="addSongBtn" class="add-song-btn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+              <div id="songsList" class="songs-list"></div>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSectionAlbum" class="preview-section hidden">
+              <h3>Preview</h3>
+
+              <div class="preview-controls">
+                <button class="view-toggle-album active" data-view="list">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                </button>
+                <button class="view-toggle-album" data-view="box">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                </button>
+              </div>
+
+              <div id="previewContentAlbum" class="preview-content"></div>
+            </div>
+
+            <div class="button-group">
+              <button id="backBtn2" class="back-btn">← Back</button>
+              <button id="uploadAlbumBtn">Upload & Preview</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>

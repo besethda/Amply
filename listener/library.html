@@ -13,21 +13,24 @@
     <meta name="apple-mobile-web-app-title" content="Amply" />
     <link rel="apple-touch-icon" href="/images/Amply.png" />
 
-    <!-- STYLES -->
+    <!-- ===== STYLES ===== -->
     <link rel="stylesheet" href="../Styles/core.css" />
     <link rel="stylesheet" href="../Styles/fonts.css" />
     <link rel="stylesheet" href="../Styles/listener/general.css" />
     <link rel="stylesheet" href="../Styles/listener/playlist.css" />
-
-    <!-- SCRIPTS -->
+    <link rel="stylesheet" href="../Styles/listener/artist-profile.css" />
+    <link rel="stylesheet" href="../Styles/listener/settings.css" />
+    <!-- ===== SCRIPTS ===== -->
     <script type="module" src="../scripts/general.js" defer></script>
     <script type="module" src="../scripts/player.js" defer></script>
+    <script type="module" src="../scripts/listener/general.js" defer></script>
     <script type="module" src="../scripts/listener/playlist.js" defer></script>
   </head>
 
   <body>
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <img src="../images/Amply_lgo.png" alt="Amply" class="sidebar-logo" />
       </div>
@@ -52,7 +55,7 @@
           </li>
           <li
             class="menu-item"
-            onclick="window.location.href='playlist.html'"
+            onclick="window.location.href='playlists.html'"
             data-title="Playlists"
           >
             <svg class="menu-icon-svg" viewBox="0 0 24 24">
@@ -94,7 +97,7 @@
           </li>
           <li
             class="menu-item"
-            onclick="window.location.href='explore.html'"
+            onclick="window.location.href='listener.html'"
             data-title="Explore"
           >
             <svg class="menu-icon-svg" viewBox="0 0 24 24">
@@ -115,7 +118,7 @@
           </li>
           <li
             class="active menu-item"
-            onclick="window.location.href='library.html'"
+            onclick="window.location.href='playlists.html'"
             data-title="Library"
           >
             <svg class="menu-icon-svg" viewBox="0 0 24 24">

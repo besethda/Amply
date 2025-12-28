@@ -5,7 +5,7 @@
 
 /* ====== SIDEBAR (Listener Specific) ====== */
 .sidebar {
-  left: 0;
+  left: 0 !important;
 }
 
 /* Tooltips (Listener Specific - Right Side) */
@@ -29,14 +29,6 @@
   min-height: 100vh;
   padding-bottom: 9rem; /* space for floating player bar */
   transition: margin-left 0.3s ease;
-}
-
-@media (orientation: portrait) {
-  .main-content {
-    margin-left: 0;
-    padding: 0.2rem 0.2rem;
-    padding-bottom: var(--player-bar-spacing);
-  }
 }
 
 #searchBar {
@@ -189,7 +181,7 @@ h2 {
   opacity: 1;
 }
 
-@media (orientation: portrait) {
+@media (max-width: 768px), (orientation: portrait) {
   #trackList {
     grid-template-columns: repeat(3, minmax(60px, 1fr)) !important;
     gap: 0.6rem !important;
@@ -228,7 +220,7 @@ h2 {
     height: 100vh;
     background: #1a1a1a;
     z-index: 1000;
-    transform: translateX(-100%);
+    transform: translateX(-100%) !important;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
     display: flex;
@@ -239,7 +231,7 @@ h2 {
   }
 
   .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
   }
 
   .sidebar-header {

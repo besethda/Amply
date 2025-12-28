@@ -11,11 +11,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  min-height: 80vh;
+  min-height: 100vh;
+  padding: 2rem 1rem;
 }
 
 .upload {
   width: 100%;
+  max-width: 900px;
   display: flex;
   justify-content: center;
 }
@@ -39,9 +41,15 @@ body {
 
 h2 {
   color: var(--accent-color);
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
   text-align: center;
   font-size: 1.9rem;
+}
+
+h3 {
+  color: var(--accent-color);
+  font-size: 1.6rem;
+  margin: 0 0 1rem 0;
 }
 
 label {
@@ -53,15 +61,71 @@ label {
   font-family: "Electrolize";
 }
 
-/* 🆕 Make file input sections more readable */
-.file-input-group {
-  display: flex;
-  align-items: center;
-  gap: 1rem; /* space between button and text */
-  margin-top: 0.5rem;
-  flex-wrap: wrap;
+/* ===== UPLOAD STEPS ===== */
+.upload-step {
+  animation: fadeIn 0.3s ease;
 }
 
+.upload-step.hidden {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== CHOICE GRID (STEP 1) ===== */
+.upload-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.upload-choice-btn {
+  padding: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(40, 40, 40, 0.6);
+  color: white;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.upload-choice-btn svg {
+  width: 60px;
+  height: 60px;
+  color: var(--accent-color);
+}
+
+.upload-choice-btn p {
+  font-size: 1.2rem;
+  color: #999;
+  margin: 0;
+  text-align: center;
+}
+
+.upload-choice-btn:hover {
+  border-color: var(--accent-color);
+  background: rgba(102, 204, 255, 0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(102, 204, 255, 0.2);
+}
+
+/* ===== FORM INPUTS ===== */
 input[type="text"],
 input[type="number"],
 input[type="file"] {
@@ -83,7 +147,6 @@ input[type="number"]:focus {
   box-shadow: 0 0 8px rgba(102, 204, 255, 0.4);
 }
 
-/* 🆕 Make file inputs cleaner and interactive */
 input[type="file"] {
   background: none;
   border: none;
@@ -109,7 +172,6 @@ input[type="file"]::-webkit-file-upload-button:hover {
   transform: translateY(-1px);
 }
 
-/* 🆕 Add a small “no file selected” style tweak */
 input[type="file"]::file-selector-button {
   background: var(--accent-color);
   color: #111;
@@ -120,37 +182,295 @@ input[type="file"]::file-selector-button {
   cursor: pointer;
   transition: background 0.3s ease, transform 0.15s ease;
 }
+
 input[type="file"]::file-selector-button:hover {
   background: linear-gradient(to bottom, #7c7c7c, #8b8b8b);
   color: white;
   transform: translateY(-1px);
 }
 
-uploadBtn {
+/* ===== FLAT RATE NOTICE ===== */
+.flat-rate-notice {
+  background: rgba(102, 204, 255, 0.08);
+  border-left: 3px solid var(--accent-color);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  color: #ddd;
+  font-size: 1.3rem;
+}
+
+.flat-rate-notice p {
+  margin: 0;
+}
+
+.flat-rate-notice strong {
+  color: var(--accent-color);
+}
+
+/* ===== BUTTONS ===== */
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+#uploadBtn,
+#uploadAlbumBtn,
+.back-btn {
+  flex: 1;
   border: none;
-  color: #111;
   font-weight: bold;
   border-radius: 10px;
   padding: 1rem 1.2rem;
-  margin: 20px 0;
-  width: 100%;
   cursor: pointer;
   font-size: 1.6rem;
-  background: var(--accent-color);
   transition: transform 0.2s, background 0.3s;
 }
 
-/* 🆕 Hover button color */
-uploadBtn:hover {
+#uploadBtn,
+#uploadAlbumBtn {
+  background: var(--accent-color);
+  color: #111;
+}
+
+#uploadBtn:hover,
+#uploadAlbumBtn:hover {
   background: linear-gradient(90deg, #6cf, #a4e);
   transform: translateY(-2px);
 }
 
-#status {
+.back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== ALBUM SONGS SECTION ===== */
+.songs-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(40, 40, 40, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.songs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.songs-header h3 {
+  margin: 0;
+}
+
+.add-song-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--accent-color);
+  background: rgba(102, 204, 255, 0.1);
+  color: var(--accent-color);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.add-song-btn:hover {
+  background: var(--accent-color);
+  color: #111;
+  transform: scale(1.05);
+}
+
+.add-song-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.songs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ===== SONG BOX (in album) ===== */
+.song-box {
+  padding: 1.5rem;
+  background: rgba(50, 50, 50, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.song-box:hover {
+  border-color: var(--accent-color);
+  background: rgba(60, 60, 60, 0.8);
+}
+
+.song-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  user-select: none;
+}
+
+.song-box-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.song-box-remove-btn {
+  background: transparent;
+  border: none;
+  color: #ff6464;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.song-box-remove-btn:hover {
+  color: #ff8080;
+  transform: scale(1.1);
+}
+
+.song-box-inputs {
+  display: grid;
+  gap: 1rem;
+  max-height: 500px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.song-box:not(.active) .song-box-inputs {
+  max-height: 0;
+  opacity: 0;
+}
+
+.song-box-inputs {
+  display: grid;
+  gap: 1rem;
+  max-height: 500px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.song-box:not(.active) .song-box-inputs {
+  max-height: 0;
+  opacity: 0;
+}
+
+.song-box-inputs label {
+  margin-top: 0;
+}
+
+.song-box-inputs input {
+  margin-top: 0.4rem;
+}
+
+/* ===== PREVIEW PLAYING STATE ===== */
+.song-list.playing {
+  background: rgba(180, 180, 180, 0.733);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== PREVIEW SECTION ===== */
+.preview-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-section h3 {
+  color: var(--accent-color);
+  font-size: 1.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.preview-controls {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.view-toggle,
+.view-toggle-album {
+  padding: 0.8rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(40, 40, 40, 0.8);
+  color: #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-toggle svg,
+.view-toggle-album svg {
+  width: 20px;
+  height: 20px;
+}
+
+.view-toggle:hover,
+.view-toggle-album:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.view-toggle.active,
+.view-toggle-album.active {
+  border-color: var(--accent-color);
+  background: rgba(102, 204, 255, 0.1);
+  color: var(--accent-color);
+  box-shadow: 0 0 8px rgba(102, 204, 255, 0.3);
+}
+
+.preview-content {
+  display: grid;
+  gap: 1rem;
+}
+
+/* ===== LIST VIEW ===== */
+.preview-content.list-view {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+}
+
+/* ===== BOX VIEW ===== */
+.preview-content.box-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: clamp(0.8rem, 2vw, 2rem);
+}
+
+/* ===== STATUS/ERRORS ===== */
+#status,
+#statusAlbum {
   margin-top: 1rem;
-  font-size: 0.95rem;
+  font-size: 1.4rem;
   color: #ddd;
   text-align: center;
+  min-height: 1.5rem;
 }
 
 #warningBanner {
@@ -163,6 +483,7 @@ uploadBtn:hover {
   top: 0;
   z-index: 999;
   border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
 #artistStatus {
@@ -173,9 +494,15 @@ uploadBtn:hover {
   font-size: 1.3rem;
   border-radius: 8px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1rem;
 }
 
-/* Make sure it looks centered on smaller screens */
+/* ===== HIDDEN UTILITY ===== */
+.hidden {
+  display: none !important;
+}
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .main {
     margin-right: 0;
@@ -186,8 +513,15 @@ uploadBtn:hover {
     padding: 1.5rem;
   }
 
-  .file-input-group {
+  .button-group {
     flex-direction: column;
-    align-items: flex-start;
+  }
+
+  .upload-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-content.box-view {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 }

@@ -17,6 +17,7 @@ export async function loadSongs() {
     if (!res.ok) throw new Error("Failed to load songs");
 
     const data = await res.json();
+    console.log("📋 Songs Data from API:", JSON.stringify(data, null, 2));
 
     return data.map(s => ({
       ...s,
@@ -95,22 +96,33 @@ document.addEventListener("DOMContentLoaded", setupSettingsIcon);
 setupSettingsIcon(); // Also try immediately in case DOM is already ready
 // === Sidebar Logic ===
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("🔍 Sidebar Logic: DOMContentLoaded fired");
   const hamburgerBtn = document.getElementById("hamburgerBtn");
   const sidebar = document.getElementById("sidebar");
   const overlay = document.getElementById("sidebarOverlay");
 
+  console.log("🔍 Sidebar elements:", {
+    hamburgerBtn: hamburgerBtn ? "✅ Found" : "❌ NOT FOUND",
+    sidebar: sidebar ? "✅ Found" : "❌ NOT FOUND",
+    overlay: overlay ? "✅ Found" : "❌ NOT FOUND"
+  });
+
   if (hamburgerBtn && sidebar && overlay) {
     function toggleSidebar() {
+      console.log("📱 Toggling sidebar...");
       sidebar.classList.toggle("open");
       overlay.classList.toggle("active");
+      console.log("📱 Sidebar classes:", sidebar.className);
     }
 
     function closeSidebar() {
+      console.log("📱 Closing sidebar...");
       sidebar.classList.remove("open");
       overlay.classList.remove("active");
     }
 
     hamburgerBtn.addEventListener("click", (e) => {
+      console.log("✅ Hamburger button clicked!");
       e.stopPropagation();
       toggleSidebar();
     });
@@ -118,10 +130,13 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.addEventListener("click", closeSidebar);
 
     // Close when clicking a menu item
-    const menuItems = sidebar.querySelectorAll(".menu li");
+    const menuItems = sidebar.querySelectorAll(".menu li, .menu li a");
+    console.log("🔍 Found", menuItems.length, "menu items");
     menuItems.forEach(item => {
       item.addEventListener("click", closeSidebar);
     });
+  } else {
+    console.error("❌ Sidebar logic failed - missing elements");
   }
 });
 

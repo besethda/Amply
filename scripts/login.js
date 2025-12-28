@@ -131,6 +131,41 @@ let pendingSignupEmail = null;
 let pendingSignupPassword = null;
 
 /* --------------------------------------------------------
+   REQUEST VERIFICATION CODE FROM COGNITO
+--------------------------------------------------------- */
+async function requestVerificationCode(email) {
+  const payload = {
+    ClientId: clientId,
+    Username: email
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-amz-json-1.1",
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.ResendConfirmationCode"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    console.log("📧 ResendConfirmationCode Response:", data);
+
+    if (data.__type?.includes("Exception")) {
+      console.warn("⚠️ Failed to resend code:", data.message);
+      return false;
+    }
+
+    console.log("✅ Verification code requested. Email should arrive shortly.");
+    return true;
+  } catch (err) {
+    console.error("❌ Error requesting verification code:", err);
+    return false;
+  }
+}
+
+/* --------------------------------------------------------
    AUTO LOGIN AFTER EMAIL VERIFICATION
 --------------------------------------------------------- */
 function autoLoginAfterVerification() {
@@ -180,6 +215,20 @@ verifyButton?.addEventListener("click", async () => {
 
     verifyMessage.style.color = "white";
     verifyMessage.textContent = "Verified! Logging you in...";
+    
+    // Create user in DynamoDB
+    try {
+      const email = verifyEmail.value.trim();
+      const userData = JSON.parse(localStorage.getItem("amplyUserData") || "{}");
+      
+      if (!userData.userId) {
+        // We'll get userId from the auto-login token
+        console.warn("⚠️ userId not yet available");
+      }
+    } catch (err) {
+      console.warn("⚠️ DynamoDB user creation skipped:", err.message);
+    }
+    
     setTimeout(autoLoginAfterVerification, 800);
 
   } catch {
@@ -240,11 +289,15 @@ signupBtn?.addEventListener("click", async () => {
     });
 
     const data = await res.json();
+    console.log("🔍 SignUp Response:", data);
 
     // If user exists but is unconfirmed → show verify form
     if (data.__type?.includes("UsernameExistsException")) {
       signupMessage.style.color = "red";
       signupMessage.textContent = "Account exists. Please verify.";
+
+      // Request verification code for existing unconfirmed user
+      await requestVerificationCode(email);
 
       showVerifyForm();
       verifyEmail.value = email;
@@ -255,8 +308,13 @@ signupBtn?.addEventListener("click", async () => {
       return;
     }
 
-    // New user created → show verify
-    if (data.userConfirmed === false || data.UserConfirmed === false) {
+    // New user created → request verification code and show verify form
+    if (data.UserSub || data.userConfirmed === false || data.UserConfirmed === false) {
+      console.log("✅ Account created. Requesting verification code...");
+      
+      // Request verification code
+      await requestVerificationCode(email);
+      
       showVerifyForm();
       verifyEmail.value = email;
 
@@ -265,6 +323,11 @@ signupBtn?.addEventListener("click", async () => {
       signupMessage.textContent = "";
       return;
     }
+
+    console.warn("⚠️ Unexpected SignUp response:", data);
+    signupMessage.style.color = "red";
+    signupMessage.textContent = "Signup failed. Check browser console.";
+    return;
 
   } catch (err) {
     signupMessage.style.color = "red";
@@ -321,10 +384,37 @@ loginBtn?.addEventListener("click", async () => {
 
     const emailDecoded = (userInfo.email || email).toLowerCase();
     const userRole = userInfo["custom:role"]?.toLowerCase() || "listener";
+    const userId = userInfo.sub || userInfo.username;
 
-    // Store email + role
+    // Store user data
     localStorage.setItem("email", emailDecoded);
     localStorage.setItem("role", userRole);
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("amplyUserData", JSON.stringify({
+      userId,
+      email: emailDecoded,
+      username: userInfo["cognito:username"] || emailDecoded.split("@")[0],
+      displayName: userInfo.name || emailDecoded,
+    }));
+
+    // Create user in DynamoDB (if not already created)
+    try {
+      await fetch(`${API_URL}/create-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          email: emailDecoded,
+          username: userInfo["cognito:username"] || emailDecoded.split("@")[0],
+          displayName: userInfo.name || emailDecoded,
+        }),
+      }).catch(() => {
+        // Ignore if already exists or network error
+        console.log("ℹ️ User already in DynamoDB");
+      });
+    } catch (err) {
+      console.warn("⚠️ DynamoDB user creation failed:", err.message);
+    }
 
     /* --------------------------------------------------------
        If NOT an artist → just go to listener page

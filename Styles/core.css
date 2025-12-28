@@ -58,6 +58,7 @@ select {
   margin: 0 6px;
   border-radius: 12px;
   cursor: pointer;
+  transition: none;
 }
 
 .profile {
@@ -469,8 +470,8 @@ li {
   background: #1a1a1a;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.3s ease, background 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease, background 0.3s ease;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -559,7 +560,7 @@ li {
     opacity: 1;
     transform: translate(-50%, -50%) scale(0.9);
   }
-  
+
   .song-box:hover .song-play-btn-box {
     transform: translate(-50%, -50%) scale(0.9);
   }
@@ -902,7 +903,7 @@ li {
   }
 
   .song-title-box {
-    font-size: clamp(0.7rem, 3vw, .85rem);
+    font-size: clamp(0.7rem, 3vw, 0.85rem);
     padding: 0.3rem 0.5rem 0.5rem 0.6rem;
     line-height: 1.1;
   }

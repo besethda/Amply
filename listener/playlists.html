@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Playlists - Amply</title>
+
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/images/Amply_lgofav.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Amply" />
+    <link rel="apple-touch-icon" href="/images/Amply.png" />
+
+    <!-- ===== STYLES ===== -->
+    <link rel="stylesheet" href="/Styles/core.css" />
+    <link rel="stylesheet" href="/Styles/fonts.css" />
+    <link rel="stylesheet" href="/Styles/listener/general.css" />
+    <link rel="stylesheet" href="/Styles/listener/playlist.css" />
+    <link rel="stylesheet" href="/Styles/listener/artist-profile.css" />
+    <link rel="stylesheet" href="/Styles/listener/settings.css" />
+    <!-- ===== SCRIPTS ===== -->
+    <script type="module" src="../scripts/general.js" defer></script>
+    <script type="module" src="../scripts/player.js" defer></script>
+    <script type="module" src="../scripts/listener/general.js" defer></script>
+    <script type="module" src="../scripts/listener/playlists.js" defer></script>
+  </head>
+  <body>
+    <!-- SIDEBAR -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="../images/Amply_lgo.png" alt="Amply" class="sidebar-logo" />
+      </div>
+
+      <nav class="menu">
+        <ul>
+          <li class="menu-item" data-route="home" data-title="Home">
+            <a href="listener.html">
+              <svg
+                class="menu-icon-svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+              </svg>
+            </a>
+          </li>
+          <li
+            class="menu-item active"
+            data-route="playlist"
+            data-title="Playlists"
+          >
+            <a href="playlists.html">
+              <svg
+                class="menu-icon-svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="3" y1="6" x2="13" y2="6" />
+                <line x1="3" y1="10" x2="13" y2="10" />
+                <line x1="3" y1="14" x2="9" y2="14" />
+                <path
+                  d="M17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"
+                />
+              </svg>
+            </a>
+          </li>
+          <li class="menu-item" data-route="explore" data-title="Explore">
+            <a href="listener.html">
+              <svg
+                class="menu-icon-svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polygon
+                  points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+                />
+              </svg>
+            </a>
+          </li>
+          <li class="menu-item" data-route="library" data-title="Library">
+            <a href="settings.html">
+              <svg
+                class="menu-icon-svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z" />
+                <path
+                  d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"
+                />
+                <line x1="10" y1="10" x2="18" y2="10" />
+                <line x1="10" y1="6" x2="18" y2="6" />
+                <line x1="10" y1="14" x2="15" y2="14" />
+              </svg>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button
+          id="artistDashboardBtn"
+          class="toArtist-btn"
+          data-title="Artist Dashboard"
+        >
+          <svg
+            class="menu-icon-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </button>
+        <button id="logoutBtn" class="logout-btn" data-title="Logout">
+          <svg
+            class="menu-icon-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- TOP BAR -->
+      <header class="top-bar">
+        <button id="hamburgerBtn" class="hamburger-btn">
+          <svg
+            viewBox="0 0 24 24"
+            width="37"
+            height="37"
+            stroke="currentColor"
+            stroke-width="1.2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <input
+          type="text"
+          id="searchBar"
+          placeholder="Search for songs or artists..."
+        />
+        <div class="menu-icons">
+          <svg
+            class="profile menu-icon"
+            viewBox="0 0 256 256"
+            xmlns="http://www.w3.org/2000/svg"
+            id="profileIcon"
+          >
+            <path
+              d="M228,128A100,100,0,1,0,60.71,201.90967a3.97048,3.97048,0,0,0,.842.751,99.79378,99.79378,0,0,0,132.8982-.00195,3.96558,3.96558,0,0,0,.83813-.74756A99.76267,99.76267,0,0,0,228,128ZM36,128a92,92,0,1,1,157.17139,64.87207,75.616,75.616,0,0,0-44.50782-34.04053,44,44,0,1,0-41.32714,0,75.61784,75.61784,0,0,0-44.50782,34.04A91.70755,91.70755,0,0,1,36,128Zm92,28a36,36,0,1,1,36-36A36.04061,36.04061,0,0,1,128,156ZM68.86475,198.417a68.01092,68.01092,0,0,1,118.27.00049,91.80393,91.80393,0,0,1-118.27-.00049Z"
+            />
+          </svg>
+        </div>
+
+        <!-- PROFILE MODAL -->
+        <div id="profileModal" class="profile-modal hidden">
+          <div class="profile-modal-content">
+            <button class="modal-close-btn" id="closeProfileModal">×</button>
+
+            <div class="profile-modal-tabs">
+              <button class="profile-tab-btn active" data-tab="account">
+                Account
+              </button>
+              <button class="profile-tab-btn" data-tab="payments">
+                Payments
+              </button>
+              <button class="profile-tab-btn" data-tab="settings">
+                Settings
+              </button>
+            </div>
+
+            <div class="profile-tab-content">
+              <!-- ACCOUNT TAB -->
+              <div id="account-tab" class="profile-tab active">
+                <h3>Account</h3>
+                <div class="account-info">
+                  <p>
+                    <strong>Username:</strong>
+                    <span id="displayUsername">User</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- PAYMENTS TAB -->
+              <div id="payments-tab" class="profile-tab">
+                <h3>Payments</h3>
+                <div class="payments-placeholder">
+                  <p>Payment information placeholder</p>
+                </div>
+              </div>
+
+              <!-- SETTINGS TAB -->
+              <div id="settings-tab" class="profile-tab">
+                <h3>Settings</h3>
+                <div class="settings-placeholder">
+                  <p>Settings placeholder</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROFILE MODAL BACKDROP -->
+        <div id="profileBackdrop" class="profile-modal-backdrop"></div>
+      </header>
+
+      <!-- Create Playlist Button -->
+      <div class="playlist-action-bar">
+        <button class="btn-create-playlist" id="createPlaylistBtn">
+          <svg
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Playlists Grid Container -->
+      <section class="playlists-section">
+        <div class="playlists-grid" id="playlistsGrid">
+          <!-- Playlists will be loaded here -->
+          <div class="loading">Loading playlists...</div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none">
+          <p>No playlists yet</p>
+          <p class="empty-hint">Create your first playlist to get started</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Create Playlist Modal -->
+    <div class="modal" id="createPlaylistModal">
+      <div class="modal-content">
+        <button class="modal-close" id="modalClose">&times;</button>
+        <h2>Create New Playlist</h2>
+        <form id="createPlaylistForm">
+          <div class="form-group">
+            <label for="playlistName">Playlist Name *</label>
+            <input
+              type="text"
+              id="playlistName"
+              required
+              placeholder="Enter playlist name"
+            />
+          </div>
+          <div class="form-group">
+            <label for="playlistDescription">Description</label>
+            <textarea
+              id="playlistDescription"
+              placeholder="Add an optional description"
+              rows="3"
+            ></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Create Playlist</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Playlist Detail Modal (for editing) -->
+    <div class="modal" id="playlistDetailModal">
+      <div class="modal-content modal-large">
+        <button class="modal-close" id="detailModalClose">&times;</button>
+        <div class="playlist-detail-header">
+          <div class="playlist-cover-large" id="detailPlaylistCover">
+            <div class="cover-box"></div>
+            <div class="cover-box"></div>
+            <div class="cover-box"></div>
+          </div>
+          <div class="playlist-info">
+            <h2 id="detailPlaylistName"></h2>
+            <p id="detailPlaylistDesc"></p>
+            <p class="song-count" id="detailSongCount"></p>
+          </div>
+        </div>
+
+        <div class="playlist-songs">
+          <h3>Songs in Playlist</h3>
+          <div id="playlistSongsList"></div>
+        </div>
+
+        <button class="btn-danger" id="deletePlaylistBtn">
+          Delete Playlist
+        </button>
+      </div>
+    </div>
+
+    <!-- Shared Scripts -->
+    <script type="module" src="../scripts/listener/playlists.js"></script>
+    <script type="module">
+      import {
+        getUserPlaylists,
+        renderPlaylists,
+        createPlaylist,
+      } from "../scripts/listener/playlists.js";
+      import { getAuthToken, parseJwt } from "../scripts/general.js";
+
+      // Initialize playlists page
+      document.addEventListener("DOMContentLoaded", async () => {
+        const token = getAuthToken();
+        if (!token) {
+          window.location.href = "../index.html";
+          return;
+        }
+
+        const payload = parseJwt(token);
+        const userId = payload.sub;
+
+        // Load and render playlists
+        await getUserPlaylists(userId);
+        renderPlaylists();
+
+        // Setup event listeners
+        setupPlaylistsPageListeners(userId);
+      });
+
+      function setupPlaylistsPageListeners(userId) {
+        const createBtn = document.getElementById("createPlaylistBtn");
+        const modal = document.getElementById("createPlaylistModal");
+        const modalClose = document.getElementById("modalClose");
+        const form = document.getElementById("createPlaylistForm");
+
+        createBtn.addEventListener("click", () => {
+          modal.style.display = "flex";
+          document.getElementById("playlistName").focus();
+        });
+
+        modalClose.addEventListener("click", () => {
+          modal.style.display = "none";
+          form.reset();
+        });
+
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) {
+            modal.style.display = "none";
+            form.reset();
+          }
+        });
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("playlistName").value;
+          const desc = document.getElementById("playlistDescription").value;
+
+          await createPlaylist(userId, name, desc);
+          await getUserPlaylists(userId);
+          renderPlaylists();
+
+          modal.style.display = "none";
+          form.reset();
+        });
+
+        // Sidebar toggle
+        const hamburgerBtn = document.getElementById("hamburgerBtn");
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        hamburgerBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          sidebar.classList.toggle("open");
+          overlay.classList.toggle("active");
+        });
+
+        overlay.addEventListener("click", () => {
+          sidebar.classList.remove("open");
+          overlay.classList.remove("active");
+        });
+
+        sidebar.querySelectorAll(".menu li").forEach((link) => {
+          link.addEventListener("click", () => {
+            sidebar.classList.remove("open");
+            overlay.classList.remove("active");
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

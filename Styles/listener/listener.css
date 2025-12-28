@@ -9,9 +9,12 @@
 }
 
 /* Grid layout - responsive */
-#trackList {
+#trackList,
+#recentlyListened,
+#recommendedTracks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: clamp(0.8rem, 2vw, 2rem);
-  justify-items: stretch;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: clamp(0.8rem, 2vw, 1.5rem);
+  justify-items: center;
+  max-width: 100%;
 }

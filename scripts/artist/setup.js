@@ -45,6 +45,11 @@ connectAwsBtn.addEventListener("click", () => {
 
   // Update message after opening
   setupStatus.textContent =
-    "✅ AWS setup page opened! Follow the steps in the new tab.";
+    "✅ AWS setup page opened! Redirecting to verification page...";
   setupStatus.style.color = "#6cf";
+
+  // 🔄 Auto-redirect to setup-complete after 1 second
+  setTimeout(() => {
+    window.location.href = "/artist/setup-complete.html";
+  }, 1000);
 });

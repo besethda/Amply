@@ -50,7 +50,13 @@ let attempts = 0;
 const interval = setInterval(async () => {
   const done = await checkStackStatus();
   attempts++;
-  if (done || attempts > 30) clearInterval(interval);
+  // Poll for 30 minutes (180 attempts × 10 seconds = 1800 seconds = 30 mins)
+  if (done || attempts > 180) {
+    clearInterval(interval);
+    if (attempts > 180) {
+      setupMessage.textContent = "❌ Stack creation timeout (30 mins). Please check your AWS Console.";
+    }
+  }
 }, 10000);
 
 checkStackStatus();

@@ -7,10 +7,18 @@ import { initArtistView } from "./artist-profile.js";
 // Minimal inline fallback to ensure required containers exist if a dev server injects markup
 const fallbackViews = {
   home: `
-    <header class="top-bar">
-      <input type="text" id="searchBar" placeholder="Search for songs or artists..." />
-    </header>
-    <section class="songs-section"><div id="trackList"></div></section>
+    <section class="songs-section">
+      <h2>Recently Listened</h2>
+      <div id="recentlyListened"></div>
+    </section>
+    <section class="songs-section">
+      <h2>Recommended For You</h2>
+      <div id="recommendedTracks"></div>
+    </section>
+    <section class="songs-section">
+      <h2>Discover</h2>
+      <div id="trackList"></div>
+    </section>
   `,
   playlist: `
     <header class="top-bar">
@@ -60,26 +68,23 @@ const navItems = Array.from(document.querySelectorAll("[data-route]"));
 
 const routes = {
   home: {
-    view: () => `/listener/views/home.html?v=${Date.now()}`,
+    redirect: "listener.html",
     init: initHomeView,
   },
   playlist: {
-    view: () => `/listener/views/playlist.html?v=${Date.now()}`,
-    init: initPlaylistView,
+    redirect: "playlists.html",
   },
   library: {
-    view: () => `/listener/views/library.html?v=${Date.now()}`,
+    redirect: "playlists.html",
   },
   explore: {
-    view: () => `/listener/views/explore.html?v=${Date.now()}`,
+    redirect: "listener.html",
   },
   settings: {
-    view: () => `/listener/views/settings.html?v=${Date.now()}`,
-    init: initSettingsView,
+    redirect: "settings.html",
   },
   artist: {
-    view: () => `/listener/views/artist.html?v=${Date.now()}`,
-    init: initArtistView,
+    redirect: "artist-profile.html",
   },
 };
 
@@ -107,35 +112,58 @@ async function loadRoute(routeKey, routeParam = null) {
   const key = routes[routeKey] ? routeKey : "home";
   const config = routes[key];
 
-  if (!viewRoot) {
-    console.error("❌ viewRoot not found; cannot render view.");
-    return;
-  }
-
-  viewRoot.innerHTML = "<div class='loading'>Loading…</div>";
-
   try {
+    // If this route has a redirect, navigate to that page
+    // But only if we're not already on that page
+    if (config.redirect) {
+      const currentFile = window.location.pathname.split('/').pop() || 'listener.html';
+      const targetFile = config.redirect;
+      
+      // Only redirect if we're not already on the target page
+      if (!currentFile.includes(targetFile.replace('.html', ''))) {
+        window.location.href = config.redirect;
+        return;
+      }
+    }
+
+    // Fallback for single-page app pattern (if needed)
+    if (!viewRoot) {
+      console.error("❌ viewRoot not found; cannot render view.");
+      return;
+    }
+
+    viewRoot.innerHTML = "<div class='loading'>Loading…</div>";
+
     const viewUrl = typeof config.view === "function" ? config.view() : config.view;
-    const { text: html, status, finalUrl } = await fetchView(viewUrl);
     
-    // Check for route-specific container IDs
-    const containerMap = {
-      home: "trackList",
-      playlist: "playlistTrackList",
-      library: "playlistGrid",
-      artist: "artistTrackList",
-    };
-    const expectedContainer = containerMap[key] || "trackList";
-    const hasExpectedContainer = html.includes(expectedContainer);
+    // Use fallback view if no viewUrl or fetch fails
+    let htmlToUse;
+    if (viewUrl) {
+      const { text: html, status, finalUrl } = await fetchView(viewUrl);
+      
+      // Check for route-specific container IDs
+      const containerMap = {
+        home: "trackList",
+        playlist: "playlistTrackList",
+        library: "playlistGrid",
+        artist: "artistTrackList",
+      };
+      const expectedContainer = containerMap[key] || "trackList";
+      const hasExpectedContainer = html.includes(expectedContainer);
+      
+      htmlToUse = hasExpectedContainer ? html : fallbackViews[key] || html;
+      
+      if (!hasExpectedContainer) {
+        console.warn(`View '${key}' served without ${expectedContainer} container; used fallback.`);
+      }
+    } else {
+      // No viewUrl provided, use fallback
+      htmlToUse = fallbackViews[key] || "<p>View not found</p>";
+    }
     
-    const htmlToUse = hasExpectedContainer ? html : fallbackViews[key] || html;
     const tpl = document.createElement("div");
     tpl.innerHTML = htmlToUse;
     viewRoot.replaceChildren(...tpl.childNodes);
-
-    if (!hasExpectedContainer) {
-      console.warn(`View '${key}' served without ${expectedContainer} container; used fallback.`);
-    }
 
     if (typeof config.init === "function") {
       await config.init(routeParam);
@@ -144,7 +172,9 @@ async function loadRoute(routeKey, routeParam = null) {
     setActive(key);
   } catch (err) {
     console.error("❌ Route load failed:", err);
-    viewRoot.innerHTML = "<p>Could not load this view.</p>";
+    if (viewRoot) {
+      viewRoot.innerHTML = "<p>Could not load this view.</p>";
+    }
   }
 }
 

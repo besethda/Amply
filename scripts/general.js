@@ -1,5 +1,5 @@
 //main links...
-export const API_URL = "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com";
+export const API_URL = "https://0c90n5h21f.execute-api.eu-north-1.amazonaws.com/prod";
 export const INDEX_URL =
   "https://amply-central-596430611327.s3.eu-north-1.amazonaws.com/amply-index.json";
 export const TEMPLATE_URL =
