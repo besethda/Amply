@@ -394,3 +394,10 @@ window.PlaylistManager = {
   removeSongFromPlaylist,
   deletePlaylist,
 };
+
+// Also expose the cache for other modules
+Object.defineProperty(window, 'userPlaylistsCache', {
+  get() {
+    return userPlaylistsCache;
+  }
+});
