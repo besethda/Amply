@@ -112,8 +112,9 @@ const routes = {
 
 function getRouteFromHash() {
   const hash = window.location.hash.replace("#", "").trim();
-  if (hash.startsWith("artist:")) return "artist";
-  return hash && routes[hash] ? hash : "home";
+  const [route] = hash.split(":");
+  if (!route) return "home";
+  return routes[route] ? route : "home";
 }
 
 function setActive(routeKey) {
