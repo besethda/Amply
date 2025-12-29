@@ -47,11 +47,12 @@ export async function unlikeSong(songId) {
   if (!user) throw new Error("Not authenticated");
 
   try {
-    const timestamp = new Date().toISOString();
+    // Backend stores timestamp as Date.now() - milliseconds since epoch
+    const timestamp = Date.now();
     console.log("Unlike request - userId:", user.userId, "songId:", songId, "timestamp:", timestamp);
     
     const response = await apiFetch(
-      `${API_URL}/unlike-song?userId=${encodeURIComponent(user.userId)}&songId=${encodeURIComponent(songId)}&timestamp=${encodeURIComponent(timestamp)}`,
+      `${API_URL}/unlike-song?userId=${encodeURIComponent(user.userId)}&songId=${encodeURIComponent(songId)}&timestamp=${timestamp}`,
       { method: "DELETE" }
     );
 

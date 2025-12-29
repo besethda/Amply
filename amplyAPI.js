@@ -531,12 +531,12 @@ const handler = async (event) => {
         // === UNLIKE SONG ===
         if (path.endsWith("/unlike-song") && method === "DELETE") {
             try {
-                const { userId, songId } = event.queryStringParameters || {};
-                if (!userId || !songId) {
+                const { userId, songId, timestamp } = event.queryStringParameters || {};
+                if (!userId || !songId || !timestamp) {
                     return {
                         statusCode: 400,
                         headers: corsHeaders,
-                        body: JSON.stringify({ error: "Missing userId or songId" }),
+                        body: JSON.stringify({ error: "Missing userId, songId, or timestamp" }),
                     };
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
@@ -545,7 +545,7 @@ const handler = async (event) => {
                     TableName: LIKES_TABLE,
                     Key: (0, util_dynamodb_1.marshall)({
                         songId: likeId,
-                        timestamp: Date.now(), // Note: this won't match - we'd need to query first
+                        timestamp: parseInt(timestamp),
                     }),
                 }));
                 return {
