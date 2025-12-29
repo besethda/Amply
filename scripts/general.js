@@ -224,3 +224,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Also expose globally (for inline onclick)
 window.logout = logout;
+
+// Export functions to window for use in inline scripts
+window.getAuthToken = getAuthToken;
+window.parseJwt = parseJwt;
+window.apiFetch = apiFetch;
+window.API_URL = API_URL;

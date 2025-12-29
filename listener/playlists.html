@@ -335,96 +335,165 @@
 
     <!-- Shared Scripts -->
     <script type="module" src="../scripts/listener/playlists.js"></script>
+    <script type="module" src="../scripts/listener/general.js"></script>
     <script>
-      console.log("🔷 Inline script starting (non-module)");
-    </script>
-    <script type="module">
-      try {
-        console.log("📦 Playlists module script: trying imports...");
-        
-        const playlistsModule = await import("../scripts/listener/playlists.js");
-        const generalModule = await import("../scripts/general.js");
-        
-        console.log("✅ Imports successful");
-        console.log("Available exports from playlists:", Object.keys(playlistsModule));
-        console.log("Available exports from general:", Object.keys(generalModule));
-        
-        const { getUserPlaylists, renderPlaylists, createPlaylist } = playlistsModule;
-        const { getAuthToken, parseJwt } = generalModule;
-        
-        console.log("🎯 Functions imported successfully");
-
-        function setupPlaylistsPageListeners(userId) {
-          console.log("🔌 setupPlaylistsPageListeners called for user:", userId);
-          const createBtn = document.getElementById("createPlaylistBtn");
-          const modal = document.getElementById("createPlaylistModal");
-          const modalClose = document.getElementById("modalClose");
-          const form = document.getElementById("createPlaylistForm");
-
-          console.log("Elements found:", { createBtn: !!createBtn, modal: !!modal, modalClose: !!modalClose, form: !!form });
-
-          if (!createBtn) {
-            console.error("❌ createPlaylistBtn not found in DOM");
+      console.log("🔷 Non-module playlists init script starting...");
+      
+      // Wait for everything to load, then initialize
+      async function initPlaylistsPage() {
+        try {
+          console.log("⏳ Waiting for DOM to be ready...");
+          
+          // Wait for DOM to be ready
+          if (document.readyState === "loading") {
+            await new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve));
+          }
+          console.log("✅ DOM ready");
+          
+          // Give modules time to load and attach to window
+          console.log("⏳ Waiting for modules to load (500ms)...");
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Check for required functions
+          console.log("🔍 Checking window for functions...");
+          console.log("window.getAuthToken:", typeof window.getAuthToken);
+          console.log("window.parseJwt:", typeof window.parseJwt);
+          console.log("window.PlaylistManager:", !!window.PlaylistManager);
+          
+          if (typeof window.getAuthToken !== "function") {
+            console.error("❌ getAuthToken not found");
+            throw new Error("getAuthToken not available");
+          }
+          
+          if (typeof window.parseJwt !== "function") {
+            console.error("❌ parseJwt not found");
+            throw new Error("parseJwt not available");
+          }
+          
+          if (!window.PlaylistManager) {
+            console.error("❌ PlaylistManager not found");
+            throw new Error("PlaylistManager not available");
+          }
+          
+          console.log("✅ All modules loaded");
+          
+          // Extract functions for easier use
+          const { createPlaylist, getUserPlaylists, renderPlaylists } = window.PlaylistManager;
+          const { getAuthToken, parseJwt } = window;
+          
+          // Now run the initialization
+          console.log("🎵 Getting auth token...");
+          const token = getAuthToken();
+          
+          if (!token) {
+            console.warn("⚠️ No token found, redirecting to login");
+            window.location.href = "../index.html";
             return;
           }
+          
+          console.log("🔑 Token found, parsing...");
+          const payload = parseJwt(token);
+          const userId = payload.sub;
+          console.log("👤 User ID:", userId);
+          
+          // Load and render playlists
+          console.log("📥 Fetching playlists...");
+          await getUserPlaylists(userId);
+          console.log("📤 Rendering playlists...");
+          renderPlaylists();
+          console.log("✅ Playlists rendered successfully");
+          
+          // Setup event listeners
+          console.log("🔌 Setting up event listeners...");
+          setupPlaylistsPageListeners(userId);
+          console.log("✅ Page fully initialized");
+          
+        } catch (err) {
+          console.error("❌ Error in playlist initialization:", err);
+          console.error("Stack:", err.stack);
+          const grid = document.getElementById("playlistsGrid");
+          if (grid) {
+            grid.innerHTML = `<p>Error: ${err.message}</p>`;
+          }
+        }
+      }
+      
+      function setupPlaylistsPageListeners(userId) {
+        console.log("🔌 setupPlaylistsPageListeners called");
+        const createBtn = document.getElementById("createPlaylistBtn");
+        const modal = document.getElementById("createPlaylistModal");
+        const modalClose = document.getElementById("modalClose");
+        const form = document.getElementById("createPlaylistForm");
 
-          createBtn.addEventListener("click", () => {
-            console.log("🎬 Create button clicked");
-            modal.style.display = "flex";
-            document.getElementById("playlistName").focus();
-          });
+        console.log("Elements found:", { createBtn: !!createBtn, modal: !!modal, modalClose: !!modalClose, form: !!form });
 
-          modalClose.addEventListener("click", () => {
-            console.log("❌ Modal close clicked");
+        if (!createBtn) {
+          console.error("❌ createPlaylistBtn not found");
+          return;
+        }
+
+        createBtn.addEventListener("click", () => {
+          console.log("🎬 Create button clicked");
+          modal.style.display = "flex";
+          document.getElementById("playlistName").focus();
+        });
+
+        modalClose.addEventListener("click", () => {
+          console.log("❌ Modal close clicked");
+          modal.style.display = "none";
+          form.reset();
+        });
+
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) {
+            console.log("❌ Modal backdrop clicked");
             modal.style.display = "none";
             form.reset();
-          });
+          }
+        });
 
-          modal.addEventListener("click", (e) => {
-            if (e.target === modal) {
-              console.log("❌ Modal backdrop clicked");
-              modal.style.display = "none";
-              form.reset();
-            }
-          });
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try {
+            const name = document.getElementById("playlistName").value;
+            const desc = document.getElementById("playlistDescription").value;
+            console.log("📝 Creating playlist:", { name, desc });
 
-          form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            try {
-              const name = document.getElementById("playlistName").value;
-              const desc = document.getElementById("playlistDescription").value;
-              console.log("📝 Creating playlist:", { name, desc });
+            await window.PlaylistManager.createPlaylist(userId, name, desc);
+            console.log("✅ Playlist created");
+            await window.PlaylistManager.getUserPlaylists(userId);
+            window.PlaylistManager.renderPlaylists();
 
-              await createPlaylist(userId, name, desc);
-              console.log("✅ Playlist created, refreshing list...");
-              await getUserPlaylists(userId);
-              renderPlaylists();
+            modal.style.display = "none";
+            form.reset();
+            console.log("✅ Modal closed");
+          } catch (err) {
+            console.error("❌ Error creating playlist:", err);
+            alert("Error: " + err.message);
+          }
+        });
 
-              modal.style.display = "none";
-              form.reset();
-              console.log("✅ Form reset and modal closed");
-            } catch (err) {
-              console.error("❌ Error creating playlist:", err);
-              alert("Error creating playlist: " + err.message);
-            }
-          });
+        // Sidebar toggle
+        const hamburgerBtn = document.getElementById("hamburgerBtn");
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
 
-          // Sidebar toggle
-          const hamburgerBtn = document.getElementById("hamburgerBtn");
-          const sidebar = document.getElementById("sidebar");
-          const overlay = document.getElementById("sidebarOverlay");
-
+        if (hamburgerBtn) {
           hamburgerBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             sidebar.classList.toggle("open");
             overlay.classList.toggle("active");
           });
+        }
 
+        if (overlay) {
           overlay.addEventListener("click", () => {
             sidebar.classList.remove("open");
             overlay.classList.remove("active");
           });
+        }
 
+        if (sidebar) {
           sidebar.querySelectorAll(".menu li").forEach((link) => {
             link.addEventListener("click", () => {
               sidebar.classList.remove("open");
@@ -432,57 +501,11 @@
             });
           });
         }
-
-        // Initialize playlists page when DOM is ready
-        console.log("🎵 Playlists module script: registering DOMContentLoaded listener");
-        
-        if (document.readyState === "loading") {
-          // DOM is still loading, add listener
-          document.addEventListener("DOMContentLoaded", initializePlaylists);
-        } else {
-          // DOM is already loaded, run immediately
-          console.log("⚡ DOM already loaded, initializing immediately");
-          initializePlaylists();
-        }
-
-        async function initializePlaylists() {
-          try {
-            console.log("🎵 Playlists page initialization starting...");
-            const token = getAuthToken();
-            if (!token) {
-              console.warn("⚠️ No token found, redirecting to login");
-              window.location.href = "../index.html";
-              return;
-            }
-
-            const payload = parseJwt(token);
-            const userId = payload.sub;
-            console.log("👤 User ID:", userId);
-
-            // Load and render playlists
-            console.log("📥 Fetching playlists...");
-            await getUserPlaylists(userId);
-            console.log("📤 Rendering playlists...");
-            renderPlaylists();
-            console.log("✅ Playlists rendered successfully");
-
-            // Setup event listeners
-            console.log("🔌 Setting up event listeners...");
-            setupPlaylistsPageListeners(userId);
-            console.log("✅ Page fully initialized");
-          } catch (err) {
-            console.error("❌ Error in initializePlaylists:", err);
-            console.error("Stack:", err.stack);
-            const grid = document.getElementById("playlistsGrid");
-            if (grid) {
-              grid.innerHTML = `<p>Error loading playlists: ${err.message}</p>`;
-            }
-          }
-        }
-      } catch (importErr) {
-        console.error("❌ Error in module setup:", importErr);
-        console.error("Stack:", importErr.stack);
       }
+      
+      // Start the initialization
+      console.log("🚀 Starting playlist initialization...");
+      initPlaylistsPage();
     </script>
 
     <!-- PLAYER BAR (same as listener.html) -->
