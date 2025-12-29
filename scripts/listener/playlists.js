@@ -357,6 +357,79 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// === INIT PLAYLISTS VIEW (for router) ===
+export async function initPlaylistsView() {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      window.location.href = "../index.html";
+      return;
+    }
+
+    const payload = parseJwt(token);
+    const userId = payload.sub;
+
+    // Load and render playlists
+    await getUserPlaylists(userId);
+    renderPlaylists();
+
+    // Setup listeners
+    setupPlaylistsPageListeners(userId);
+  } catch (err) {
+    console.error("Error initializing playlists view:", err.message);
+    const grid = document.getElementById("playlistsGrid");
+    if (grid) {
+      grid.innerHTML = `<div style="padding: 20px; color: red;"><strong>Error:</strong> ${err.message}</div>`;
+    }
+  }
+}
+
+// === SETUP PLAYLISTS PAGE LISTENERS ===
+function setupPlaylistsPageListeners(userId) {
+  const createBtn = document.getElementById("createPlaylistBtn");
+  const modal = document.getElementById("createPlaylistModal");
+  const modalClose = document.getElementById("modalClose");
+  const form = document.getElementById("createPlaylistForm");
+
+  if (!createBtn) {
+    console.error("createPlaylistBtn not found");
+    return;
+  }
+
+  createBtn.addEventListener("click", () => {
+    modal.style.display = "flex";
+    document.getElementById("playlistName").focus();
+  });
+
+  modalClose.addEventListener("click", () => {
+    modal.style.display = "none";
+    form.reset();
+  });
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+      form.reset();
+    }
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const playlistName = document.getElementById("playlistName").value.trim();
+    const playlistDescription = document
+      .getElementById("playlistDescription")
+      .value.trim();
+
+    if (!playlistName) return;
+
+    await createPlaylist(userId, playlistName, playlistDescription);
+    await getUserPlaylists(userId);
+    renderPlaylists();
+    modal.style.display = "none";
+    form.reset();
+  });
+}
+
 // === EXPORT FOR WINDOW ACCESS (CommonJS compatibility) ===
 window.PlaylistManager = {
   createPlaylist,

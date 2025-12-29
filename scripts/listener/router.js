@@ -3,6 +3,7 @@ import { initHomeView } from "./listener.js";
 import { initPlaylistView } from "./playlist.js";
 import { initSettingsView } from "./settings.js";
 import { initArtistView } from "./artist-profile.js";
+import { initPlaylistsView } from "./playlists.js";
 
 // Minimal inline fallback to ensure required containers exist if a dev server injects markup
 const fallbackViews = {
@@ -28,9 +29,9 @@ const fallbackViews = {
   `,
   library: `
     <header class="top-bar">
-      <input type="text" id="searchBar" placeholder="Search for playlists..." />
+      <button id="createPlaylistBtn" class="btn-primary">+ Create Playlist</button>
     </header>
-    <section class="playlist-section"><div id="playlistGrid" class="playlist-grid"></div></section>
+    <section class="playlists-section"><div id="playlistsGrid" class="playlist-grid"></div></section>
   `,
   explore: `
     <header class="top-bar"><h2>Explore</h2></header>
@@ -68,23 +69,27 @@ const navItems = Array.from(document.querySelectorAll("[data-route]"));
 
 const routes = {
   home: {
-    redirect: "listener.html",
+    view: "/listener/views/home.html",
     init: initHomeView,
   },
   playlist: {
-    redirect: "playlists.html",
+    view: "/listener/views/playlist.html",
+    init: initPlaylistView,
   },
   library: {
-    redirect: "playlists.html",
+    view: "/listener/views/playlists.html",
+    init: initPlaylistsView,
   },
   explore: {
-    redirect: "listener.html",
+    view: "/listener/views/explore.html",
   },
   settings: {
-    redirect: "settings.html",
+    view: "/listener/views/settings.html",
+    init: initSettingsView,
   },
   artist: {
-    redirect: "artist-profile.html",
+    view: "/listener/views/artist.html",
+    init: initArtistView,
   },
 };
 
@@ -113,22 +118,9 @@ async function loadRoute(routeKey, routeParam = null) {
   const config = routes[key];
 
   try {
-    // If this route has a redirect, navigate to that page
-    // But only if we're not already on that page
-    if (config.redirect) {
-      const currentFile = window.location.pathname.split('/').pop() || 'listener.html';
-      const targetFile = config.redirect;
-      
-      // Only redirect if we're not already on the target page
-      if (!currentFile.includes(targetFile.replace('.html', ''))) {
-        window.location.href = config.redirect;
-        return;
-      }
-    }
-
     // Fallback for single-page app pattern (if needed)
     if (!viewRoot) {
-      console.error("❌ viewRoot not found; cannot render view.");
+      console.error("viewRoot not found; cannot render view.");
       return;
     }
 
