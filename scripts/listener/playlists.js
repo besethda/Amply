@@ -43,11 +43,10 @@ export async function getUserPlaylists(userId) {
       `${API_URL}/playlists?userId=${encodeURIComponent(userId)}`
     );
 
-    console.log("📋 User playlists:", response.playlists);
     userPlaylistsCache = response.playlists || [];
     return userPlaylistsCache;
   } catch (err) {
-    console.error("❌ Error fetching playlists:", err);
+    console.error("Error fetching playlists:", err);
     return [];
   }
 }
@@ -130,35 +129,23 @@ export async function deletePlaylist(playlistId) {
 
 // === RENDER PLAYLISTS ===
 export function renderPlaylists() {
-  console.log("🎨 renderPlaylists called");
   const grid = document.getElementById("playlistsGrid");
   const emptyState = document.getElementById("emptyState");
 
-  console.log("Grid element:", grid);
-  console.log("Empty state element:", emptyState);
-  console.log("Playlists cache:", userPlaylistsCache);
-
-  if (!grid) {
-    console.warn("⚠️ Grid element not found");
-    return;
-  }
+  if (!grid) return;
 
   if (userPlaylistsCache.length === 0) {
-    console.log("📭 No playlists, showing empty state");
     grid.style.display = "none";
     emptyState.style.display = "flex";
     return;
   }
 
-  console.log(`📊 Rendering ${userPlaylistsCache.length} playlists`);
   grid.style.display = "grid";
   emptyState.style.display = "none";
 
   grid.innerHTML = userPlaylistsCache
     .map((playlist) => createPlaylistCardHTML(playlist))
     .join("");
-
-  console.log("🔗 Attaching click handlers to", document.querySelectorAll(".playlist-card").length, "cards");
 
   // Attach click handlers to cards
   document.querySelectorAll(".playlist-card").forEach((card) => {
@@ -176,7 +163,6 @@ export function renderPlaylists() {
       openPlaylistListView(playlistId);
     });
   });
-  console.log("✅ renderPlaylists complete");
 }
 
 // === CREATE PLAYLIST CARD HTML ===
