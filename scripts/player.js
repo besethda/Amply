@@ -47,6 +47,111 @@ let currentIndex = 0;
 let eventsBound = false;
 
 // ===============================
+// PLAYER STATE PERSISTENCE
+// ===============================
+function savePlayerState() {
+  if (!audio || !currentSong) return;
+  
+  try {
+    const state = {
+      currentSong: {
+        id: currentSong.id,
+        title: currentSong.title,
+        artist: currentSong.artist,
+        file: currentSong.file,
+        bucket: currentSong.bucket,
+        cloudfrontDomain: currentSong.cloudfrontDomain,
+        coverImage: currentSong.coverImage,
+      },
+      currentTime: audio.currentTime,
+      isPlaying: !audio.paused,
+      currentIndex,
+      playlist: playlist.map(s => ({
+        id: s.id,
+        title: s.title,
+        artist: s.artist,
+        file: s.file,
+        bucket: s.bucket,
+        cloudfrontDomain: s.cloudfrontDomain,
+        coverImage: s.coverImage,
+      })),
+    };
+    localStorage.setItem('amplyPlayerState', JSON.stringify(state));
+  } catch (err) {
+    console.error('Failed to save player state:', err);
+  }
+}
+
+function restorePlayerState() {
+  try {
+    const saved = localStorage.getItem('amplyPlayerState');
+    if (!saved) return false;
+    
+    const state = JSON.parse(saved);
+    if (!state.currentSong || !state.playlist?.length) return false;
+    
+    // Restore playlist and current song
+    playlist = state.playlist;
+    currentSong = state.currentSong;
+    window.currentSong = currentSong;
+    currentIndex = state.currentIndex || 0;
+    
+    // Update UI
+    if (currentSong) {
+      // Update player bar
+      currentTrackName.textContent = currentSong.title || "Unknown Track";
+      currentTrackArtist.textContent = currentSong.artist || "";
+      if (currentTrackArt) {
+        currentTrackArt.src = currentSong.coverImage || currentSong.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
+      }
+      updateFullPlayerUI();
+      if (playerBar) playerBar.classList.remove('hidden');
+    }
+    
+    // Setup audio if not already setup
+    if (!audio.src && state.currentSong.file) {
+      const setupAudio = async () => {
+        try {
+          const res = await fetch(
+            `${API_URL}/stream?bucket=${encodeURIComponent(
+              currentSong.bucket
+            )}&file=${encodeURIComponent(currentSong.file)}`
+          );
+          const data = await res.json();
+          audio.src = data.streamUrl;
+          
+          // Restore playback position
+          if (state.currentTime) {
+            audio.currentTime = state.currentTime;
+          }
+          
+          // Restore playback state
+          if (state.isPlaying) {
+            audio.play().catch(err => console.error('Autoplay prevented:', err));
+          }
+        } catch (err) {
+          console.error('Failed to setup audio:', err);
+        }
+      };
+      setupAudio();
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Failed to restore player state:', err);
+    return false;
+  }
+}
+
+function clearPlayerState() {
+  try {
+    localStorage.removeItem('amplyPlayerState');
+  } catch (err) {
+    console.error('Failed to clear player state:', err);
+  }
+}
+
+// ===============================
 // INIT PLAYER
 // ===============================
 export function initPlayer(songs = []) {
@@ -165,8 +270,11 @@ export async function playSong(song, list = playlist) {
 
     // Update all cards
     syncPlayerIcons();
+    
+    // Save player state to persist across page navigations
+    savePlayerState();
   } catch (err) {
-    console.error("❌ Playback error:", err);
+    console.error("Playback error:", err);
     alert("Cannot play this track right now.");
   }
 }
@@ -329,6 +437,7 @@ function setupEvents() {
     pauseIcon.style.display = "block";
     updateFullPlayerPlayPause(true);
     syncPlayerIcons();
+    savePlayerState();
   });
 
   audio.addEventListener("pause", () => {
@@ -336,6 +445,7 @@ function setupEvents() {
     pauseIcon.style.display = "none";
     updateFullPlayerPlayPause(false);
     syncPlayerIcons();
+    savePlayerState();
   });
 
   // Options menu
@@ -651,6 +761,9 @@ function restoreSettings() {
     shuffleBtn?.classList.add("active");
     fullShuffleBtn?.classList.add("active");
   }
+  
+  // Restore player state (current song, position, playback status)
+  restorePlayerState();
 }
 
 // ===============================
