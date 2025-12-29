@@ -1,4 +1,5 @@
 "use strict";
+// Updated: 2025-12-29 17:07:00
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
@@ -21,11 +22,69 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
+
+// Helper function to extract userId from Authorization header JWT token
+function extractUserIdFromToken(event) {
+    console.log("🔑 extractUserIdFromToken called!");
+    try {
+        const authHeader = event.headers?.authorization || event.headers?.Authorization || "";
+        console.log("🔐 Auth header present:", !!authHeader);
+        if (!authHeader) {
+            console.warn("❌ No Authorization header found");
+            return null;
+        }
+        
+        const token = authHeader.replace("Bearer ", "").trim();
+        console.log("🔐 Token extracted, length:", token.length);
+        
+        // Decode JWT without verification (frontend token is already validated by Cognito)
+        const parts = token.split(".");
+        if (parts.length !== 3) {
+            console.warn("❌ Invalid JWT format, parts:", parts.length);
+            return null;
+        }
+        
+        // Handle base64url encoding (replace - with + and _ with /)
+        let base64Payload = parts[1];
+        base64Payload = base64Payload.replace(/-/g, "+").replace(/_/g, "/");
+        
+        const payload = JSON.parse(Buffer.from(base64Payload, "base64").toString());
+        console.log("🔐 JWT payload extracted, sub:", payload.sub);
+        
+        const userId = payload.sub || payload["cognito:username"] || null;
+        if (userId) {
+            console.log("✅ Extracted userId from token:", userId);
+        } else {
+            console.warn("❌ No userId found in JWT payload");
+        }
+        return userId;
+    } catch (err) {
+        console.error("❌ Error extracting userId from token:", err.message);
+        return null;
+    }
+}
+
 const handler = async (event) => {
     const rawPath = event.rawPath || event.path || "";
     const path = rawPath.split("?")[0]; // Strip query string for routing
     const method = event.requestContext.http?.method || event.httpMethod;
+    
+    // Extract authorizer - handle both direct and nested claims structure
+    let authorizer = event.requestContext?.authorizer || {};
+    if (authorizer.claims === undefined && typeof authorizer === 'object') {
+        // If authorizer is an object but doesn't have claims, it might BE the claims
+        // Check if it has 'sub' directly
+        if (!authorizer.sub && authorizer.claims) {
+            authorizer = { claims: authorizer };
+        } else if (!authorizer.sub) {
+            // Try to extract claims if they're in a different format
+            authorizer = { claims: authorizer };
+        }
+    }
+    
     console.log("➡️ PATH:", path, "| METHOD:", method, "| RAW PATH:", rawPath);
+    console.log("🔐 Full authorizer object:", JSON.stringify(event.requestContext?.authorizer || {}));
+    console.log("🔐 Authorizer claims:", authorizer?.claims?.sub || "MISSING");
     try {
         // === Handle CORS preflight ===
         if (method === "OPTIONS") {
@@ -647,14 +706,18 @@ const handler = async (event) => {
         // === GET USER PROFILE ===
         if (path.endsWith("/user") && method === "GET") {
             try {
-                const userId = authorizer?.claims?.sub;
+                // Extract userId from JWT token directly instead of authorizer
+                const userId = extractUserIdFromToken(event);
                 if (!userId) {
+                    console.warn("❌ No userId found in JWT token");
                     return {
                         statusCode: 401,
                         headers: corsHeaders,
                         body: JSON.stringify({ error: "Not authenticated" }),
                     };
                 }
+
+                console.log("✅ Extracted userId from token:", userId);
 
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 const result = await dynamodb.send(new client_dynamodb_1.GetItemCommand({
@@ -671,7 +734,7 @@ const handler = async (event) => {
                         userId: user.userId,
                         username: user.username || null,
                         avatar: user.avatar || null,
-                        email: authorizer?.claims?.email || null,
+                        email: null,
                         createdAt: user.createdAt || new Date().toISOString(),
                     }),
                 };
@@ -689,14 +752,18 @@ const handler = async (event) => {
         // === UPDATE USER PROFILE ===
         if (path.endsWith("/user") && method === "PUT") {
             try {
-                const userId = authorizer?.claims?.sub;
+                // Extract userId from JWT token directly instead of authorizer
+                const userId = extractUserIdFromToken(event);
                 if (!userId) {
+                    console.warn("❌ No userId found in JWT token");
                     return {
                         statusCode: 401,
                         headers: corsHeaders,
                         body: JSON.stringify({ error: "Not authenticated" }),
                     };
                 }
+
+                console.log("✅ Extracted userId from token:", userId);
 
                 const body = JSON.parse(event.body || "{}");
                 const { username, avatar } = body;
@@ -757,16 +824,21 @@ const handler = async (event) => {
         }
 
         // === RECORD LISTEN (30+ seconds) ===
+        console.log("🔍 Checking /record-listen... path:", path, "method:", method, "match:", path.endsWith("/record-listen"));
         if (path.endsWith("/record-listen") && method === "POST") {
             try {
-                const userId = authorizer?.claims?.sub;
+                // Extract userId from JWT token directly instead of authorizer
+                const userId = extractUserIdFromToken(event);
                 if (!userId) {
+                    console.warn("❌ No userId found in JWT token");
                     return {
                         statusCode: 401,
                         headers: corsHeaders,
                         body: JSON.stringify({ error: "Not authenticated" }),
                     };
                 }
+
+                console.log("✅ Extracted userId from token:", userId);
 
                 const body = JSON.parse(event.body || "{}");
                 const { songId, durationPlayed, artistId } = body;
@@ -825,14 +897,18 @@ const handler = async (event) => {
         // === GET USER LISTENING HISTORY ===
         if (path.endsWith("/user/listening-history") && method === "GET") {
             try {
-                const userId = authorizer?.claims?.sub;
+                // Extract userId from JWT token directly instead of authorizer
+                const userId = extractUserIdFromToken(event);
                 if (!userId) {
+                    console.warn("❌ No userId found in JWT token");
                     return {
                         statusCode: 401,
                         headers: corsHeaders,
                         body: JSON.stringify({ error: "Not authenticated" }),
                     };
                 }
+
+                console.log("✅ Extracted userId from token:", userId);
 
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({

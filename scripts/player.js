@@ -159,7 +159,8 @@ function restorePlayerState() {
             try {
               await audio.play();
             } catch (err) {
-              console.warn('Autoplay prevented by browser policy');
+              // Autoplay is blocked by browser policy - this is expected
+              console.log('ℹ️ Autoplay blocked (browser policy) - user must click play');
             }
           }
         } catch (err) {
@@ -325,7 +326,21 @@ export async function playSong(song, list = playlist) {
     if (!streamUrl) throw new Error("Missing stream URL");
 
     audio.src = streamUrl;
-    await audio.play();
+    // Reset currentTime immediately to prevent recording the old song
+    // This is safe to do after setting src
+    if (audio.currentTime > 0) {
+      try {
+        audio.currentTime = 0;
+      } catch (e) {
+        // Ignore errors from setting currentTime before metadata loads
+      }
+    }
+    
+    try {
+      await audio.play();
+    } catch (err) {
+      console.error("❌ Play failed:", err.message);
+    }
 
     // Update main player bar icons
     playIcon.style.display = "none";
@@ -491,10 +506,16 @@ function setupEvents() {
 
     // Track listen when 30+ seconds have been played
     if (currentSong && audio.currentTime >= 30) {
-      const songKey = `${currentSong.id}`;
-      if (!listenTracked.has(songKey)) {
-        recordListen(currentSong);
-        listenTracked.add(songKey);
+      // Verify this is the correct song by checking the audio source
+      // This prevents recording listens for the wrong song when switching tracks
+      const currentSongUrl = audio.src;
+      if (currentSongUrl && currentSongUrl.length > 0) {
+        // Use song file path as unique key for better accuracy
+        const songKey = currentSong.file || currentSong.id || currentSong.songId || currentSong.title;
+        if (!listenTracked.has(songKey)) {
+          recordListen(currentSong);
+          listenTracked.add(songKey);
+        }
       }
     }
   });
