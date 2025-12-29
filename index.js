@@ -863,10 +863,12 @@ const handler = async (event) => {
                 const listenId = `${userId}#${songId}#${now}`;
 
                 // Record the listen event
+                const title = requestBody.title || "Unknown";
                 await dynamodb.send(new client_dynamodb_1.PutItemCommand({
                     TableName: LIKES_TABLE,
                     Item: (0, util_dynamodb_1.marshall)({
                         songId: listenId,
+                        title,
                         timestamp: now,
                         userId,
                         actualSongId: songId,

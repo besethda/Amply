@@ -260,11 +260,13 @@ async function recordListen(song) {
   try {
     const artistId = song.artistId || song.artist || "Unknown";
     const songId = song.file || song.songId || song.id;
+    const title = song.title || song.name || "Unknown Title";
 
     const response = await apiFetch(`${API_URL}/record-listen`, {
       method: "POST",
       body: JSON.stringify({
         songId,
+        title,
         artistId,
         durationPlayed: 30, // We record at 30 second mark
       }),

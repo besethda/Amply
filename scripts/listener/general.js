@@ -252,11 +252,20 @@ async function loadListeningStats() {
       const time = new Date(listen.timestamp).toLocaleTimeString();
       const songId = listen.actualSongId || listen.songId;
       
+      // Use title if available, otherwise extract from filename
+      let songName = listen.title || songId;
+      if (!listen.title && songId && typeof songId === 'string') {
+        // Remove "songs/" prefix if present
+        songName = songId.replace(/^songs\//, '');
+        // Remove file extension
+        songName = songName.replace(/\.[^.]+$/, '');
+      }
+      
       html += `
         <div class="listening-item">
           <span class="listen-number">${index + 1}</span>
           <div class="listen-info">
-            <p class="song-id"><strong>Song:</strong> ${songId}</p>
+            <p class="song-id"><strong>Song:</strong> ${songName}</p>
             <p class="artist-info"><strong>Artist:</strong> ${listen.artistId || 'Unknown'}</p>
             <p class="listen-date"><strong>Listened:</strong> ${date} at ${time}</p>
           </div>
