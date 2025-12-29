@@ -1023,6 +1023,19 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
           console.log("Liking song:", songId, artistId, songName);
           await likeSong(songId, artistId, songName);
         }
+        
+        // Refresh library view if it's currently displayed
+        const viewRoot = document.getElementById("viewRoot");
+        const currentHash = window.location.hash.slice(1);
+        if (currentHash === "library" && viewRoot) {
+          try {
+            const { initLibraryView } = await import("./listener/library.js");
+            await initLibraryView();
+            console.log("Library view refreshed after like/unlike");
+          } catch (err) {
+            console.error("Failed to refresh library:", err);
+          }
+        }
       } catch (err) {
         console.error("Error toggling like:", err);
         alert("Failed to update like status");

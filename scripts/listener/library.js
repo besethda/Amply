@@ -26,9 +26,11 @@ export async function initLibraryView() {
     }
 
     // Filter to get liked songs with full metadata
-    // The backend returns {songId, artistId}, so we match by songId
+    // The backend returns {songId, artistId}, and songId is the file path
     const likedSongIds = new Set(likedSongs.map(s => s.songId));
-    const songs = allSongs.filter(s => likedSongIds.has(s.songId || s.file));
+    console.log("Liked song IDs:", likedSongIds);
+    console.log("Checking against songs with files:", allSongs.map(s => s.file).slice(0, 3));
+    const songs = allSongs.filter(s => likedSongIds.has(s.file));
 
     if (songs.length === 0) {
       container.innerHTML = "<p>No liked songs found.</p>";
