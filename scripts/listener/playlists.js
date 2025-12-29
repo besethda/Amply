@@ -150,9 +150,18 @@ export function renderPlaylists() {
 
   // Attach click handlers to cards
   document.querySelectorAll(".playlist-card").forEach((card) => {
-    card.addEventListener("click", () => {
+    card.addEventListener("click", (e) => {
+      // If clicking the edit button, show the detail modal
+      if (e.target.closest(".playlist-card-edit-btn")) {
+        e.stopPropagation();
+        const playlistId = card.dataset.playlistId;
+        showPlaylistDetail(playlistId);
+        return;
+      }
+      
+      // Otherwise, open the playlist in list view
       const playlistId = card.dataset.playlistId;
-      showPlaylistDetail(playlistId);
+      openPlaylistListView(playlistId);
     });
   });
 }
@@ -168,6 +177,13 @@ function createPlaylistCardHTML(playlist) {
         <div class="cover-box" style="background-image: url('${imageUrls[0]}')"></div>
         <div class="cover-box" style="background-image: url('${imageUrls[1]}')"></div>
         <div class="cover-box" style="background-image: url('${imageUrls[2]}')"></div>
+        <button class="playlist-card-edit-btn" title="Edit playlist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="19" cy="12" r="1"></circle>
+            <circle cx="5" cy="12" r="1"></circle>
+          </svg>
+        </button>
       </div>
       <div class="playlist-card-info">
         <div class="playlist-card-name">${escapeHtml(playlist.playlistName)}</div>
@@ -199,6 +215,62 @@ function getPlaylistImageUrls(playlist) {
   }
 
   return urls;
+}
+
+// === OPEN PLAYLIST IN LIST VIEW ===
+function openPlaylistListView(playlistId) {
+  const playlist = userPlaylistsCache.find((p) => p.playlistId === playlistId);
+  if (!playlist) return;
+
+  // Import player functions
+  import("./player.js").then(({ initPlayer, renderSongsToDom }) => {
+    const root = document.getElementById("viewRoot") || document;
+    const mainContent = root.querySelector(".main-content");
+    
+    if (!mainContent) return;
+
+    // Create list view header
+    const header = document.createElement("div");
+    header.className = "playlist-view-header";
+    header.innerHTML = `
+      <button class="btn-back" onclick="window.location.reload()">← Back to Playlists</button>
+      <h2>${escapeHtml(playlist.playlistName)}</h2>
+      <p>${(playlist.songs || []).length} songs</p>
+    `;
+
+    // Clear main content and show playlist songs
+    const viewContainer = document.createElement("div");
+    viewContainer.id = "playlistViewContainer";
+    viewContainer.style.marginLeft = "80px";
+    viewContainer.style.padding = "1rem";
+    viewContainer.style.color = "white";
+
+    mainContent.innerHTML = "";
+    mainContent.appendChild(header);
+    mainContent.appendChild(viewContainer);
+
+    // Render songs as playable list
+    if (playlist.songs && playlist.songs.length > 0) {
+      // Convert stored songs to playable format
+      const songs = playlist.songs.map((s) => ({
+        songId: s.songId,
+        title: s.songName || "Unknown",
+        artist: s.artistName || "Unknown Artist",
+        file: s.file,
+        bucket: s.bucket,
+      }));
+
+      renderSongsToDom({
+        songs,
+        layout: "list",
+        container: "#playlistViewContainer",
+      });
+
+      initPlayer(songs);
+    } else {
+      viewContainer.innerHTML = "<p style='color: var(--text-secondary);'>No songs in this playlist yet</p>";
+    }
+  });
 }
 
 // === SHOW PLAYLIST DETAIL ===
