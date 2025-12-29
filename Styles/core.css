@@ -1305,3 +1305,27 @@ body.modal-open {
 .account-info strong {
   color: var(--text-main-color);
 }
+/* ===== LIKE BUTTON ===== */
+.song-like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.song-like-btn:hover {
+  transform: scale(1.15);
+}
+
+.song-like-btn.liked {
+  color: #ff6b6b;
+}
+
+.song-like-btn:active {
+  transform: scale(0.95);
+}

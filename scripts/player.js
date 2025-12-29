@@ -863,6 +863,10 @@ export function renderSongsToDom({
           </svg>
         </div>
 
+        <button class="song-like-btn" data-action="like" data-song-id="${safeId}" data-artist-id="${song.artistId || ''}" data-song-name="${song.title || ''}">
+          🤍
+        </button>
+
         <button class="song-play-btn-list">
           <svg class="play-icon-list" width="40" height="40"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"

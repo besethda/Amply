@@ -4,6 +4,7 @@ import { initPlaylistView } from "./playlist.js";
 import { initSettingsView } from "./settings.js";
 import { initArtistView } from "./artist-profile.js";
 import { initPlaylistsView } from "./playlists.js";
+import { initLibraryView } from "./library.js";
 
 // Minimal inline fallback to ensure required containers exist if a dev server injects markup
 const fallbackViews = {
@@ -94,7 +95,7 @@ const routes = {
   },
   library: {
     view: "/listener/views/library.html",
-    init: initHomeView,
+    init: initLibraryView,
   },
   explore: {
     view: "/listener/views/explore.html",
