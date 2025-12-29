@@ -345,21 +345,26 @@
 
       // Initialize playlists page
       document.addEventListener("DOMContentLoaded", async () => {
-        const token = getAuthToken();
-        if (!token) {
-          window.location.href = "../index.html";
-          return;
+        try {
+          const token = getAuthToken();
+          if (!token) {
+            window.location.href = "../index.html";
+            return;
+          }
+
+          const payload = parseJwt(token);
+          const userId = payload.sub;
+
+          // Load and render playlists
+          await getUserPlaylists(userId);
+          renderPlaylists();
+
+          // Setup event listeners
+          setupPlaylistsPageListeners(userId);
+        } catch (err) {
+          console.error("❌ Error loading playlists page:", err);
+          document.getElementById("playlistsGrid").innerHTML = `<p>Error loading playlists: ${err.message}</p>`;
         }
-
-        const payload = parseJwt(token);
-        const userId = payload.sub;
-
-        // Load and render playlists
-        await getUserPlaylists(userId);
-        renderPlaylists();
-
-        // Setup event listeners
-        setupPlaylistsPageListeners(userId);
       });
 
       function setupPlaylistsPageListeners(userId) {
