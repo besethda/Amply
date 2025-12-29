@@ -5,6 +5,12 @@ import { API_URL, parseJwt, getAuthToken, apiFetch } from "../scripts/general.js
 // ===============================
 const audio = document.getElementById("globalAudio");
 const playerBar = document.getElementById("playerBar");
+
+// Ensure player bar starts hidden
+if (playerBar && !playerBar.classList.contains("hidden")) {
+  playerBar.classList.add("hidden");
+}
+
 const playIcon = document.getElementById("playIcon");
 const pauseIcon = document.getElementById("pauseIcon");
 const progressBar = document.getElementById("progressBar");
