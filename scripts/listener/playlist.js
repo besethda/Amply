@@ -6,6 +6,7 @@ requireAuth();
 export async function initPlaylistView(playlistId) {
   const root = document.getElementById("viewRoot") || document;
   const container = root.querySelector("#playlistTrackList");
+  const titleHeader = root.querySelector("#playlistTitle");
   if (!container) return;
 
   try {
@@ -13,25 +14,34 @@ export async function initPlaylistView(playlistId) {
     const actualPlaylistId = playlistId || sessionStorage.getItem('currentPlaylistId');
     
     let songs = [];
+    let playlistName = "Playlist";
     
     if (actualPlaylistId && window.PlaylistManager) {
       // Try to get the specific playlist from the cache
       const userPlaylistsCache = window.userPlaylistsCache;
       if (userPlaylistsCache) {
         const playlist = userPlaylistsCache.find(p => p.playlistId === actualPlaylistId);
-        if (playlist && playlist.songs && playlist.songs.length > 0) {
-          // Convert stored songs to playable format
-          songs = playlist.songs.map((s) => ({
-            songId: s.songId,
-            title: s.songName || "Unknown",
-            artist: s.artistName || "Unknown Artist",
-            file: s.file,
-            bucket: s.bucket,
-            cloudfrontDomain: s.cloudfrontDomain,
-            coverImage: s.coverImage,
-          }));
+        if (playlist) {
+          playlistName = playlist.playlistName || "Playlist";
+          if (playlist.songs && playlist.songs.length > 0) {
+            // Convert stored songs to playable format
+            songs = playlist.songs.map((s) => ({
+              songId: s.songId,
+              title: s.songName || "Unknown",
+              artist: s.artistName || "Unknown Artist",
+              file: s.file,
+              bucket: s.bucket,
+              cloudfrontDomain: s.cloudfrontDomain,
+              coverImage: s.coverImage,
+            }));
+          }
         }
       }
+    }
+    
+    // Update the title if the header exists
+    if (titleHeader) {
+      titleHeader.textContent = playlistName;
     }
     
     // If we didn't get songs from the playlist, load all songs as fallback
