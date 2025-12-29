@@ -9,11 +9,35 @@
 }
 
 /* Tooltips (Listener Specific - Right Side) */
+.menu-item::before,
+.sidebar-footer button::before {
+  content: attr(data-title);
+  position: absolute;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  top: 50%;
+  z-index: 1001;
+}
+
 .menu-item::after,
 .sidebar-footer button::after {
   left: 100%;
   margin-left: 15px;
   transform: translateY(-50%) translateX(10px);
+}
+
+.menu-item:hover::before,
+.sidebar-footer button:hover::before {
+  opacity: 1;
 }
 
 .menu-item:hover::after,
