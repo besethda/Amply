@@ -889,9 +889,9 @@ export function renderSongsToDom({
     // Add context menu handler for song options (3-dot menu)
     const optionBtn = div.querySelector(".song-option");
     if (optionBtn) {
-      optionBtn.addEventListener("click", (e) => {
+      optionBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        showSongContextMenu(optionBtn, { ...song, id: safeId }, playlistId);
+        await showSongContextMenu(optionBtn, { ...song, id: safeId }, playlistId);
       });
     }
     
@@ -965,7 +965,7 @@ function setupPlayButton(div, song, fullList) {
 // ===============================
 // SONG CONTEXT MENU
 // ===============================
-function showSongContextMenu(triggerElement, song, playlistId) {
+async function showSongContextMenu(triggerElement, song, playlistId) {
   // Remove any existing menu
   const existingMenu = document.querySelector(".song-context-menu");
   if (existingMenu) existingMenu.remove();
@@ -984,58 +984,56 @@ function showSongContextMenu(triggerElement, song, playlistId) {
   `;
 
   // Like/Unlike Song option
-  (async () => {
-    try {
-      const { isSongLiked, likeSong, unlikeSong } = await import("./listener/likes.js");
-      const isLiked = await isSongLiked(song.file || song.songId || song.id);
-      
-      const likeItem = document.createElement("div");
-      likeItem.style.cssText = `
-        padding: 12px 16px;
-        cursor: pointer;
-        border-bottom: 1px solid var(--border-color);
-        transition: background-color 0.2s;
-      `;
-      likeItem.textContent = isLiked ? "Unlike Song" : "Like Song";
-      likeItem.addEventListener("mouseenter", () => {
-        likeItem.style.backgroundColor = "var(--bg-tertiary)";
-      });
-      likeItem.addEventListener("mouseleave", () => {
-        likeItem.style.backgroundColor = "transparent";
-      });
-      likeItem.addEventListener("click", async () => {
-        menu.remove();
-        try {
-          const songId = song.file || song.songId || song.id;
-          if (isLiked) {
-            await unlikeSong(songId);
-          } else {
-            // Extract artistId if available, otherwise use empty string
-            const artistId = song.artistId || "";
-            const songName = song.title || "Unknown";
-            await likeSong(songId, artistId, songName);
-          }
-          // Update the like button UI
-          const likeButtons = document.querySelectorAll(`[data-song-id="${songId}"][data-action="like"]`);
-          likeButtons.forEach((btn) => {
-            if (isLiked) {
-              btn.classList.remove("liked");
-              btn.textContent = "🤍";
-            } else {
-              btn.classList.add("liked");
-              btn.textContent = "❤️";
-            }
-          });
-        } catch (err) {
-          console.error("Error toggling like:", err);
-          alert("Failed to update like status");
+  try {
+    const { isSongLiked, likeSong, unlikeSong } = await import("./listener/likes.js");
+    const isLiked = await isSongLiked(song.file || song.songId || song.id);
+    
+    const likeItem = document.createElement("div");
+    likeItem.style.cssText = `
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.2s;
+    `;
+    likeItem.textContent = isLiked ? "Unlike Song" : "Like Song";
+    likeItem.addEventListener("mouseenter", () => {
+      likeItem.style.backgroundColor = "var(--bg-tertiary)";
+    });
+    likeItem.addEventListener("mouseleave", () => {
+      likeItem.style.backgroundColor = "transparent";
+    });
+    likeItem.addEventListener("click", async () => {
+      menu.remove();
+      try {
+        const songId = song.file || song.songId || song.id;
+        if (isLiked) {
+          await unlikeSong(songId);
+        } else {
+          // Extract artistId if available, otherwise use empty string
+          const artistId = song.artistId || "";
+          const songName = song.title || "Unknown";
+          await likeSong(songId, artistId, songName);
         }
-      });
-      menu.insertBefore(likeItem, menu.firstChild);
-    } catch (err) {
-      console.error("Error loading like functionality:", err);
-    }
-  })();
+        // Update the like button UI
+        const likeButtons = document.querySelectorAll(`[data-song-id="${songId}"][data-action="like"]`);
+        likeButtons.forEach((btn) => {
+          if (isLiked) {
+            btn.classList.remove("liked");
+            btn.textContent = "🤍";
+          } else {
+            btn.classList.add("liked");
+            btn.textContent = "❤️";
+          }
+        });
+      } catch (err) {
+        console.error("Error toggling like:", err);
+        alert("Failed to update like status");
+      }
+    });
+    menu.appendChild(likeItem);
+  } catch (err) {
+    console.error("Error loading like functionality:", err);
+  }
 
   // Add to Playlist option
   const addToPlaylistItem = document.createElement("div");
