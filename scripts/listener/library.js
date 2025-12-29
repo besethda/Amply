@@ -37,15 +37,21 @@ export async function initLibraryView() {
       return;
     }
 
+    // Ensure all songs have required properties for playback
+    const enrichedSongs = songs.map(song => ({
+      ...song,
+      id: song.id || song.file,
+    }));
+
     // Render in list view
     renderSongsToDom({
-      songs,
+      songs: enrichedSongs,
       layout: "list",
       container: "#playlistTrackList"
     });
 
     // Initialize player with liked songs
-    initPlayer(songs);
+    initPlayer(enrichedSongs);
 
     // Initialize like buttons
     await initLikeButtons();

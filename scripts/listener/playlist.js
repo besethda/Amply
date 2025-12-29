@@ -65,14 +65,20 @@ export async function initPlaylistView(playlistId) {
       return;
     }
 
+    // Ensure all songs have required properties for playback
+    const enrichedSongs = songs.map(song => ({
+      ...song,
+      id: song.id || song.file,
+    }));
+
     renderSongsToDom({
-      songs,
+      songs: enrichedSongs,
       layout: "list",
       container: "#playlistTrackList",
       playlistId: actualPlaylistId
     });
 
-    initPlayer(songs);
+    initPlayer(enrichedSongs);
 
     // Add delete playlist button handler
     const deleteBtn = root.querySelector("#deletePlaylistBtn");

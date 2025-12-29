@@ -1,921 +1,655 @@
-const {
-  S3Client,
-  PutObjectCommand,
-  ListObjectsV2Command,
-  GetObjectCommand,
-  HeadObjectCommand,
-  DeleteObjectCommand,
-} = require("@aws-sdk/client-s3");
-const { STSClient, AssumeRoleCommand } = require("@aws-sdk/client-sts");
-const {
-  CloudFrontClient,
-  ListDistributionsCommand,
-  CreateInvalidationCommand,
-} = require("@aws-sdk/client-cloudfront");
-const {
-  CloudFormationClient,
-  CreateStackCommand,
-  DescribeStacksCommand,
-} = require("@aws-sdk/client-cloudformation");
-const {
-  DynamoDBClient,
-  PutItemCommand,
-  GetItemCommand,
-  QueryCommand,
-  UpdateItemCommand,
-  DeleteItemCommand,
-} = require("@aws-sdk/client-dynamodb");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.handler = void 0;
+const client_s3_1 = require("@aws-sdk/client-s3");
+const client_sts_1 = require("@aws-sdk/client-sts");
+const client_cloudfront_1 = require("@aws-sdk/client-cloudfront");
+const client_cloudformation_1 = require("@aws-sdk/client-cloudformation");
+const client_dynamodb_1 = require("@aws-sdk/client-dynamodb");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
+const util_dynamodb_1 = require("@aws-sdk/util-dynamodb");
 const region = "eu-north-1";
-const templateURL =
-  "https://amply-templates.s3.eu-north-1.amazonaws.com/artist-environment.yml";
+const templateURL = "https://amply-templates.s3.eu-north-1.amazonaws.com/artist-environment.yml";
 const defaultBucket = process.env.S3_BUCKET;
 const centralBucket = "amply-central-596430611327"; // ✅ central metadata bucket
-
 const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
 const LIKES_TABLE = `amply-listen-history-${environment}`; // Reuse listen table with GSI for likes
-
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
-
-exports.handler = async (event) => {
-  const rawPath = event.rawPath || event.path || "";
-  const path = rawPath.split("?")[0]; // Strip query string for routing
-  const method = event.requestContext.http?.method || event.httpMethod;
-  console.log("➡️ PATH:", path, "| METHOD:", method, "| RAW PATH:", rawPath);
-
-  // === CORS Preflight ===
-  if (method === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: "",
-    };
-  }
-
-  try {
-    // === DEPLOY STACK ===
-    if (path.endsWith("/deploy-stack") && method === "POST") {
-      const body = JSON.parse(event.body || "{}");
-      const artistName = body.artistName || "Unknown";
-      const accountId = event.requestContext.accountId;
-
-      const cf = new CloudFormationClient({ region });
-      const result = await cf.send(
-        new CreateStackCommand({
-          StackName: `amply-${artistName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
-          TemplateURL: templateURL,
-          Parameters: [
-            { ParameterKey: "AmplyAccountId", ParameterValue: process.env.AWS_ACCOUNT_ID },
-            { ParameterKey: "ArtistName", ParameterValue: artistName },
-          ],
-          Capabilities: ["CAPABILITY_NAMED_IAM"],
-        })
-      );
-
-      console.log("✅ Stack created:", result.StackId);
-
-      // Wait a bit for stack to initialize
-      await new Promise((r) => setTimeout(r, 8000));
-
-      return {
-        statusCode: 201,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          message: "Stack creation initiated",
-          stackId: result.StackId,
-        }),
-      };
-    }
-
-    // === UPLOAD PRESIGNED URL ===
-    if (path.endsWith("/presigned-url") && method === "POST") {
-      const body = JSON.parse(event.body || "{}");
-      const fileName = body.fileName || `song-${Date.now()}.mp3`;
-      const artistId = body.artistId || "unknown";
-
-      console.log("➡️ Generating presigned upload URL...");
-
-      const s3 = new S3Client({ region });
-      const uploadUrl = await getSignedUrl(
-        s3,
-        new PutObjectCommand({
-          Bucket: defaultBucket,
-          Key: `${artistId}/${fileName}`,
-          ContentType: "audio/mpeg",
-        }),
-        { expiresIn: 3600 }
-      );
-
-      console.log("✅ Presigned URL generated:", fileName);
-
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          uploadUrl,
-          fileName,
-          bucketKey: `${artistId}/${fileName}`,
-        }),
-      };
-    }
-
-    // === UPDATE CENTRAL INDEX ===
-    if (path.endsWith("/update-index") && method === "POST") {
-      const body = JSON.parse(event.body || "{}");
-      const { artistId, artistName, songs } = body;
-
-      console.log("➡️ Updating central index...");
-
-      const s3 = new S3Client({ region });
-      const indexKey = "global-index.json";
-
-      let index = { artists: [] };
-      try {
-        const response = await s3.send(
-          new GetObjectCommand({
-            Bucket: centralBucket,
-            Key: indexKey,
-          })
-        );
-        const data = await response.Body.transformToString();
-        index = JSON.parse(data);
-      } catch (err) {
-        console.log("ℹ️ No existing index file, creating new one.");
-      }
-
-      let artistEntry = index.artists.find((a) => a.id === artistId);
-      if (!artistEntry) {
-        artistEntry = { id: artistId, name: artistName, songs: [] };
-        index.artists.push(artistEntry);
-        console.log(`🆕 Created new artist entry for ${artistName}`);
-      }
-
-      // Update songs
-      for (const song of songs) {
-        const existingSongIndex = artistEntry.songs.findIndex(
-          (s) => s.id === song.id
-        );
-        if (existingSongIndex >= 0) {
-          artistEntry.songs[existingSongIndex] = song;
-          console.log(`🔁 Updated existing song: ${song.title}`);
-        } else {
-          artistEntry.songs.push(song);
-          console.log(`🎵 Added new song: ${song.title}`);
+const handler = async (event) => {
+    const rawPath = event.rawPath || event.path || "";
+    const path = rawPath.split("?")[0]; // Strip query string for routing
+    const method = event.requestContext.http?.method || event.httpMethod;
+    console.log("➡️ PATH:", path, "| METHOD:", method, "| RAW PATH:", rawPath);
+    try {
+        // === Handle CORS preflight ===
+        if (method === "OPTIONS") {
+            return { statusCode: 204, headers: corsHeaders };
         }
-      }
-
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: centralBucket,
-          Key: indexKey,
-          Body: JSON.stringify(index),
-          ContentType: "application/json",
-        })
-      );
-
-      console.log("✅ Central index updated successfully!");
-
-      // Invalidate CloudFront cache if domain is provided
-      if (body.cloudfrontDomain) {
-        try {
-          console.log("🔁 Invalidating cache for re-uploaded song...");
-
-          const cloudfrontDomain = body.cloudfrontDomain;
-          const cf = new CloudFrontClient({ region });
-          const distributions = await cf.send(new ListDistributionsCommand({}));
-
-          const distribution = distributions.DistributionList?.Items?.find(
-            (d) => d.DomainName === cloudfrontDomain
-          );
-
-          if (distribution) {
-            await cf.send(
-              new CreateInvalidationCommand({
-                DistributionId: distribution.Id,
-                InvalidationBatch: {
-                  CallerReference: Date.now().toString(),
-                  Paths: { Quantity: 1, Items: ["/global-index.json"] },
+        // === CONNECT ===
+        if (path.endsWith("/connect") && method === "POST") {
+            const body = JSON.parse(event.body || "{}");
+            const { artistName } = body;
+            if (!artistName)
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Missing artist name" }),
+                };
+            const cf = new client_cloudformation_1.CloudFormationClient({ region });
+            const stackName = `amply-${artistName.replace(/\s+/g, "-").toLowerCase()}`;
+            await cf.send(new client_cloudformation_1.CreateStackCommand({
+                StackName: stackName,
+                TemplateURL: templateURL,
+                Capabilities: ["CAPABILITY_NAMED_IAM"],
+                Parameters: [
+                    { ParameterKey: "ArtistName", ParameterValue: artistName },
+                    { ParameterKey: "AmplyAccountId", ParameterValue: process.env.AWS_ACCOUNT_ID },
+                    { ParameterKey: "Region", ParameterValue: region },
+                ],
+            }));
+            await new Promise((r) => setTimeout(r, 8000));
+            const describe = await cf.send(new client_cloudformation_1.DescribeStacksCommand({ StackName: stackName }));
+            const outputs = describe.Stacks?.[0]?.Outputs || [];
+            const result = Object.fromEntries(outputs.map((o) => [o.OutputKey, o.OutputValue]));
+            return {
+                statusCode: 200,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: "Artist environment created!", ...result }),
+            };
+        }
+        // === LIST ===
+        if (path.endsWith("/list") && method === "POST") {
+            const body = JSON.parse(event.body || "{}");
+            const { artistRoleArn, bucketName } = body;
+            if (!artistRoleArn || !bucketName)
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Missing artistRoleArn or bucketName" }),
+                };
+            const sts = new client_sts_1.STSClient({ region });
+            const assume = await sts.send(new client_sts_1.AssumeRoleCommand({
+                RoleArn: artistRoleArn,
+                RoleSessionName: "AmplyArtistList",
+                DurationSeconds: 900,
+            }));
+            const s3 = new client_s3_1.S3Client({
+                region,
+                credentials: {
+                    accessKeyId: assume.Credentials.AccessKeyId,
+                    secretAccessKey: assume.Credentials.SecretAccessKey,
+                    sessionToken: assume.Credentials.SessionToken,
                 },
-              })
-            );
-            console.log("✅ Cache invalidation triggered.");
-          } else {
-            console.warn(
-              "⚠️ No matching CloudFront distribution found for domain:",
-              cloudfrontDomain
-            );
-          }
-        } catch (err) {
-          console.warn("⚠️ Cache invalidation skipped:", err.message);
+            });
+            const res = await s3.send(new client_s3_1.ListObjectsV2Command({ Bucket: bucketName }));
+            const files = (res.Contents || []).map((obj) => obj.Key);
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ files }) };
         }
-      }
-
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          message: "Index updated successfully",
-          totalArtists: index.artists.length,
-        }),
-      };
-    }
-
-    // === GET STREAM PRESIGNED URL ===
-    if (path.endsWith("/stream-url") && method === "POST") {
-      const body = JSON.parse(event.body || "{}");
-      const { bucketKey } = body;
-
-      if (!bucketKey) {
-        return {
-          statusCode: 400,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: "Missing bucketKey" }),
-        };
-      }
-
-      try {
-        const s3 = new S3Client({ region });
-        const streamUrl = await getSignedUrl(
-          s3,
-          new GetObjectCommand({
-            Bucket: defaultBucket,
-            Key: bucketKey,
-          }),
-          { expiresIn: 3600 }
-        );
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ streamUrl }),
-        };
-      } catch (err) {
-        console.error("❌ Stream error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === GET STREAM (Query params version) ===
-    if (path.endsWith("/stream") && method === "GET") {
-      const { bucket, file } = event.queryStringParameters || {};
-
-      if (!bucket || !file) {
-        return {
-          statusCode: 400,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: "Missing bucket or file parameter" }),
-        };
-      }
-
-      try {
-        const s3 = new S3Client({ region });
-        const streamUrl = await getSignedUrl(
-          s3,
-          new GetObjectCommand({
-            Bucket: bucket,
-            Key: file,
-          }),
-          { expiresIn: 3600 }
-        );
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ streamUrl }),
-        };
-      } catch (err) {
-        console.error("❌ Stream error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === CREATE USER ===
-    if (path.endsWith("/create-user") && method === "POST") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { userId, email, userType } = body;
-
-        if (!userId || !email) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing userId or email" }),
-          };
+        // === GET-UPLOAD-URL ===
+        if (path.endsWith("/get-upload-url") && method === "POST") {
+            console.log("➡️ Generating presigned upload URL...");
+            let body;
+            try {
+                body = JSON.parse(event.body || "{}");
+            }
+            catch {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Invalid JSON body" }),
+                };
+            }
+            const { fileName, artistRoleArn, bucketName, contentType } = body;
+            if (!fileName || !artistRoleArn || !bucketName)
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({
+                        error: "Missing required fields: fileName, artistRoleArn, bucketName",
+                    }),
+                };
+            const sts = new client_sts_1.STSClient({ region });
+            const assume = await sts.send(new client_sts_1.AssumeRoleCommand({
+                RoleArn: artistRoleArn,
+                RoleSessionName: "AmplyArtistPresign",
+                DurationSeconds: 900,
+            }));
+            const s3 = new client_s3_1.S3Client({
+                region,
+                credentials: {
+                    accessKeyId: assume.Credentials.AccessKeyId,
+                    secretAccessKey: assume.Credentials.SecretAccessKey,
+                    sessionToken: assume.Credentials.SessionToken,
+                },
+            });
+            const command = new client_s3_1.PutObjectCommand({
+                Bucket: bucketName,
+                Key: fileName,
+                ContentType: contentType || "application/octet-stream",
+                ChecksumAlgorithm: "CRC32",
+                ACL: "bucket-owner-full-control", // ✅ Add this line
+            });
+            const uploadUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, command, { expiresIn: 300 });
+            console.log("✅ Presigned URL generated:", fileName);
+            return {
+                statusCode: 200,
+                headers: corsHeaders,
+                body: JSON.stringify({ uploadUrl, expiresIn: 300 }),
+            };
         }
-
-        const dynamodb = new DynamoDBClient({ region });
-        await dynamodb.send(
-          new PutItemCommand({
-            TableName: USERS_TABLE,
-            Item: marshall({
-              userId,
-              email,
-              userType: userType || "listener",
-              createdAt: new Date().toISOString(),
-              balance: 0,
-            }),
-          })
-        );
-
-        return {
-          statusCode: 201,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: "User created", userId }),
-        };
-      } catch (err) {
-        console.error("❌ Create user error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === GET PLAYLISTS ===
-    if (path.endsWith("/playlists") && method === "GET") {
-      try {
-        const { userId } = event.queryStringParameters || {};
-
-        if (!userId) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing userId" }),
-          };
-        }
-
-        const dynamodb = new DynamoDBClient({ region });
-        // Use Query if table has userId as partition key and playlistId as sort key
-        // Otherwise use Scan with FilterExpression
-        const result = await dynamodb.send(
-          new QueryCommand({
-            TableName: PLAYLISTS_TABLE,
-            IndexName: "UserIdIndex",  // Assuming this GSI exists with userId as partition key
-            KeyConditionExpression: "userId = :userId",
-            ExpressionAttributeValues: marshall({
-              ":userId": userId,
-            }),
-          })
-        );
-
-        const playlists = (result.Items || []).map((item) =>
-          unmarshall(item)
-        );
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ playlists }),
-        };
-      } catch (err) {
-        console.error("❌ Get playlists error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === CREATE PLAYLIST ===
-    if (path.endsWith("/playlists") && method === "POST") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { userId, playlistName, description } = body;
-
-        if (!userId || !playlistName) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({
-              error: "Missing userId or playlistName",
-            }),
-          };
-        }
-
-        const playlistId = `playlist-${Date.now()}`;
-        const dynamodb = new DynamoDBClient({ region });
-        await dynamodb.send(
-          new PutItemCommand({
-            TableName: PLAYLISTS_TABLE,
-            Item: marshall({
-              userId,
-              playlistId,
-              playlistName,
-              description: description || "",
-              isPublic: 0,
-              songs: [],
-              createdAt: new Date().toISOString(),
-            }),
-          })
-        );
-
-        return {
-          statusCode: 201,
-          headers: corsHeaders,
-          body: JSON.stringify({
-            message: "Playlist created",
-            playlistId,
-          }),
-        };
-      } catch (err) {
-        console.error("❌ Create playlist error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === UPDATE PLAYLIST (Add/Remove Songs) ===
-    if (path.endsWith("/playlists") && method === "PUT") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { userId, playlistId, action, song } = body;
-
-        if (!userId || !playlistId) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({
-              error: "Missing userId or playlistId",
-            }),
-          };
-        }
-
-        if (action === "add" && !song) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing song for add action" }),
-          };
-        }
-
-        const dynamodb = new DynamoDBClient({ region });
-
-        if (action === "add") {
-          await dynamodb.send(
-            new UpdateItemCommand({
-              TableName: PLAYLISTS_TABLE,
-              Key: marshall({ playlistId }),
-              UpdateExpression: "SET songs = list_append(if_not_exists(songs, :empty), :song)",
-              ExpressionAttributeValues: marshall({
-                ":song": [song],
-                ":empty": [],
-              }),
-            })
-          );
-        } else if (action === "remove") {
-          // Get playlist, find song index, remove it
-          const getResult = await dynamodb.send(
-            new GetItemCommand({
-              TableName: PLAYLISTS_TABLE,
-              Key: marshall({ playlistId }),
-            })
-          );
-
-          const playlist = unmarshall(getResult.Item);
-          const newSongs = (playlist.songs || []).filter(
-            (s) => s.songId !== body.songId
-          );
-
-          await dynamodb.send(
-            new UpdateItemCommand({
-              TableName: PLAYLISTS_TABLE,
-              Key: marshall({ playlistId }),
-              UpdateExpression: "SET songs = :songs",
-              ExpressionAttributeValues: marshall({
-                ":songs": newSongs,
-              }),
-            })
-          );
-        }
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: `Song ${action}ed from playlist` }),
-        };
-      } catch (err) {
-        console.error("❌ Update playlist error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === DELETE PLAYLIST ===
-    if (path.endsWith("/playlists") && method === "DELETE") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { userId, playlistId } = body;
-
-        if (!userId || !playlistId) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({
-              error: "Missing userId or playlistId",
-            }),
-          };
-        }
-
-        const dynamodb = new DynamoDBClient({ region });
-        await dynamodb.send(
-          new DeleteItemCommand({
-            TableName: PLAYLISTS_TABLE,
-            Key: marshall({ playlistId }),
-          })
-        );
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: "Playlist deleted" }),
-        };
-      } catch (err) {
-        console.error("❌ Delete playlist error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === LIKE SONG ===
-    if (path.endsWith("/like-song") && method === "POST") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { userId, songId, artistId, songName } = body;
-
-        if (!userId || !songId || !artistId) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({
-              error: "Missing userId, songId, or artistId",
-            }),
-          };
-        }
-
-        const dynamodb = new DynamoDBClient({ region });
-        const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp
-
-        await dynamodb.send(
-          new PutItemCommand({
-            TableName: LIKES_TABLE,
-            Item: marshall({
-              songId,
-              timestamp,
-              userId,
-              type: "like",
-              artistId,
-              songName: songName || "Unknown Song",
-            }),
-          })
-        );
-
-        return {
-          statusCode: 201,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: "Song liked" }),
-        };
-      } catch (err) {
-        console.error("❌ Like song error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === UNLIKE SONG ===
-    if (path.endsWith("/unlike-song") && method === "DELETE") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { userId, songId, timestamp } = body;
-
-        if (!songId || !timestamp) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing songId or timestamp" }),
-          };
-        }
-
-        const dynamodb = new DynamoDBClient({ region });
-
-        await dynamodb.send(
-          new DeleteItemCommand({
-            TableName: LIKES_TABLE,
-            Key: marshall({
-              songId,
-              timestamp,
-            }),
-          })
-        );
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: "Song unliked" }),
-        };
-      } catch (err) {
-        console.error("❌ Unlike song error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === GET LIKED SONGS ===
-    if (path.endsWith("/liked-songs") && method === "GET") {
-      try {
-        const { userId } = event.queryStringParameters || {};
-
-        if (!userId) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing userId" }),
-          };
-        }
-
-        const dynamodb = new DynamoDBClient({ region });
-        const result = await dynamodb.send(
-          new QueryCommand({
-            TableName: LIKES_TABLE,
-            IndexName: "UserIdIndex",
-            KeyConditionExpression: "userId = :userId",
-            FilterExpression: "#type = :type",
-            ExpressionAttributeNames: { "#type": "type" },
-            ExpressionAttributeValues: marshall({
-              ":userId": userId,
-              ":type": "like",
-            }),
-          })
-        );
-
-        const likedSongs = (result.Items || []).map((item) => {
-          const data = unmarshall(item);
-          return { songId: data.songId, artistId: data.artistId };
-        });
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ likedSongs }),
-        };
-      } catch (err) {
-        console.error("❌ Get liked songs error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === DELETE SONG ===
-    if (path.endsWith("/delete-song") && method === "DELETE") {
-      try {
-        const body = JSON.parse(event.body || "{}");
-        const { artistId, songId, fileName, cloudfrontDomain } = body;
-
-        if (!artistId || !fileName) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing artistId or fileName" }),
-          };
-        }
-
-        const s3 = new S3Client({ region });
-
-        console.log("➡️ Deleting song from S3:", `${artistId}/${fileName}`);
-
-        // Delete from S3
-        await s3.send(
-          new DeleteObjectCommand({
-            Bucket: defaultBucket,
-            Key: `${artistId}/${fileName}`,
-          })
-        );
-
-        console.log("✅ Song deleted from S3");
-
-        // Update central index to remove song if songId provided
-        if (songId) {
-          try {
+        // === UPDATE-INDEX (Artist Profile + Songs) ===
+        if (path.endsWith("/update-index") && method === "POST") {
             console.log("➡️ Updating central index...");
-            const indexKey = "global-index.json";
-            const response = await s3.send(
-              new GetObjectCommand({
+            const body = JSON.parse(event.body || "{}");
+            const { artistId, artistName, cloudfrontDomain, bucketName, song, profilePhoto, coverPhoto, bio, socials } = body;
+            if (!artistId || !artistName || !cloudfrontDomain || !bucketName) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Missing one or more required fields" }),
+                };
+            }
+            const s3 = new client_s3_1.S3Client({ region });
+            const indexKey = "amply-index.json";
+            let indexData = { artists: [] };
+            let reuploading = false;
+            // --- Load existing index (or create new)
+            try {
+                const existing = await s3.send(new client_s3_1.GetObjectCommand({ Bucket: centralBucket, Key: indexKey }));
+                const text = await existing.Body.transformToString();
+                indexData = JSON.parse(text);
+            }
+            catch {
+                console.log("ℹ️ No existing index file, creating new one.");
+            }
+            // --- Find or create artist entry
+            let artistEntry = indexData.artists.find((a) => a.artistId === artistId);
+            if (!artistEntry) {
+                artistEntry = {
+                    artistId,
+                    artistName,
+                    bucket: bucketName,
+                    cloudfrontDomain,
+                    songs: [],
+                };
+                indexData.artists.push(artistEntry);
+                console.log(`🆕 Created new artist entry for ${artistName}`);
+            }
+            // --- Update artist metadata (optional)
+            artistEntry.artistName = artistName || artistEntry.artistName;
+            artistEntry.bucket = bucketName;
+            artistEntry.cloudfrontDomain = cloudfrontDomain;
+            if (profilePhoto)
+                artistEntry.profilePhoto = profilePhoto;
+            if (coverPhoto)
+                artistEntry.coverPhoto = coverPhoto;
+            if (bio)
+                artistEntry.bio = bio;
+            if (socials)
+                artistEntry.socials = socials;
+            // --- If song provided, add/update it
+            if (song) {
+                const existingIndex = artistEntry.songs.findIndex((s) => s.title === song.title);
+                if (existingIndex >= 0) {
+                    artistEntry.songs[existingIndex] = song;
+                    reuploading = true;
+                    console.log(`🔁 Updated existing song: ${song.title}`);
+                }
+                else {
+                    artistEntry.songs.push(song);
+                    console.log(`🎵 Added new song: ${song.title}`);
+                }
+            }
+            // --- Save updated index
+            await s3.send(new client_s3_1.PutObjectCommand({
                 Bucket: centralBucket,
                 Key: indexKey,
-              })
-            );
-            const index = JSON.parse(await response.Body.transformToString());
-
-            const artistEntry = index.artists.find((a) => a.id === artistId);
-            if (artistEntry) {
-              const originalCount = artistEntry.songs.length;
-              artistEntry.songs = artistEntry.songs.filter(
-                (s) => s.id !== songId
-              );
-              console.log(
-                `🗑️ Removed song from index (${originalCount} -> ${artistEntry.songs.length})`
-              );
-
-              await s3.send(
-                new PutObjectCommand({
-                  Bucket: centralBucket,
-                  Key: indexKey,
-                  Body: JSON.stringify(index),
-                  ContentType: "application/json",
-                })
-              );
+                Body: JSON.stringify(indexData, null, 2),
+                ContentType: "application/json",
+                ACL: "public-read",
+            }));
+            console.log("✅ Central index updated successfully!");
+            // --- Optional CloudFront cache invalidation (only if reuploading)
+            if (reuploading) {
+                try {
+                    console.log("🔁 Invalidating cache for re-uploaded song...");
+                    const cfClient = new client_cloudfront_1.CloudFrontClient({ region });
+                    const list = await cfClient.send(new client_cloudfront_1.ListDistributionsCommand({}));
+                    const target = list.DistributionList?.Items?.find((d) => d.DomainName === cloudfrontDomain);
+                    if (target) {
+                        await cfClient.send(new client_cloudfront_1.CreateInvalidationCommand({
+                            DistributionId: target.Id,
+                            InvalidationBatch: {
+                                Paths: { Quantity: 1, Items: ["/*"] },
+                                CallerReference: `reupload-${artistId}-${Date.now()}`,
+                            },
+                        }));
+                        console.log("✅ Cache invalidation triggered.");
+                    }
+                    else {
+                        console.warn("⚠️ No matching CloudFront distribution found for domain:", cloudfrontDomain);
+                    }
+                }
+                catch (err) {
+                    console.warn("⚠️ Cache invalidation skipped:", err.message);
+                }
             }
-          } catch (indexErr) {
-            console.warn("⚠️ Index update failed:", indexErr.message);
-          }
+            return {
+                statusCode: 200,
+                headers: corsHeaders,
+                body: JSON.stringify({
+                    message: song
+                        ? "Song added and index updated successfully"
+                        : "Artist profile updated successfully",
+                }),
+            };
         }
-
-        // Invalidate CloudFront cache if domain is provided
-        if (cloudfrontDomain) {
-          try {
-            console.log("🔁 Invalidating CloudFront cache...");
-            const cf = new CloudFrontClient({ region });
-            const distributions = await cf.send(
-              new ListDistributionsCommand({})
-            );
-
-            const distribution = distributions.DistributionList?.Items?.find(
-              (d) => d.DomainName === cloudfrontDomain
-            );
-
-            if (distribution) {
-              await cf.send(
-                new CreateInvalidationCommand({
-                  DistributionId: distribution.Id,
-                  InvalidationBatch: {
-                    CallerReference: Date.now().toString(),
-                    Paths: { Quantity: 2, Items: ["/global-index.json", "/*"] },
-                  },
-                })
-              );
-              console.log("✅ Cache invalidation triggered.");
+        // === STREAM ===
+        if (path.endsWith("/stream") && method === "GET") {
+            const { file, bucket } = event.queryStringParameters || {};
+            if (!file || !bucket) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Missing 'file' or 'bucket' parameter" }),
+                };
             }
-          } catch (cfErr) {
-            console.warn("⚠️ Cache invalidation failed:", cfErr.message);
-          }
+            try {
+                const s3 = new client_s3_1.S3Client({ region });
+                const command = new client_s3_1.GetObjectCommand({ Bucket: bucket, Key: file });
+                // generate a temporary presigned URL to stream the song
+                const signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, command, { expiresIn: 300 });
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ streamUrl: signedUrl }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Stream error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Failed to generate stream URL: " + err.message }),
+                };
+            }
         }
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: "Song deleted successfully" }),
-        };
-      } catch (err) {
-        console.error("❌ Delete song error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === GET USER PREFERENCES ===
-    if (path === "/user-preferences" && method === "GET") {
-      try {
-        const userId = decodeURIComponent(event.queryStringParameters?.userId || "");
-        
-        if (!userId) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing userId" }),
-          };
+        // === CREATE USER (on signup) ===
+        if (path.endsWith("/create-user") && method === "POST") {
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { userId, email, username, displayName } = body;
+                if (!userId || !email) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing userId or email" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const user = {
+                    userId,
+                    email,
+                    username: username || email.split("@")[0],
+                    displayName: displayName || email,
+                    createdAt: new Date().toISOString(),
+                    likedSongs: [],
+                    followingArtists: [],
+                };
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: USERS_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)(user),
+                }));
+                return {
+                    statusCode: 201,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "User created", userId }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Create user error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
         }
-
-        const db = new DynamoDBClient({ region });
-        const result = await db.send(
-          new GetItemCommand({
-            TableName: USERS_TABLE,
-            Key: marshall({ userId }),
-          })
-        );
-
-        const user = result.Item ? unmarshall(result.Item) : null;
-        const preferences = user?.preferences || {
-          sidebarItems: ["Explore", "Playlists", "Liked Songs", "Settings"],
-          showHearts: true,
-          theme: "dark",
-        };
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify(preferences),
-        };
-      } catch (err) {
-        console.error("❌ Get preferences error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
-    }
-
-    // === UPDATE USER PREFERENCES ===
-    if (path === "/user-preferences" && method === "PUT") {
-      try {
-        const { userId, preferences } = JSON.parse(body || "{}");
-
-        if (!userId || !preferences) {
-          return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({ error: "Missing userId or preferences" }),
-          };
+        // === GET PLAYLISTS ===
+        if (path.endsWith("/playlists") && method === "GET") {
+            try {
+                const { userId } = event.queryStringParameters || {};
+                if (!userId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing userId" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({
+                    TableName: PLAYLISTS_TABLE,
+                    FilterExpression: "userId = :userId",
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":userId": userId,
+                    }),
+                }));
+                const playlists = (result.Items || []).map((item) => (0, util_dynamodb_1.unmarshall)(item));
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ playlists }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Get playlists error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
         }
-
-        const db = new DynamoDBClient({ region });
-        
-        // First ensure user exists
-        await db.send(
-          new GetItemCommand({
-            TableName: USERS_TABLE,
-            Key: marshall({ userId }),
-          })
-        );
-
-        // Update preferences
-        await db.send(
-          new UpdateItemCommand({
-            TableName: USERS_TABLE,
-            Key: marshall({ userId }),
-            UpdateExpression: "SET preferences = :prefs, updatedAt = :ts",
-            ExpressionAttributeValues: marshall({
-              ":prefs": preferences,
-              ":ts": new Date().toISOString(),
-            }),
-          })
-        );
-
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: JSON.stringify({ message: "Preferences updated", preferences }),
-        };
-      } catch (err) {
-        console.error("❌ Update preferences error:", err);
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: err.message }),
-        };
-      }
+        // === CREATE PLAYLIST ===
+        if (path.endsWith("/playlists") && method === "POST") {
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { userId, playlistName, description } = body;
+                if (!userId || !playlistName) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing userId or playlistName" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const playlistId = `${userId}#${Date.now()}`;
+                const playlist = {
+                    playlistId,
+                    userId,
+                    playlistName,
+                    description: description || "",
+                    songs: [],
+                    isPublic: 0, // DynamoDB: 0 = false, 1 = true
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: PLAYLISTS_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)(playlist),
+                }));
+                return {
+                    statusCode: 201,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Playlist created", playlist }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Create playlist error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+        // === UPDATE PLAYLIST (add/remove songs) ===
+        if (path.endsWith("/playlists") && method === "PUT") {
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { userId, playlistId, action, song } = body;
+                if (!userId || !playlistId || !action) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing required fields" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                if (action === "add") {
+                    // Normalize song to have songId field
+                    const normalizedSong = { songId: song.file || song.songId, ...song };
+                    await dynamodb.send(new client_dynamodb_1.UpdateItemCommand({
+                        TableName: PLAYLISTS_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({ playlistId }),
+                        UpdateExpression: "SET songs = list_append(if_not_exists(songs, :empty), :song), updatedAt = :now",
+                        ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                            ":song": [normalizedSong],
+                            ":empty": [],
+                            ":now": new Date().toISOString(),
+                        }),
+                    }));
+                }
+                else if (action === "remove") {
+                    // Get playlist, filter out song, and update
+                    const getResult = await dynamodb.send(new client_dynamodb_1.GetItemCommand({
+                        TableName: PLAYLISTS_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({ playlistId }),
+                    }));
+                    if (!getResult.Item) {
+                        return {
+                            statusCode: 404,
+                            headers: corsHeaders,
+                            body: JSON.stringify({ error: "Playlist not found" }),
+                        };
+                    }
+                    const playlist = (0, util_dynamodb_1.unmarshall)(getResult.Item);
+                    if (!playlist.songs || playlist.songs.length === 0) {
+                        return {
+                            statusCode: 400,
+                            headers: corsHeaders,
+                            body: JSON.stringify({ error: "Playlist has no songs" }),
+                        };
+                    }
+                    const songToRemove = song.file || song.songId;
+                    const updatedSongs = playlist.songs.filter((s) => (s.songId !== songToRemove && s.file !== songToRemove));
+                    await dynamodb.send(new client_dynamodb_1.UpdateItemCommand({
+                        TableName: PLAYLISTS_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({ playlistId }),
+                        UpdateExpression: "SET songs = :songs, updatedAt = :now",
+                        ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                            ":songs": updatedSongs,
+                            ":now": new Date().toISOString(),
+                        }),
+                    }));
+                }
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: `Song ${action === "add" ? "added to" : "removed from"} playlist` }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Update playlist error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+        // === DELETE PLAYLIST ===
+        if (path.endsWith("/playlists") && method === "DELETE") {
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { playlistId } = body;
+                if (!playlistId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing playlistId" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                await dynamodb.send(new client_dynamodb_1.DeleteItemCommand({
+                    TableName: PLAYLISTS_TABLE,
+                    Key: (0, util_dynamodb_1.marshall)({ playlistId }),
+                }));
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Playlist deleted" }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Delete playlist error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+        // === LIKE SONG ===
+        if (path.endsWith("/like-song") && method === "POST") {
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { userId, songId, artistId } = body;
+                if (!userId || !songId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing userId or songId" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const likeId = `${userId}#${songId}`;
+                const timestamp = Date.now();
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: LIKES_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)({
+                        songId: likeId,
+                        timestamp: timestamp,
+                        userId,
+                        actualSongId: songId,
+                        artistId: artistId || "unknown",
+                        type: "like",
+                    }),
+                }));
+                return {
+                    statusCode: 201,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Song liked" }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Like song error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+        // === UNLIKE SONG ===
+        if (path.endsWith("/unlike-song") && method === "DELETE") {
+            try {
+                const { userId, songId } = event.queryStringParameters || {};
+                if (!userId || !songId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing userId or songId" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const likeId = `${userId}#${songId}`;
+                
+                // Scan to find the like record (can't use Query because we need to find all likes for this user#songId)
+                const scanResult = await dynamodb.send(new client_dynamodb_1.ScanCommand({
+                    TableName: LIKES_TABLE,
+                    FilterExpression: "songId = :likeId",
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":likeId": likeId,
+                    }),
+                }));
+                
+                if (!scanResult.Items || scanResult.Items.length === 0) {
+                    return {
+                        statusCode: 404,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Like not found" }),
+                    };
+                }
+                
+                const likeRecord = (0, util_dynamodb_1.unmarshall)(scanResult.Items[0]);
+                
+                // Delete using both composite key elements
+                await dynamodb.send(new client_dynamodb_1.DeleteItemCommand({
+                    TableName: LIKES_TABLE,
+                    Key: (0, util_dynamodb_1.marshall)({
+                        songId: likeId,
+                        timestamp: likeRecord.timestamp,
+                    }),
+                }));
+                
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Song unliked" }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Unlike song error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+        // === GET LIKED SONGS ===
+        if (path.endsWith("/liked-songs") && method === "GET") {
+            try {
+                const { userId } = event.queryStringParameters || {};
+                if (!userId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing userId" }),
+                    };
+                }
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({
+                    TableName: LIKES_TABLE,
+                    FilterExpression: "userId = :userId AND #type = :type",
+                    ExpressionAttributeNames: { "#type": "type" },
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":userId": userId,
+                        ":type": "like",
+                    }),
+                }));
+                const likedSongs = (result.Items || []).map((item) => {
+                    const data = (0, util_dynamodb_1.unmarshall)(item);
+                    return { songId: data.actualSongId || data.songId.split("#")[1], artistId: data.artistId };
+                });
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ likedSongs }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Get liked songs error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+        // === FALLBACK ===
+        return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Not found", route: path }) };
     }
-
-    // === FALLBACK ===
-    return {
-      statusCode: 404,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Not found", route: path }),
-    };
-  } catch (err) {
-    console.error("❌ Lambda error:", err);
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: err.message }),
-    };
-  }
+    catch (err) {
+        console.error("❌ Lambda error:", err);
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+    }
 };
+exports.handler = handler;

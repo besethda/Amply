@@ -222,7 +222,8 @@ function syncPlayerIcons() {
   // Add playing class
   activeCard.classList.add("playing");
 
-  const btn = activeCard.querySelector("button");
+  // Get the play button (not the like button)
+  const btn = activeCard.querySelector(".song-play-btn-list, .song-play-btn-box") || activeCard.querySelector("button:last-of-type");
   if (!btn) return;
 
   const cardPlay = btn.querySelector(
@@ -903,7 +904,12 @@ export function renderSongsToDom({
 // PLAY BUTTON LOGIC PER CARD
 // ===============================
 function setupPlayButton(div, song, fullList) {
-  const btn = div.querySelector("button");
+  // For list layout, select the play button specifically; for grid, select the first button
+  const btn = div.querySelector(".song-play-btn-list") || div.querySelector(".song-play-btn-box") || div.querySelector("button:last-of-type");
+  
+  // Get the specific SVG icons for this button
+  const playIconEl = btn?.querySelector(".play-icon-list, .play-icon-box");
+  const pauseIconEl = btn?.querySelector(".pause-icon-list, .pause-icon-box");
 
   // Click handler for the play button
   const handlePlay = () => {
@@ -912,13 +918,13 @@ function setupPlayButton(div, song, fullList) {
       if (audio.paused) {
         // Resume playback
         audio.play();
-        playIcon.style.display = "none";
-        pauseIcon.style.display = "block";
+        if (playIconEl) playIconEl.style.display = "none";
+        if (pauseIconEl) pauseIconEl.style.display = "block";
       } else {
         // Pause playback
         audio.pause();
-        playIcon.style.display = "block";
-        pauseIcon.style.display = "none";
+        if (playIconEl) playIconEl.style.display = "block";
+        if (pauseIconEl) pauseIconEl.style.display = "none";
       }
 
       // Sync all cards with the current state
@@ -935,11 +941,15 @@ function setupPlayButton(div, song, fullList) {
       .querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
       .forEach((el) => (el.style.display = "block"));
 
+    // Update this specific button's icons
+    if (playIconEl) playIconEl.style.display = "none";
+    if (pauseIconEl) pauseIconEl.style.display = "block";
+
     // Play the newly selected song
     playSong(song, fullList);
   };
 
-  btn.addEventListener("click", (e) => {
+  btn?.addEventListener("click", (e) => {
     e.stopPropagation(); // Prevent bubbling if we add listener to div
     handlePlay();
   });

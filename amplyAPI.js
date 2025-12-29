@@ -333,9 +333,9 @@ const handler = async (event) => {
                     };
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
-                const result = await dynamodb.send(new client_dynamodb_1.QueryCommand({
+                const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({
                     TableName: PLAYLISTS_TABLE,
-                    KeyConditionExpression: "userId = :userId",
+                    FilterExpression: "userId = :userId",
                     ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
                         ":userId": userId,
                     }),
@@ -413,12 +413,14 @@ const handler = async (event) => {
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 if (action === "add") {
+                    // Normalize song to have songId field
+                    const normalizedSong = { songId: song.file || song.songId, ...song };
                     await dynamodb.send(new client_dynamodb_1.UpdateItemCommand({
                         TableName: PLAYLISTS_TABLE,
-                        Key: (0, util_dynamodb_1.marshall)({ userId, playlistId }),
+                        Key: (0, util_dynamodb_1.marshall)({ playlistId }),
                         UpdateExpression: "SET songs = list_append(if_not_exists(songs, :empty), :song), updatedAt = :now",
                         ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
-                            ":song": [song],
+                            ":song": [normalizedSong],
                             ":empty": [],
                             ":now": new Date().toISOString(),
                         }),
@@ -428,13 +430,28 @@ const handler = async (event) => {
                     // Get playlist, filter out song, and update
                     const getResult = await dynamodb.send(new client_dynamodb_1.GetItemCommand({
                         TableName: PLAYLISTS_TABLE,
-                        Key: (0, util_dynamodb_1.marshall)({ userId, playlistId }),
+                        Key: (0, util_dynamodb_1.marshall)({ playlistId }),
                     }));
+                    if (!getResult.Item) {
+                        return {
+                            statusCode: 404,
+                            headers: corsHeaders,
+                            body: JSON.stringify({ error: "Playlist not found" }),
+                        };
+                    }
                     const playlist = (0, util_dynamodb_1.unmarshall)(getResult.Item);
-                    const updatedSongs = playlist.songs.filter((s) => s.songId !== song.songId);
+                    if (!playlist.songs || playlist.songs.length === 0) {
+                        return {
+                            statusCode: 400,
+                            headers: corsHeaders,
+                            body: JSON.stringify({ error: "Playlist has no songs" }),
+                        };
+                    }
+                    const songToRemove = song.file || song.songId;
+                    const updatedSongs = playlist.songs.filter((s) => (s.songId !== songToRemove && s.file !== songToRemove));
                     await dynamodb.send(new client_dynamodb_1.UpdateItemCommand({
                         TableName: PLAYLISTS_TABLE,
-                        Key: (0, util_dynamodb_1.marshall)({ userId, playlistId }),
+                        Key: (0, util_dynamodb_1.marshall)({ playlistId }),
                         UpdateExpression: "SET songs = :songs, updatedAt = :now",
                         ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
                             ":songs": updatedSongs,
@@ -460,18 +477,19 @@ const handler = async (event) => {
         // === DELETE PLAYLIST ===
         if (path.endsWith("/playlists") && method === "DELETE") {
             try {
-                const { userId, playlistId } = event.queryStringParameters || {};
-                if (!userId || !playlistId) {
+                const body = JSON.parse(event.body || "{}");
+                const { playlistId } = body;
+                if (!playlistId) {
                     return {
                         statusCode: 400,
                         headers: corsHeaders,
-                        body: JSON.stringify({ error: "Missing userId or playlistId" }),
+                        body: JSON.stringify({ error: "Missing playlistId" }),
                     };
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 await dynamodb.send(new client_dynamodb_1.DeleteItemCommand({
                     TableName: PLAYLISTS_TABLE,
-                    Key: (0, util_dynamodb_1.marshall)({ userId, playlistId }),
+                    Key: (0, util_dynamodb_1.marshall)({ playlistId }),
                 }));
                 return {
                     statusCode: 200,
@@ -502,13 +520,14 @@ const handler = async (event) => {
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 const likeId = `${userId}#${songId}`;
+                const timestamp = Date.now();
                 await dynamodb.send(new client_dynamodb_1.PutItemCommand({
                     TableName: LIKES_TABLE,
                     Item: (0, util_dynamodb_1.marshall)({
                         songId: likeId,
-                        timestamp: Date.now(),
+                        timestamp: timestamp,
                         userId,
-                        songId: songId,
+                        actualSongId: songId,
                         artistId: artistId || "unknown",
                         type: "like",
                     }),
@@ -531,23 +550,45 @@ const handler = async (event) => {
         // === UNLIKE SONG ===
         if (path.endsWith("/unlike-song") && method === "DELETE") {
             try {
-                const { userId, songId, timestamp } = event.queryStringParameters || {};
-                if (!userId || !songId || !timestamp) {
+                const { userId, songId } = event.queryStringParameters || {};
+                if (!userId || !songId) {
                     return {
                         statusCode: 400,
                         headers: corsHeaders,
-                        body: JSON.stringify({ error: "Missing userId, songId, or timestamp" }),
+                        body: JSON.stringify({ error: "Missing userId or songId" }),
                     };
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 const likeId = `${userId}#${songId}`;
+                
+                // Scan to find the like record (can't use Query because we need to find all likes for this user#songId)
+                const scanResult = await dynamodb.send(new client_dynamodb_1.ScanCommand({
+                    TableName: LIKES_TABLE,
+                    FilterExpression: "songId = :likeId",
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":likeId": likeId,
+                    }),
+                }));
+                
+                if (!scanResult.Items || scanResult.Items.length === 0) {
+                    return {
+                        statusCode: 404,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Like not found" }),
+                    };
+                }
+                
+                const likeRecord = (0, util_dynamodb_1.unmarshall)(scanResult.Items[0]);
+                
+                // Delete using both composite key elements
                 await dynamodb.send(new client_dynamodb_1.DeleteItemCommand({
                     TableName: LIKES_TABLE,
                     Key: (0, util_dynamodb_1.marshall)({
                         songId: likeId,
-                        timestamp: parseInt(timestamp),
+                        timestamp: likeRecord.timestamp,
                     }),
                 }));
+                
                 return {
                     statusCode: 200,
                     headers: corsHeaders,
@@ -575,10 +616,9 @@ const handler = async (event) => {
                     };
                 }
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
-                const result = await dynamodb.send(new client_dynamodb_1.QueryCommand({
+                const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({
                     TableName: LIKES_TABLE,
-                    IndexName: "UserIdIndex",
-                    KeyConditionExpression: "userId = :userId AND #type = :type",
+                    FilterExpression: "userId = :userId AND #type = :type",
                     ExpressionAttributeNames: { "#type": "type" },
                     ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
                         ":userId": userId,
@@ -587,7 +627,7 @@ const handler = async (event) => {
                 }));
                 const likedSongs = (result.Items || []).map((item) => {
                     const data = (0, util_dynamodb_1.unmarshall)(item);
-                    return { songId: data.songId.split("#")[1], artistId: data.artistId };
+                    return { songId: data.actualSongId || data.songId.split("#")[1], artistId: data.artistId };
                 });
                 return {
                     statusCode: 200,
