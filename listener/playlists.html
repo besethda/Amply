@@ -347,11 +347,15 @@
             if (
               !window.getAuthToken ||
               !window.parseJwt ||
-              !window.PlaylistManager
+              !window.PlaylistManager ||
+              !window.initPlayer
             ) {
               setTimeout(window.initPlaylistsPageNow, 1000); // Retry in 1 second
               return;
             }
+
+            // Initialize player to restore saved state
+            window.initPlayer();
 
             // Get auth token
             const token = window.getAuthToken();
