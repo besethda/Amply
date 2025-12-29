@@ -249,8 +249,8 @@ async function loadListeningStats() {
 
     listens.forEach((listen, index) => {
       const date = new Date(listen.timestamp).toLocaleDateString();
-      const time = new Date(listen.timestamp).toLocaleTimeString();
       const songId = listen.actualSongId || listen.songId;
+      const artist = listen.artistId || 'Unknown';
       
       // Use title if available, otherwise extract from filename
       let songName = listen.title || songId;
@@ -265,9 +265,9 @@ async function loadListeningStats() {
         <div class="listening-item">
           <span class="listen-number">${index + 1}</span>
           <div class="listen-info">
-            <p class="song-id"><strong>Song:</strong> ${songName}</p>
-            <p class="artist-info"><strong>Artist:</strong> ${listen.artistId || 'Unknown'}</p>
-            <p class="listen-date"><strong>Listened:</strong> ${date} at ${time}</p>
+            <p class="song-title">${songName} by ${artist}</p>
+            <p class="listen-date">${date}</p>
+            <p class="song-cost">$0.99</p>
           </div>
         </div>
       `;

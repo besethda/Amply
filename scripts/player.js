@@ -62,6 +62,7 @@ let eventsBound = false;
 // LISTEN TRACKING STATE
 // ===============================
 let listenTracked = new Set(); // Track songs that have been counted to prevent duplicates
+let currentSongReady = false; // Track if current song has properly loaded and started
 let currentSongStartTime = 0; // When current song started playing
 
 // ===============================
@@ -293,6 +294,7 @@ export async function playSong(song, list = playlist) {
   
   // Reset listen tracking for new song
   listenTracked.clear();
+  currentSongReady = false; // Mark that the new song hasn't fully loaded yet
   currentSongStartTime = audio.currentTime || 0;
 
   // Normalize playlist IDs before comparing
@@ -340,6 +342,7 @@ export async function playSong(song, list = playlist) {
     
     try {
       await audio.play();
+      currentSongReady = true; // Song has started playing
     } catch (err) {
       console.error("❌ Play failed:", err.message);
     }
@@ -507,7 +510,7 @@ function setupEvents() {
     }
 
     // Track listen when 30+ seconds have been played
-    if (currentSong && audio.currentTime >= 30) {
+    if (currentSong && currentSongReady && audio.currentTime >= 30) {
       // Verify this is the correct song by checking the audio source
       // This prevents recording listens for the wrong song when switching tracks
       const currentSongUrl = audio.src;
