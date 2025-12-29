@@ -1018,7 +1018,7 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
         if (isLiked) {
           await unlikeSong(songId);
         } else {
-          const artistId = song.artistId || "";
+          const artistId = song.artist || song.artistId || "";
           const songName = song.title || "Unknown";
           console.log("Liking song:", songId, artistId, songName);
           await likeSong(songId, artistId, songName);
