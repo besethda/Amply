@@ -89,6 +89,9 @@ export async function getLikedSongs() {
     );
 
     console.log("📚 Liked songs:", response.likedSongs);
+    if (response.likedSongs && response.likedSongs.length > 0) {
+      console.log("First liked song structure:", response.likedSongs[0]);
+    }
     return response.likedSongs || [];
   } catch (err) {
     console.error("❌ Error fetching liked songs:", err);
