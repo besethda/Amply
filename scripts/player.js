@@ -1040,7 +1040,8 @@ function showSongContextMenu(triggerElement, song, playlistId) {
       try {
         // Import dynamically to avoid circular dependency
         const { removeSongFromPlaylist } = await import("./listener/playlists.js");
-        await removeSongFromPlaylist(playlistId, song.songId || song.id);
+        // Use file as the identifier since that's what's stored
+        await removeSongFromPlaylist(playlistId, song.file || song.songId || song.id);
         
         // Refresh the playlist view
         const { initPlaylistView } = await import("./listener/playlist.js");

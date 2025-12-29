@@ -57,6 +57,9 @@ export async function addSongToPlaylist(playlistId, song) {
   if (!user) throw new Error("Not authenticated");
 
   try {
+    // Use file path as the identifier since that's how songs are uniquely identified
+    const songIdentifier = song.songId || song.file;
+    
     const response = await apiFetch(`${API_URL}/playlists`, {
       method: "PUT",
       body: JSON.stringify({
@@ -64,7 +67,7 @@ export async function addSongToPlaylist(playlistId, song) {
         playlistId,
         action: "add",
         song: {
-          songId: song.songId,
+          songId: songIdentifier,
         },
       }),
     });

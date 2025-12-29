@@ -39,8 +39,15 @@ export async function initPlaylistView(playlistId) {
               const playlistSongIds = playlist.songs.map(s => s.songId || s);
               console.log("🔍 Playlist song IDs:", playlistSongIds);
               console.log("🔍 First song from allSongs:", allSongs[0]);
+              console.log("🔍 Matching songs by file property");
               
-              songs = allSongs.filter(s => playlistSongIds.includes(s.songId || s.id));
+              // Match by file property since that's what's being stored
+              songs = allSongs.filter(s => {
+                const songFile = s.file;
+                const match = playlistSongIds.includes(songFile);
+                console.log(`  Checking ${songFile}: ${match}`);
+                return match;
+              });
               console.log("✅ Filtered songs:", songs);
             }
           }
