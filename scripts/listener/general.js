@@ -17,8 +17,6 @@ export async function loadSongs() {
     if (!res.ok) throw new Error("Failed to load songs");
 
     const data = await res.json();
-    console.log("📋 Songs Data from API:", JSON.stringify(data, null, 2));
-
     return data.map(s => ({
       ...s,
       id: s.id || s.songId || s.file || s.title
@@ -94,35 +92,25 @@ function setupSettingsIcon() {
 // Set up initially
 document.addEventListener("DOMContentLoaded", setupSettingsIcon);
 setupSettingsIcon(); // Also try immediately in case DOM is already ready
+
 // === Sidebar Logic ===
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🔍 Sidebar Logic: DOMContentLoaded fired");
   const hamburgerBtn = document.getElementById("hamburgerBtn");
   const sidebar = document.getElementById("sidebar");
   const overlay = document.getElementById("sidebarOverlay");
 
-  console.log("🔍 Sidebar elements:", {
-    hamburgerBtn: hamburgerBtn ? "✅ Found" : "❌ NOT FOUND",
-    sidebar: sidebar ? "✅ Found" : "❌ NOT FOUND",
-    overlay: overlay ? "✅ Found" : "❌ NOT FOUND"
-  });
-
   if (hamburgerBtn && sidebar && overlay) {
     function toggleSidebar() {
-      console.log("📱 Toggling sidebar...");
       sidebar.classList.toggle("open");
       overlay.classList.toggle("active");
-      console.log("📱 Sidebar classes:", sidebar.className);
     }
 
     function closeSidebar() {
-      console.log("📱 Closing sidebar...");
       sidebar.classList.remove("open");
       overlay.classList.remove("active");
     }
 
     hamburgerBtn.addEventListener("click", (e) => {
-      console.log("✅ Hamburger button clicked!");
       e.stopPropagation();
       toggleSidebar();
     });
@@ -131,12 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Close when clicking a menu item
     const menuItems = sidebar.querySelectorAll(".menu li, .menu li a");
-    console.log("🔍 Found", menuItems.length, "menu items");
     menuItems.forEach(item => {
       item.addEventListener("click", closeSidebar);
     });
-  } else {
-    console.error("❌ Sidebar logic failed - missing elements");
   }
 });
 
@@ -153,10 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
 //       });
 //   });
 // }
+
 // === PROFILE MODAL ===
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🔍 Profile Modal: DOMContentLoaded fired");
-
   const profileIcon = document.getElementById("profileIcon");
   const profileModal = document.getElementById("profileModal");
   const profileBackdrop = document.getElementById("profileBackdrop");
@@ -164,22 +148,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabButtons = document.querySelectorAll(".profile-tab-btn");
   const tabContents = document.querySelectorAll(".profile-tab");
 
-  console.log("🔍 Profile Modal Elements:", {
-    profileIcon: profileIcon ? "✅ Found" : "❌ NOT FOUND",
-    profileModal: profileModal ? "✅ Found" : "❌ NOT FOUND",
-    profileBackdrop: profileBackdrop ? "✅ Found" : "❌ NOT FOUND",
-    closeBtn: closeBtn ? "✅ Found" : "❌ NOT FOUND",
-    tabButtons: tabButtons.length,
-    tabContents: tabContents.length
-  });
-
   // Load user data
   const token = localStorage.getItem("amplyIdToken");
   if (token) {
     try {
       const payload = parseJwt(token);
       const username = payload["cognito:username"] || payload["email"] || "User";
-      console.log("✅ Username loaded:", username);
       document.getElementById("displayUsername").textContent = username;
     } catch (err) {
       console.error("❌ Error parsing token:", err);
@@ -189,21 +163,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Open modal on profile icon click
   if (profileIcon) {
     profileIcon.addEventListener("click", (e) => {
-      console.log("✅ Profile icon clicked");
       e.stopPropagation();
       profileModal.classList.remove("hidden");
       profileBackdrop.classList.add("active");
       document.body.classList.add("modal-open");
-      console.log("✅ Modal and backdrop shown");
     });
-  } else {
-    console.error("❌ profileIcon not found - click listener NOT attached");
   }
 
   // Close modal on close button click
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
-      console.log("✅ Close button clicked");
       profileModal.classList.add("hidden");
       profileBackdrop.classList.remove("active");
       document.body.classList.remove("modal-open");
@@ -213,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Close modal on backdrop click
   if (profileBackdrop) {
     profileBackdrop.addEventListener("click", (e) => {
-      console.log("✅ Backdrop clicked");
       profileModal.classList.add("hidden");
       profileBackdrop.classList.remove("active");
       document.body.classList.remove("modal-open");
@@ -224,7 +192,6 @@ document.addEventListener("DOMContentLoaded", () => {
   tabButtons.forEach(button => {
     button.addEventListener("click", () => {
       const tabName = button.getAttribute("data-tab");
-      console.log("✅ Tab clicked:", tabName);
 
       // Remove active class from all buttons and contents
       tabButtons.forEach(btn => btn.classList.remove("active"));
@@ -235,10 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const activeTab = document.getElementById(`${tabName}-tab`);
       if (activeTab) {
         activeTab.classList.add("active");
-        console.log("✅ Tab activated:", tabName);
       }
     });
   });
-
-  console.log("🔍 Profile Modal: Setup complete");
 });
