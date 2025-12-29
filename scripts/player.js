@@ -985,14 +985,17 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
 
   // Like/Unlike Song option
   try {
-    console.log("Loading likes.js...");
+    console.log("Loading likes.js and song data:", song);
     const likeModule = await import("./listener/likes.js");
-    console.log("Likes module loaded:", likeModule);
     const { isSongLiked, likeSong, unlikeSong } = likeModule;
+    
+    // Use the file property since that's what playlists store
     const songId = song.file || song.songId || song.id;
-    console.log("Checking if song is liked, songId:", songId);
+    console.log("Song ID for like check:", songId);
+    console.log("Full song object:", JSON.stringify(song));
+    
     const isLiked = await isSongLiked(songId);
-    console.log("Song liked status:", isLiked);
+    console.log("Is song liked?", isLiked);
     
     const likeItem = document.createElement("div");
     likeItem.style.cssText = `
@@ -1011,25 +1014,15 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
     likeItem.addEventListener("click", async () => {
       menu.remove();
       try {
+        console.log("Like/Unlike clicked, current isLiked:", isLiked);
         if (isLiked) {
           await unlikeSong(songId);
         } else {
-          // Extract artistId if available, otherwise use empty string
           const artistId = song.artistId || "";
           const songName = song.title || "Unknown";
+          console.log("Liking song:", songId, artistId, songName);
           await likeSong(songId, artistId, songName);
         }
-        // Update the like button UI
-        const likeButtons = document.querySelectorAll(`[data-song-id="${songId}"][data-action="like"]`);
-        likeButtons.forEach((btn) => {
-          if (isLiked) {
-            btn.classList.remove("liked");
-            btn.textContent = "🤍";
-          } else {
-            btn.classList.add("liked");
-            btn.textContent = "❤️";
-          }
-        });
       } catch (err) {
         console.error("Error toggling like:", err);
         alert("Failed to update like status");
@@ -1039,6 +1032,7 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
     console.log("Like item appended to menu");
   } catch (err) {
     console.error("Error loading like functionality:", err);
+    console.error("Error stack:", err.stack);
   }
 
   // Remove from Playlist option (only if viewing a playlist)
