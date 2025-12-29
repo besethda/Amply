@@ -141,7 +141,16 @@ async function showPlaylistSelector(playlists, songName) {
 
       try {
         const { createPlaylist } = await import("./playlists.js");
-        const newPlaylist = await createPlaylist(name);
+        const { getAuthToken, parseJwt } = await import("../general.js");
+        
+        const token = getAuthToken();
+        if (!token) {
+          alert("Not authenticated");
+          return;
+        }
+        
+        const payload = parseJwt(token);
+        const newPlaylist = await createPlaylist(payload.sub, name);
         modal.remove();
         resolve(newPlaylist.playlistId);
       } catch (err) {
