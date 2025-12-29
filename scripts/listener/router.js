@@ -157,7 +157,7 @@ async function loadRoute(routeKey, routeParam = null) {
         home: "trackList",
         playlist: "playlistTrackList",
         playlists: "playlistsGrid",
-        library: "trackList",
+        library: "playlistTrackList",
         explore: "trackList",
         artist: "artistTrackList",
       };
