@@ -23,19 +23,16 @@ export async function initPlaylistView(playlistId) {
         const playlist = userPlaylistsCache.find(p => p.playlistId === actualPlaylistId);
         if (playlist) {
           playlistName = playlist.playlistName || "Playlist";
+          
+          // Load all songs to find the ones in this playlist
           if (playlist.songs && playlist.songs.length > 0) {
-            // Convert stored songs to playable format with proper art_url mapping
-            songs = playlist.songs.map((s) => ({
-              songId: s.songId,
-              id: s.songId,
-              title: s.songName || "Unknown",
-              artist: s.artistName || "Unknown Artist",
-              file: s.file,
-              bucket: s.bucket,
-              cloudfrontDomain: s.cloudfrontDomain,
-              coverImage: s.coverImage,
-              art_url: s.coverImage, // Map coverImage to art_url for rendering
-            }));
+            const allSongs = await loadSongs();
+            
+            if (allSongs && allSongs.length > 0) {
+              // Map songIds to actual song data
+              const playlistSongIds = playlist.songs.map(s => s.songId || s);
+              songs = allSongs.filter(s => playlistSongIds.includes(s.songId || s.id));
+            }
           }
         }
       }
@@ -46,13 +43,8 @@ export async function initPlaylistView(playlistId) {
       titleHeader.textContent = playlistName;
     }
     
-    // If we didn't get songs from the playlist, load all songs as fallback
-    if (songs.length === 0) {
-      songs = await loadSongs();
-    }
-
     if (!songs || songs.length === 0) {
-      container.innerHTML = "<p>No songs available.</p>";
+      container.innerHTML = "<p>No songs in this playlist.</p>";
       return;
     }
 

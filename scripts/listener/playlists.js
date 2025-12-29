@@ -65,12 +65,6 @@ export async function addSongToPlaylist(playlistId, song) {
         action: "add",
         song: {
           songId: song.songId,
-          songName: song.songName || song.name,
-          artistName: song.artistName,
-          bucket: song.bucket,
-          cloudfrontDomain: song.cloudfrontDomain,
-          file: song.file,
-          coverImage: song.coverImage || song.albumArt,
         },
       }),
     });
@@ -203,19 +197,8 @@ function getPlaylistImageUrls(playlist) {
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%234facfe'/%3E%3Cstop offset='100%25' style='stop-color:%2300f2fe'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E",
   ];
 
-  const songs = playlist.songs || [];
-  const urls = [];
-
-  // For each of the 3 cover boxes, get the corresponding song's cover or use fallback
-  for (let i = 0; i < 3; i++) {
-    if (songs[i] && songs[i].coverImage) {
-      urls.push(songs[i].coverImage);
-    } else {
-      urls.push(gradients[i]);
-    }
-  }
-
-  return urls;
+  // For now, return fallback gradients - actual images will be fetched when needed
+  return gradients;
 }
 
 // === OPEN PLAYLIST IN LIST VIEW ===
