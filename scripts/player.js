@@ -475,7 +475,19 @@ function getCurrentUser() {
 }
 
 export async function addToPlaylist(song) {
-  if (!song) return;
+  if (!song) {
+    alert("No song selected");
+    return;
+  }
+  
+  // Validate song has required fields
+  if (!song.songId && !song.file) {
+    alert("Invalid song data - missing songId or file");
+    return;
+  }
+
+  if (!song.title) song.title = "Unknown Track";
+  if (!song.artist) song.artist = "Unknown Artist";
   
   try {
     const user = getCurrentUser();
@@ -521,7 +533,7 @@ export async function addToPlaylist(song) {
         playlistId: playlist.playlistId,
         action: "add",
         song: {
-          songId: song.songId,
+          songId: song.songId || song.file,
           title: song.title,
           artist: song.artist,
           file: song.file,
@@ -545,7 +557,19 @@ export function addToQueue(song) {
 }
 
 export async function addToLibrary(song) {
-  if (!song) return;
+  if (!song) {
+    alert("No song selected");
+    return;
+  }
+
+  // Validate song has required fields
+  if (!song.songId && !song.file) {
+    alert("Invalid song data - missing songId or file");
+    return;
+  }
+
+  if (!song.title) song.title = "Unknown Track";
+  if (!song.artist) song.artist = "Unknown Artist";
   
   try {
     const user = getCurrentUser();
@@ -554,12 +578,20 @@ export async function addToLibrary(song) {
       return;
     }
 
+    console.log("📝 Liking song:", {
+      userId: user.userId,
+      songId: song.songId,
+      file: song.file,
+      title: song.title,
+      artist: song.artist,
+    });
+
     // Call like-song endpoint
     await apiFetch(`${API_URL}/like-song`, {
       method: "POST",
       body: JSON.stringify({
         userId: user.userId,
-        songId: song.songId,
+        songId: song.songId || song.file,
         artistId: song.artistId || song.artist,
         songName: song.title,
       }),
