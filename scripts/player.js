@@ -662,7 +662,7 @@ export async function addToPlaylist(song) {
 
     const playlist = playlists[playlistIndex];
 
-    // Add song to playlist
+    // Add song to playlist (only send songId to maintain single source of truth)
     await apiFetch(`${API_URL}/playlists`, {
       method: "PUT",
       body: JSON.stringify({
@@ -671,12 +671,6 @@ export async function addToPlaylist(song) {
         action: "add",
         song: {
           songId: song.songId || song.file,
-          songName: song.title,
-          artistName: song.artist,
-          file: song.file,
-          bucket: song.bucket,
-          cloudfrontDomain: song.cloudfrontDomain,
-          coverImage: song.coverImage || song.albumArt,
         },
       }),
     });
