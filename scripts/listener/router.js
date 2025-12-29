@@ -137,7 +137,7 @@ async function loadRoute(routeKey, routeParam = null) {
       const containerMap = {
         home: "trackList",
         playlist: "playlistTrackList",
-        library: "playlistGrid",
+        library: "playlistsGrid",
         artist: "artistTrackList",
       };
       const expectedContainer = containerMap[key] || "trackList";
