@@ -983,6 +983,60 @@ function showSongContextMenu(triggerElement, song, playlistId) {
     min-width: 180px;
   `;
 
+  // Like/Unlike Song option
+  (async () => {
+    try {
+      const { isSongLiked, likeSong, unlikeSong } = await import("./listener/likes.js");
+      const isLiked = await isSongLiked(song.file || song.songId || song.id);
+      
+      const likeItem = document.createElement("div");
+      likeItem.style.cssText = `
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+      `;
+      likeItem.textContent = isLiked ? "Unlike Song" : "Like Song";
+      likeItem.addEventListener("mouseenter", () => {
+        likeItem.style.backgroundColor = "var(--bg-tertiary)";
+      });
+      likeItem.addEventListener("mouseleave", () => {
+        likeItem.style.backgroundColor = "transparent";
+      });
+      likeItem.addEventListener("click", async () => {
+        menu.remove();
+        try {
+          const songId = song.file || song.songId || song.id;
+          if (isLiked) {
+            await unlikeSong(songId);
+          } else {
+            // Extract artistId if available, otherwise use empty string
+            const artistId = song.artistId || "";
+            const songName = song.title || "Unknown";
+            await likeSong(songId, artistId, songName);
+          }
+          // Update the like button UI
+          const likeButtons = document.querySelectorAll(`[data-song-id="${songId}"][data-action="like"]`);
+          likeButtons.forEach((btn) => {
+            if (isLiked) {
+              btn.classList.remove("liked");
+              btn.textContent = "🤍";
+            } else {
+              btn.classList.add("liked");
+              btn.textContent = "❤️";
+            }
+          });
+        } catch (err) {
+          console.error("Error toggling like:", err);
+          alert("Failed to update like status");
+        }
+      });
+      menu.insertBefore(likeItem, menu.firstChild);
+    } catch (err) {
+      console.error("Error loading like functionality:", err);
+    }
+  })();
+
   // Add to Playlist option
   const addToPlaylistItem = document.createElement("div");
   addToPlaylistItem.style.cssText = `
