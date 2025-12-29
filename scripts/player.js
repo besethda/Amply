@@ -135,7 +135,7 @@ export async function playSong(song, list = playlist) {
   currentTrackName.textContent = currentSong.title || "Unknown Track";
   currentTrackArtist.textContent = currentSong.artist || "";
   if (currentTrackArt) {
-    currentTrackArt.src = currentSong.art_url || "../images/default-art.jpg";
+    currentTrackArt.src = currentSong.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
   }
   updateScrollingTitle();
   updateFullPlayerUI();
@@ -419,7 +419,7 @@ function updateFullPlayerUI() {
 
   fullPlayerTitle.textContent = currentSong.title || "Unknown Track";
   fullPlayerArtist.textContent = currentSong.artist || "";
-  fullPlayerArt.src = currentSong.art_url || "../images/default-art.jpg";
+  fullPlayerArt.src = currentSong.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
 
   updateFullPlayerPlayPause(!audio.paused);
 
@@ -697,7 +697,7 @@ export function renderSongsToDom({
     if (layout === "grid") {
       div.className = `song-box ${isCurrentSong ? 'playing' : ''}`;
       div.innerHTML = `
-        <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
+        <img src="${song.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E"}" class="cover-art" />
 
         <div class="song-info-box" data-artist="${song.artist}">
           <span class="song-title-box">${song.title}</span>
@@ -722,7 +722,7 @@ export function renderSongsToDom({
     } else {
       div.className = `song-list ${isCurrentSong ? 'playing' : ''}`;
       div.innerHTML = `
-        <img src="${song.art_url || "../images/default-art.jpg"}" class="cover-art" />
+        <img src="${song.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E"}" class="cover-art" />
 
         <div class="song-info-list" data-artist="${song.artist}">
           <span class="song-title-list">${song.title}</span>
