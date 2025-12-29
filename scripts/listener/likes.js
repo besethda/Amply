@@ -52,9 +52,18 @@ export async function unlikeSong(songId) {
     const likedSong = likedSongs.find(s => s.songId === songId);
     const timestamp = likedSong?.timestamp || new Date().toISOString();
     
+    console.log("Unlike request - songId:", songId, "timestamp:", timestamp);
+    
     const response = await apiFetch(
-      `${API_URL}/unlike-song?userId=${encodeURIComponent(user.userId)}&songId=${encodeURIComponent(songId)}&timestamp=${encodeURIComponent(timestamp)}`,
-      { method: "DELETE" }
+      `${API_URL}/unlike-song`,
+      { 
+        method: "DELETE",
+        body: JSON.stringify({
+          userId: user.userId,
+          songId,
+          timestamp
+        })
+      }
     );
 
     console.log("💔 Song unliked");
