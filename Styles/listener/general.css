@@ -25,23 +25,15 @@
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
   top: 50%;
-  z-index: 1001;
-}
-
-.menu-item::after,
-.sidebar-footer button::after {
   left: 100%;
   margin-left: 15px;
   transform: translateY(-50%) translateX(10px);
+  z-index: 1001;
 }
 
 .menu-item:hover::before,
 .sidebar-footer button:hover::before {
   opacity: 1;
-}
-
-.menu-item:hover::after,
-.sidebar-footer button:hover::after {
   transform: translateY(-50%) translateX(0);
 }
 
