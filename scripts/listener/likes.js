@@ -47,8 +47,13 @@ export async function unlikeSong(songId) {
   if (!user) throw new Error("Not authenticated");
 
   try {
+    // Get the timestamp of when the song was liked
+    const likedSongs = await getLikedSongs();
+    const likedSong = likedSongs.find(s => s.songId === songId);
+    const timestamp = likedSong?.timestamp || new Date().toISOString();
+    
     const response = await apiFetch(
-      `${API_URL}/unlike-song?userId=${encodeURIComponent(user.userId)}&songId=${encodeURIComponent(songId)}`,
+      `${API_URL}/unlike-song?userId=${encodeURIComponent(user.userId)}&songId=${encodeURIComponent(songId)}&timestamp=${encodeURIComponent(timestamp)}`,
       { method: "DELETE" }
     );
 
