@@ -1,4 +1,4 @@
-import { API_URL, getAuthToken, parseJwt, apiFetch } from "../../scripts/general.js";
+import { API_URL, getAuthToken, parseJwt, apiFetch, loadSongs } from "../../scripts/general.js";
 
 /**
  * PLAYLIST MANAGEMENT
@@ -127,7 +127,7 @@ export async function deletePlaylist(playlistId) {
 }
 
 // === RENDER PLAYLISTS ===
-export function renderPlaylists() {
+export async function renderPlaylists() {
   const grid = document.getElementById("playlistsGrid");
   const emptyState = document.getElementById("emptyState");
 
@@ -142,9 +142,10 @@ export function renderPlaylists() {
   grid.style.display = "grid";
   emptyState.style.display = "none";
 
-  grid.innerHTML = userPlaylistsCache
-    .map((playlist) => createPlaylistCardHTML(playlist))
-    .join("");
+  // Create all cards with async image fetching
+  const cardPromises = userPlaylistsCache.map(playlist => createPlaylistCardHTML(playlist));
+  const cardHTMLs = await Promise.all(cardPromises);
+  grid.innerHTML = cardHTMLs.join("");
 
   // Attach click handlers to cards
   document.querySelectorAll(".playlist-card").forEach((card) => {
@@ -165,9 +166,9 @@ export function renderPlaylists() {
 }
 
 // === CREATE PLAYLIST CARD HTML ===
-function createPlaylistCardHTML(playlist) {
+async function createPlaylistCardHTML(playlist) {
   const songCount = (playlist.songs || []).length;
-  const imageUrls = getPlaylistImageUrls(playlist);
+  const imageUrls = await getPlaylistImageUrls(playlist);
 
   return `
     <div class="playlist-card" data-playlist-id="${playlist.playlistId}">
@@ -192,7 +193,7 @@ function createPlaylistCardHTML(playlist) {
 }
 
 // === GET PLAYLIST IMAGE URLS (3-box overlay) ===
-function getPlaylistImageUrls(playlist) {
+async function getPlaylistImageUrls(playlist) {
   // Fallback gradients for empty slots
   const gradients = [
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E",
@@ -200,8 +201,39 @@ function getPlaylistImageUrls(playlist) {
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%234facfe'/%3E%3Cstop offset='100%25' style='stop-color:%2300f2fe'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E",
   ];
 
-  // For now, return fallback gradients - actual images will be fetched when needed
-  return gradients;
+  try {
+    // If no songs in playlist, return fallbacks
+    if (!playlist.songs || playlist.songs.length === 0) {
+      return gradients;
+    }
+
+    // Load all songs to find the ones in this playlist
+    const allSongs = await loadSongs();
+    if (!allSongs || allSongs.length === 0) {
+      return gradients;
+    }
+
+    // Get the file paths from the playlist
+    const playlistSongFiles = playlist.songs.map(s => s.songId || s);
+    
+    // Filter to get the actual song objects
+    const playlistSongs = allSongs.filter(s => playlistSongFiles.includes(s.file));
+    
+    // Get artwork from first 3 songs, use fallbacks for the rest
+    const imageUrls = [];
+    for (let i = 0; i < 3; i++) {
+      if (i < playlistSongs.length && playlistSongs[i].art_url) {
+        imageUrls.push(playlistSongs[i].art_url);
+      } else {
+        imageUrls.push(gradients[i]);
+      }
+    }
+    
+    return imageUrls;
+  } catch (err) {
+    console.error("Error fetching playlist images:", err);
+    return gradients;
+  }
 }
 
 // === OPEN PLAYLIST IN LIST VIEW ===
@@ -261,7 +293,7 @@ function showPlaylistDetail(playlistId) {
         const pId = btn.dataset.playlistId;
         await removeSongFromPlaylist(pId, songId);
         await getUserPlaylists(getCurrentUser().userId);
-        renderPlaylists();
+        await renderPlaylists();
         showPlaylistDetail(pId); // Re-open detail
       });
     });
@@ -274,7 +306,7 @@ function showPlaylistDetail(playlistId) {
   deleteBtn.onclick = async () => {
     await deletePlaylist(playlistId);
     await getUserPlaylists(getCurrentUser().userId);
-    renderPlaylists();
+    await renderPlaylists();
     modal.style.display = "none";
   };
 
@@ -311,7 +343,7 @@ export async function initPlaylistsView() {
 
     // Load and render playlists
     await getUserPlaylists(userId);
-    renderPlaylists();
+    await renderPlaylists();
 
     // Setup listeners
     setupPlaylistsPageListeners(userId);
@@ -364,7 +396,7 @@ function setupPlaylistsPageListeners(userId) {
 
     await createPlaylist(userId, playlistName, playlistDescription);
     await getUserPlaylists(userId);
-    renderPlaylists();
+    await renderPlaylists();
     modal.style.display = "none";
     form.reset();
   });
