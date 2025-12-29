@@ -25,14 +25,23 @@ export async function initPlaylistView(playlistId) {
         if (playlist) {
           playlistName = playlist.playlistName || "Playlist";
           
+          // Debug logging
+          console.log("📋 Playlist found:", playlist);
+          console.log("📝 Playlist songs:", playlist.songs);
+          
           // Load all songs to find the ones in this playlist
           if (playlist.songs && playlist.songs.length > 0) {
             const allSongs = await loadSongs();
+            console.log("🎵 All songs loaded:", allSongs?.length);
             
             if (allSongs && allSongs.length > 0) {
               // Map songIds to actual song data
               const playlistSongIds = playlist.songs.map(s => s.songId || s);
+              console.log("🔍 Playlist song IDs:", playlistSongIds);
+              console.log("🔍 First song from allSongs:", allSongs[0]);
+              
               songs = allSongs.filter(s => playlistSongIds.includes(s.songId || s.id));
+              console.log("✅ Filtered songs:", songs);
             }
           }
         }
@@ -60,10 +69,14 @@ export async function initPlaylistView(playlistId) {
 
     // Add delete playlist button handler
     const deleteBtn = root.querySelector("#deletePlaylistBtn");
+    console.log("🗑️ Delete button found:", deleteBtn);
+    console.log("🗑️ Actual playlist ID:", actualPlaylistId);
     if (deleteBtn && actualPlaylistId) {
       deleteBtn.addEventListener("click", async () => {
+        console.log("🗑️ Delete button clicked");
         if (confirm(`Are you sure you want to delete "${playlistName}"? This cannot be undone.`)) {
           try {
+            console.log("🗑️ Deleting playlist:", actualPlaylistId);
             await deletePlaylist(actualPlaylistId);
             // Refresh playlists list and navigate back to playlists view
             const token = getAuthToken();
