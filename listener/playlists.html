@@ -339,138 +339,149 @@
       console.log("🔷 Inline script starting (non-module)");
     </script>
     <script type="module">
-      console.log("📦 Playlists module script loading...");
-      
-      import {
-        getUserPlaylists,
-        renderPlaylists,
-        createPlaylist,
-      } from "../scripts/listener/playlists.js";
-      import { getAuthToken, parseJwt } from "../scripts/general.js";
+      try {
+        console.log("📦 Playlists module script: trying imports...");
+        
+        const playlistsModule = await import("../scripts/listener/playlists.js");
+        const generalModule = await import("../scripts/general.js");
+        
+        console.log("✅ Imports successful");
+        console.log("Available exports from playlists:", Object.keys(playlistsModule));
+        console.log("Available exports from general:", Object.keys(generalModule));
+        
+        const { getUserPlaylists, renderPlaylists, createPlaylist } = playlistsModule;
+        const { getAuthToken, parseJwt } = generalModule;
+        
+        console.log("🎯 Functions imported successfully");
 
-      console.log("✅ Imports successful");
+        function setupPlaylistsPageListeners(userId) {
+          console.log("🔌 setupPlaylistsPageListeners called for user:", userId);
+          const createBtn = document.getElementById("createPlaylistBtn");
+          const modal = document.getElementById("createPlaylistModal");
+          const modalClose = document.getElementById("modalClose");
+          const form = document.getElementById("createPlaylistForm");
 
-      function setupPlaylistsPageListeners(userId) {
-        console.log("🔌 setupPlaylistsPageListeners called for user:", userId);
-        const createBtn = document.getElementById("createPlaylistBtn");
-        const modal = document.getElementById("createPlaylistModal");
-        const modalClose = document.getElementById("modalClose");
-        const form = document.getElementById("createPlaylistForm");
+          console.log("Elements found:", { createBtn: !!createBtn, modal: !!modal, modalClose: !!modalClose, form: !!form });
 
-        console.log("Elements found:", { createBtn: !!createBtn, modal: !!modal, modalClose: !!modalClose, form: !!form });
-
-        if (!createBtn) {
-          console.error("❌ createPlaylistBtn not found in DOM");
-          return;
-        }
-
-        createBtn.addEventListener("click", () => {
-          console.log("🎬 Create button clicked");
-          modal.style.display = "flex";
-          document.getElementById("playlistName").focus();
-        });
-
-        modalClose.addEventListener("click", () => {
-          console.log("❌ Modal close clicked");
-          modal.style.display = "none";
-          form.reset();
-        });
-
-        modal.addEventListener("click", (e) => {
-          if (e.target === modal) {
-            console.log("❌ Modal backdrop clicked");
-            modal.style.display = "none";
-            form.reset();
-          }
-        });
-
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          try {
-            const name = document.getElementById("playlistName").value;
-            const desc = document.getElementById("playlistDescription").value;
-            console.log("📝 Creating playlist:", { name, desc });
-
-            await createPlaylist(userId, name, desc);
-            console.log("✅ Playlist created, refreshing list...");
-            await getUserPlaylists(userId);
-            renderPlaylists();
-
-            modal.style.display = "none";
-            form.reset();
-            console.log("✅ Form reset and modal closed");
-          } catch (err) {
-            console.error("❌ Error creating playlist:", err);
-            alert("Error creating playlist: " + err.message);
-          }
-        });
-
-        // Sidebar toggle
-        const hamburgerBtn = document.getElementById("hamburgerBtn");
-        const sidebar = document.getElementById("sidebar");
-        const overlay = document.getElementById("sidebarOverlay");
-
-        hamburgerBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          sidebar.classList.toggle("open");
-          overlay.classList.toggle("active");
-        });
-
-        overlay.addEventListener("click", () => {
-          sidebar.classList.remove("open");
-          overlay.classList.remove("active");
-        });
-
-        sidebar.querySelectorAll(".menu li").forEach((link) => {
-          link.addEventListener("click", () => {
-            sidebar.classList.remove("open");
-            overlay.classList.remove("active");
-          });
-        });
-      }
-
-      // Initialize playlists page when DOM is ready
-      console.log("🎵 Playlists module script: registering DOMContentLoaded listener");
-      
-      if (document.readyState === "loading") {
-        // DOM is still loading, add listener
-        document.addEventListener("DOMContentLoaded", initializePlaylists);
-      } else {
-        // DOM is already loaded, run immediately
-        console.log("⚡ DOM already loaded, initializing immediately");
-        initializePlaylists();
-      }
-
-      async function initializePlaylists() {
-        try {
-          console.log("🎵 Playlists page initialization starting...");
-          const token = getAuthToken();
-          if (!token) {
-            console.warn("⚠️ No token found, redirecting to login");
-            window.location.href = "../index.html";
+          if (!createBtn) {
+            console.error("❌ createPlaylistBtn not found in DOM");
             return;
           }
 
-          const payload = parseJwt(token);
-          const userId = payload.sub;
-          console.log("👤 User ID:", userId);
+          createBtn.addEventListener("click", () => {
+            console.log("🎬 Create button clicked");
+            modal.style.display = "flex";
+            document.getElementById("playlistName").focus();
+          });
 
-          // Load and render playlists
-          console.log("📥 Fetching playlists...");
-          await getUserPlaylists(userId);
-          console.log("📤 Rendering playlists...");
-          renderPlaylists();
-          console.log("✅ Playlists rendered successfully");
+          modalClose.addEventListener("click", () => {
+            console.log("❌ Modal close clicked");
+            modal.style.display = "none";
+            form.reset();
+          });
 
-          // Setup event listeners
-          console.log("🔌 Setting up event listeners...");
-          setupPlaylistsPageListeners(userId);
-          console.log("✅ Page fully initialized");
-        } catch (err) {
-          console.error("❌ Error loading playlists page:", err);
-          console.error("Stack:", err.stack);
-          document.getElementById("playlistsGrid").innerHTML = `<p>Error loading playlists: ${err.message}</p>`;
+          modal.addEventListener("click", (e) => {
+            if (e.target === modal) {
+              console.log("❌ Modal backdrop clicked");
+              modal.style.display = "none";
+              form.reset();
+            }
+          });
+
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            try {
+              const name = document.getElementById("playlistName").value;
+              const desc = document.getElementById("playlistDescription").value;
+              console.log("📝 Creating playlist:", { name, desc });
+
+              await createPlaylist(userId, name, desc);
+              console.log("✅ Playlist created, refreshing list...");
+              await getUserPlaylists(userId);
+              renderPlaylists();
+
+              modal.style.display = "none";
+              form.reset();
+              console.log("✅ Form reset and modal closed");
+            } catch (err) {
+              console.error("❌ Error creating playlist:", err);
+              alert("Error creating playlist: " + err.message);
+            }
+          });
+
+          // Sidebar toggle
+          const hamburgerBtn = document.getElementById("hamburgerBtn");
+          const sidebar = document.getElementById("sidebar");
+          const overlay = document.getElementById("sidebarOverlay");
+
+          hamburgerBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle("open");
+            overlay.classList.toggle("active");
+          });
+
+          overlay.addEventListener("click", () => {
+            sidebar.classList.remove("open");
+            overlay.classList.remove("active");
+          });
+
+          sidebar.querySelectorAll(".menu li").forEach((link) => {
+            link.addEventListener("click", () => {
+              sidebar.classList.remove("open");
+              overlay.classList.remove("active");
+            });
+          });
         }
+
+        // Initialize playlists page when DOM is ready
+        console.log("🎵 Playlists module script: registering DOMContentLoaded listener");
+        
+        if (document.readyState === "loading") {
+          // DOM is still loading, add listener
+          document.addEventListener("DOMContentLoaded", initializePlaylists);
+        } else {
+          // DOM is already loaded, run immediately
+          console.log("⚡ DOM already loaded, initializing immediately");
+          initializePlaylists();
+        }
+
+        async function initializePlaylists() {
+          try {
+            console.log("🎵 Playlists page initialization starting...");
+            const token = getAuthToken();
+            if (!token) {
+              console.warn("⚠️ No token found, redirecting to login");
+              window.location.href = "../index.html";
+              return;
+            }
+
+            const payload = parseJwt(token);
+            const userId = payload.sub;
+            console.log("👤 User ID:", userId);
+
+            // Load and render playlists
+            console.log("📥 Fetching playlists...");
+            await getUserPlaylists(userId);
+            console.log("📤 Rendering playlists...");
+            renderPlaylists();
+            console.log("✅ Playlists rendered successfully");
+
+            // Setup event listeners
+            console.log("🔌 Setting up event listeners...");
+            setupPlaylistsPageListeners(userId);
+            console.log("✅ Page fully initialized");
+          } catch (err) {
+            console.error("❌ Error in initializePlaylists:", err);
+            console.error("Stack:", err.stack);
+            const grid = document.getElementById("playlistsGrid");
+            if (grid) {
+              grid.innerHTML = `<p>Error loading playlists: ${err.message}</p>`;
+            }
+          }
+        }
+      } catch (importErr) {
+        console.error("❌ Error in module setup:", importErr);
+        console.error("Stack:", importErr.stack);
       }
     </script>
 
