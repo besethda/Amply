@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Tab switching functionality
   tabButtons.forEach(button => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const tabName = button.getAttribute("data-tab");
 
       // Remove active class from all buttons and contents
@@ -202,7 +202,76 @@ document.addEventListener("DOMContentLoaded", () => {
       const activeTab = document.getElementById(`${tabName}-tab`);
       if (activeTab) {
         activeTab.classList.add("active");
+        
+        // Load listening stats when stats tab is clicked
+        if (tabName === "stats") {
+          await loadListeningStats();
+        }
       }
     });
   });
 });
+
+// === LISTENING STATS ===
+async function loadListeningStats() {
+  const container = document.getElementById("listeningStatsContainer");
+  if (!container) return;
+
+  try {
+    container.innerHTML = "<p>Loading your listening history...</p>";
+
+    const response = await fetch(`${API_URL}/user/listening-history`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const listens = data.listens || [];
+
+    if (listens.length === 0) {
+      container.innerHTML = "<p>No listening history yet. Start playing songs!</p>";
+      return;
+    }
+
+    // Create listening history HTML
+    let html = `
+      <div class="listening-history">
+        <p class="stats-summary">You have listened to <strong>${listens.length}</strong> songs</p>
+        <div class="listening-list">
+    `;
+
+    listens.forEach((listen, index) => {
+      const date = new Date(listen.timestamp).toLocaleDateString();
+      const time = new Date(listen.timestamp).toLocaleTimeString();
+      const songId = listen.actualSongId || listen.songId;
+      
+      html += `
+        <div class="listening-item">
+          <span class="listen-number">${index + 1}</span>
+          <div class="listen-info">
+            <p class="song-id"><strong>Song:</strong> ${songId}</p>
+            <p class="artist-info"><strong>Artist:</strong> ${listen.artistId || 'Unknown'}</p>
+            <p class="listen-date"><strong>Listened:</strong> ${date} at ${time}</p>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("❌ Error loading listening stats:", err);
+    container.innerHTML = `<p>Error loading listening history: ${err.message}</p>`;
+  }
+}
