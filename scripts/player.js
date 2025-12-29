@@ -132,6 +132,17 @@ function restorePlayerState() {
           const data = await res.json();
           audio.src = data.streamUrl;
           
+          // Wait for audio to be loadable before setting currentTime
+          await new Promise((resolve) => {
+            const onCanPlay = () => {
+              audio.removeEventListener('canplay', onCanPlay);
+              resolve();
+            };
+            audio.addEventListener('canplay', onCanPlay, { once: true });
+            // Timeout fallback in case canplay doesn't fire
+            setTimeout(resolve, 2000);
+          });
+          
           // Restore playback position
           if (state.currentTime) {
             audio.currentTime = state.currentTime;
@@ -139,7 +150,11 @@ function restorePlayerState() {
           
           // Restore playback state
           if (state.isPlaying) {
-            audio.play().catch(err => console.error('Autoplay prevented:', err));
+            try {
+              await audio.play();
+            } catch (err) {
+              console.warn('Autoplay prevented by browser policy');
+            }
           }
         } catch (err) {
           console.error('Failed to setup audio:', err);
