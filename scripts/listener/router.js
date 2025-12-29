@@ -27,15 +27,27 @@ const fallbackViews = {
     </header>
     <section class="songs-section"><div id="playlistTrackList"></div></section>
   `,
-  library: `
+  playlists: `
     <header class="top-bar">
       <button id="createPlaylistBtn" class="btn-primary">+ Create Playlist</button>
     </header>
     <section class="playlists-section"><div id="playlistsGrid" class="playlist-grid"></div></section>
+    <div class="empty-state" id="emptyState" style="display: none">
+      <p>No playlists yet</p>
+      <p class="empty-hint">Create your first playlist to get started</p>
+    </div>
+  `,
+  library: `
+    <section class="songs-section">
+      <h2>Liked Songs</h2>
+      <div id="trackList"></div>
+    </section>
   `,
   explore: `
-    <header class="top-bar"><h2>Explore</h2></header>
-    <section class="songs-section"><p>Explore content coming soon.</p></section>
+    <section class="songs-section">
+      <h2>Explore & Discover</h2>
+      <div id="trackList"></div>
+    </section>
   `,
   settings: `
     <header class="top-bar"><h2 class="head">Settings & Account</h2></header>
@@ -76,12 +88,17 @@ const routes = {
     view: "/listener/views/playlist.html",
     init: initPlaylistView,
   },
-  library: {
+  playlists: {
     view: "/listener/views/playlists.html",
     init: initPlaylistsView,
   },
+  library: {
+    view: "/listener/views/library.html",
+    init: initHomeView,
+  },
   explore: {
     view: "/listener/views/explore.html",
+    init: initHomeView,
   },
   settings: {
     view: "/listener/views/settings.html",
@@ -137,7 +154,9 @@ async function loadRoute(routeKey, routeParam = null) {
       const containerMap = {
         home: "trackList",
         playlist: "playlistTrackList",
-        library: "playlistsGrid",
+        playlists: "playlistsGrid",
+        library: "trackList",
+        explore: "trackList",
         artist: "artistTrackList",
       };
       const expectedContainer = containerMap[key] || "trackList";
