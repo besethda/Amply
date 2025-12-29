@@ -683,7 +683,7 @@ export function renderSongsToDom({
   }
 
   const currentSongId = window.currentSong?.id;
-  const isPaused = audio.paused;
+  const isPaused = audio ? audio.paused : true;
 
   songs.forEach((song) => {
     const div = document.createElement("div");
