@@ -636,38 +636,19 @@ export async function addToPlaylist(song) {
     // Fetch user's playlists
     const data = await apiFetch(`${API_URL}/playlists?userId=${encodeURIComponent(user.userId)}`);
     const playlists = data.playlists || [];
+
+    // Import the nice playlist selector modal
+    const { showPlaylistSelector } = await import("./listener/listener-integration.js");
+    const playlistId = await showPlaylistSelector(playlists, song.title);
     
-    if (playlists.length === 0) {
-      alert("No playlists found. Create one first!");
-      return;
-    }
-
-    // Create a simple selector
-    let playlistOptions = playlists
-      .map((p, i) => `${i + 1}. ${p.playlistName || "Unnamed"}`)
-      .join("\n");
-    
-    const selected = prompt(
-      `Select a playlist to add "${song.title}":\n\n${playlistOptions}\n\nEnter the number:`,
-      "1"
-    );
-
-    if (!selected || isNaN(selected)) return;
-
-    const playlistIndex = parseInt(selected) - 1;
-    if (playlistIndex < 0 || playlistIndex >= playlists.length) {
-      alert("Invalid selection");
-      return;
-    }
-
-    const playlist = playlists[playlistIndex];
+    if (!playlistId) return; // User cancelled
 
     // Add song to playlist (only send songId to maintain single source of truth)
     await apiFetch(`${API_URL}/playlists`, {
       method: "PUT",
       body: JSON.stringify({
         userId: user.userId,
-        playlistId: playlist.playlistId,
+        playlistId,
         action: "add",
         song: {
           songId: song.songId || song.file,
@@ -675,7 +656,7 @@ export async function addToPlaylist(song) {
       }),
     });
 
-    alert(`✅ Added "${song.title}" to ${playlist.playlistName}`);
+    alert(`✅ Added "${song.title}" to playlist`);
   } catch (err) {
     console.error("❌ Add to playlist error:", err);
     alert("Failed to add to playlist: " + err.message);
