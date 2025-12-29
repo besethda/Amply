@@ -985,8 +985,14 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
 
   // Like/Unlike Song option
   try {
-    const { isSongLiked, likeSong, unlikeSong } = await import("./listener/likes.js");
-    const isLiked = await isSongLiked(song.file || song.songId || song.id);
+    console.log("Loading likes.js...");
+    const likeModule = await import("./listener/likes.js");
+    console.log("Likes module loaded:", likeModule);
+    const { isSongLiked, likeSong, unlikeSong } = likeModule;
+    const songId = song.file || song.songId || song.id;
+    console.log("Checking if song is liked, songId:", songId);
+    const isLiked = await isSongLiked(songId);
+    console.log("Song liked status:", isLiked);
     
     const likeItem = document.createElement("div");
     likeItem.style.cssText = `
@@ -1005,7 +1011,6 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
     likeItem.addEventListener("click", async () => {
       menu.remove();
       try {
-        const songId = song.file || song.songId || song.id;
         if (isLiked) {
           await unlikeSong(songId);
         } else {
@@ -1031,30 +1036,10 @@ async function showSongContextMenu(triggerElement, song, playlistId) {
       }
     });
     menu.appendChild(likeItem);
+    console.log("Like item appended to menu");
   } catch (err) {
     console.error("Error loading like functionality:", err);
   }
-
-  // Add to Playlist option
-  const addToPlaylistItem = document.createElement("div");
-  addToPlaylistItem.style.cssText = `
-    padding: 12px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s;
-  `;
-  addToPlaylistItem.textContent = "Add to Playlist";
-  addToPlaylistItem.addEventListener("mouseenter", () => {
-    addToPlaylistItem.style.backgroundColor = "var(--bg-tertiary)";
-  });
-  addToPlaylistItem.addEventListener("mouseleave", () => {
-    addToPlaylistItem.style.backgroundColor = "transparent";
-  });
-  addToPlaylistItem.addEventListener("click", () => {
-    menu.remove();
-    window.addToPlaylist?.(song);
-  });
-  menu.appendChild(addToPlaylistItem);
 
   // Remove from Playlist option (only if viewing a playlist)
   if (playlistId) {
