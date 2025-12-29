@@ -59,6 +59,12 @@ let currentIndex = 0;
 let eventsBound = false;
 
 // ===============================
+// LISTEN TRACKING STATE
+// ===============================
+let listenTracked = new Set(); // Track songs that have been counted to prevent duplicates
+let currentSongStartTime = 0; // When current song started playing
+
+// ===============================
 // PLAYER STATE PERSISTENCE
 // ===============================
 function savePlayerState() {
@@ -247,6 +253,32 @@ function syncPlayerIcons() {
 // ===============================
 // PLAY A SONG
 // ===============================
+// RECORD LISTEN
+// ===============================
+async function recordListen(song) {
+  try {
+    const artistId = song.artistId || song.artist || "Unknown";
+    const songId = song.file || song.songId || song.id;
+
+    const response = await apiFetch(`${API_URL}/record-listen`, {
+      method: "POST",
+      body: JSON.stringify({
+        songId,
+        artistId,
+        durationPlayed: 30, // We record at 30 second mark
+      }),
+    });
+
+    console.log("✅ Listen recorded:", songId);
+  } catch (err) {
+    console.error("❌ Failed to record listen:", err);
+    // Don't alert user - just log silently
+  }
+}
+
+// ===============================
+// PLAY SONG
+// ===============================
 export async function playSong(song, list = playlist) {
   if (!song) return;
 
@@ -255,6 +287,10 @@ export async function playSong(song, list = playlist) {
   // Apply normalized ID to the current song
   currentSong = { ...song, id: safeId };
   window.currentSong = currentSong;
+  
+  // Reset listen tracking for new song
+  listenTracked.clear();
+  currentSongStartTime = audio.currentTime || 0;
 
   // Normalize playlist IDs before comparing
   playlist = list.map(s => ({
@@ -441,7 +477,7 @@ function setupEvents() {
     localStorage.setItem("amplyShuffle", isShuffle);
   });
 
-  // Progress bar update
+  // Progress bar update and listening tracking
   audio.addEventListener("timeupdate", () => {
     if (audio.duration) {
       const progress = (audio.currentTime / audio.duration) * 100;
@@ -451,6 +487,15 @@ function setupEvents() {
       // Update time stamps
       if (fullCurrentTime) fullCurrentTime.textContent = formatTime(audio.currentTime);
       if (fullTotalTime) fullTotalTime.textContent = formatTime(audio.duration);
+    }
+
+    // Track listen when 30+ seconds have been played
+    if (currentSong && audio.currentTime >= 30) {
+      const songKey = `${currentSong.id}`;
+      if (!listenTracked.has(songKey)) {
+        recordListen(currentSong);
+        listenTracked.add(songKey);
+      }
     }
   });
 

@@ -644,6 +644,228 @@ const handler = async (event) => {
                 };
             }
         }
+        // === GET USER PROFILE ===
+        if (path.endsWith("/user") && method === "GET") {
+            try {
+                const userId = authorizer?.claims?.sub;
+                if (!userId) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const result = await dynamodb.send(new client_dynamodb_1.GetItemCommand({
+                    TableName: USERS_TABLE,
+                    Key: (0, util_dynamodb_1.marshall)({ userId }),
+                }));
+
+                const user = result.Item ? (0, util_dynamodb_1.unmarshall)(result.Item) : { userId };
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({
+                        userId: user.userId,
+                        username: user.username || null,
+                        avatar: user.avatar || null,
+                        email: authorizer?.claims?.email || null,
+                        createdAt: user.createdAt || new Date().toISOString(),
+                    }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Get user error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === UPDATE USER PROFILE ===
+        if (path.endsWith("/user") && method === "PUT") {
+            try {
+                const userId = authorizer?.claims?.sub;
+                if (!userId) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const body = JSON.parse(event.body || "{}");
+                const { username, avatar } = body;
+
+                // Validate input
+                if (username && username.length > 50) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Username too long (max 50 chars)" }),
+                    };
+                }
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const updateExpression = [];
+                const expressionValues = { ":now": new Date().toISOString() };
+
+                if (username) {
+                    updateExpression.push("username = :username");
+                    expressionValues[":username"] = username;
+                }
+                if (avatar) {
+                    updateExpression.push("avatar = :avatar");
+                    expressionValues[":avatar"] = avatar;
+                }
+
+                if (updateExpression.length === 0) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "No fields to update" }),
+                    };
+                }
+
+                updateExpression.push("updatedAt = :now");
+
+                await dynamodb.send(new client_dynamodb_1.UpdateItemCommand({
+                    TableName: USERS_TABLE,
+                    Key: (0, util_dynamodb_1.marshall)({ userId }),
+                    UpdateExpression: "SET " + updateExpression.join(", "),
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)(expressionValues),
+                }));
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "User profile updated" }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Update user error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === RECORD LISTEN (30+ seconds) ===
+        if (path.endsWith("/record-listen") && method === "POST") {
+            try {
+                const userId = authorizer?.claims?.sub;
+                if (!userId) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const body = JSON.parse(event.body || "{}");
+                const { songId, durationPlayed, artistId } = body;
+
+                if (!songId || durationPlayed === undefined || !artistId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing required fields" }),
+                    };
+                }
+
+                // Only count if 30+ seconds played
+                if (durationPlayed < 30) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Minimum 30 seconds required" }),
+                    };
+                }
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const now = Date.now();
+                const listenId = `${userId}#${songId}#${now}`;
+
+                // Record the listen event
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: LIKES_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)({
+                        songId: listenId,
+                        timestamp: now,
+                        userId,
+                        actualSongId: songId,
+                        artistId,
+                        durationPlayed,
+                        type: "listen",
+                    }),
+                }));
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Listen recorded" }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Record listen error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === GET USER LISTENING HISTORY ===
+        if (path.endsWith("/user/listening-history") && method === "GET") {
+            try {
+                const userId = authorizer?.claims?.sub;
+                if (!userId) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({
+                    TableName: LIKES_TABLE,
+                    FilterExpression: "userId = :userId AND #type = :type",
+                    ExpressionAttributeNames: { "#type": "type" },
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":userId": userId,
+                        ":type": "listen",
+                    }),
+                }));
+
+                const listens = (result.Items || [])
+                    .map((item) => (0, util_dynamodb_1.unmarshall)(item))
+                    .sort((a, b) => b.timestamp - a.timestamp)
+                    .slice(0, 100); // Last 100 listens
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ listens }),
+                };
+            }
+            catch (err) {
+                console.error("❌ Get listening history error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
         // === FALLBACK ===
         return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Not found", route: path }) };
     }
