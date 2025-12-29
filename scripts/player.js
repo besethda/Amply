@@ -1,4 +1,4 @@
-import { API_URL } from "../scripts/general.js";
+import { API_URL, parseJwt, getAuthToken, apiFetch } from "../scripts/general.js";
 
 // ===============================
 // DOM ELEMENTS
@@ -465,19 +465,112 @@ function handleOptionClick(action) {
 // ===============================
 // ACTIONS
 // ===============================
-export function addToPlaylist(song) {
-  console.log("📀 Add to playlist:", song);
-  alert(`Add "${song.title}" to playlist — coming soon!`);
+
+// Helper to get current user from token
+function getCurrentUser() {
+  const token = getAuthToken();
+  if (!token) return null;
+  const payload = parseJwt(token);
+  return { userId: payload.sub, email: payload.email };
+}
+
+export async function addToPlaylist(song) {
+  if (!song) return;
+  
+  try {
+    const user = getCurrentUser();
+    if (!user) {
+      alert("Please log in first");
+      return;
+    }
+
+    // Fetch user's playlists
+    const data = await apiFetch(`${API_URL}/playlists?userId=${encodeURIComponent(user.userId)}`);
+    const playlists = data.playlists || [];
+    
+    if (playlists.length === 0) {
+      alert("No playlists found. Create one first!");
+      return;
+    }
+
+    // Create a simple selector
+    let playlistOptions = playlists
+      .map((p, i) => `${i + 1}. ${p.playlistName || "Unnamed"}`)
+      .join("\n");
+    
+    const selected = prompt(
+      `Select a playlist to add "${song.title}":\n\n${playlistOptions}\n\nEnter the number:`,
+      "1"
+    );
+
+    if (!selected || isNaN(selected)) return;
+
+    const playlistIndex = parseInt(selected) - 1;
+    if (playlistIndex < 0 || playlistIndex >= playlists.length) {
+      alert("Invalid selection");
+      return;
+    }
+
+    const playlist = playlists[playlistIndex];
+
+    // Add song to playlist
+    await apiFetch(`${API_URL}/playlists`, {
+      method: "PUT",
+      body: JSON.stringify({
+        userId: user.userId,
+        playlistId: playlist.playlistId,
+        action: "add",
+        song: {
+          songId: song.songId,
+          title: song.title,
+          artist: song.artist,
+          file: song.file,
+          bucket: song.bucket,
+        },
+      }),
+    });
+
+    alert(`✅ Added "${song.title}" to ${playlist.playlistName}`);
+  } catch (err) {
+    console.error("❌ Add to playlist error:", err);
+    alert("Failed to add to playlist: " + err.message);
+  }
 }
 
 export function addToQueue(song) {
+  if (!song) return;
   console.log("⏳ Add to queue:", song);
+  // Placeholder for queue functionality
   alert(`Added "${song.title}" to queue.`);
 }
 
-export function addToLibrary(song) {
-  console.log("❤️  Add to library:", song);
-  alert(`Saved "${song.title}" to your library.`);
+export async function addToLibrary(song) {
+  if (!song) return;
+  
+  try {
+    const user = getCurrentUser();
+    if (!user) {
+      alert("Please log in first");
+      return;
+    }
+
+    // Call like-song endpoint
+    await apiFetch(`${API_URL}/like-song`, {
+      method: "POST",
+      body: JSON.stringify({
+        userId: user.userId,
+        songId: song.songId,
+        artistId: song.artistId || song.artist,
+        songName: song.title,
+      }),
+    });
+
+    console.log("❤️ Added to library:", song.title);
+    alert(`❤️ Saved "${song.title}" to your library.`);
+  } catch (err) {
+    console.error("❌ Add to library error:", err);
+    alert("Failed to save to library: " + err.message);
+  }
 }
 
 export function viewArtist(song) {
