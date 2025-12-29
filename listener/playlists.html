@@ -337,95 +337,104 @@
     <script type="module" src="../scripts/listener/playlists.js"></script>
     <script type="module" src="../scripts/listener/general.js"></script>
     <script>
-      console.log("🔷 Non-module playlists init script starting...");
-      
-      // Wait for everything to load, then initialize
-      async function initPlaylistsPage() {
-        try {
-          console.log("⏳ Waiting for DOM to be ready...");
+      (function() {
+        console.log("═══════════════════════════════════════════");
+        console.log("🔷 PLAYLISTS INIT SCRIPT STARTING");
+        console.log("═══════════════════════════════════════════");
+        
+        window.playlistInitReady = false;
+        
+        // Main initialization function
+        window.initPlaylistsPageNow = async function() {
+          console.log("\n📋 initPlaylistsPageNow() called");
           
-          // Wait for DOM to be ready
-          if (document.readyState === "loading") {
-            await new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve));
+          try {
+            // Step 1: Check window object
+            console.log("\n1️⃣  Checking window object...");
+            console.log("   - window.getAuthToken:", typeof window.getAuthToken);
+            console.log("   - window.parseJwt:", typeof window.parseJwt);
+            console.log("   - window.PlaylistManager:", typeof window.PlaylistManager);
+            
+            if (!window.getAuthToken || !window.parseJwt || !window.PlaylistManager) {
+              console.error("❌ Required functions not found on window");
+              setTimeout(window.initPlaylistsPageNow, 1000); // Retry in 1 second
+              return;
+            }
+            
+            console.log("✅ All required functions found");
+            
+            // Step 2: Get auth token
+            console.log("\n2️⃣  Getting auth token...");
+            const token = window.getAuthToken();
+            if (!token) {
+              console.warn("⚠️  No token, redirecting to login");
+              window.location.href = "../index.html";
+              return;
+            }
+            console.log("✅ Token found");
+            
+            // Step 3: Parse JWT
+            console.log("\n3️⃣  Parsing JWT...");
+            const payload = window.parseJwt(token);
+            const userId = payload.sub;
+            console.log("✅ User ID:", userId);
+            
+            // Step 4: Load playlists
+            console.log("\n4️⃣  Loading playlists...");
+            const result = await window.PlaylistManager.getUserPlaylists(userId);
+            console.log("✅ Playlists loaded:", result ? result.length : 0, "playlists");
+            
+            // Step 5: Render playlists
+            console.log("\n5️⃣  Rendering playlists...");
+            window.PlaylistManager.renderPlaylists();
+            console.log("✅ Playlists rendered");
+            
+            // Step 6: Setup listeners
+            console.log("\n6️⃣  Setting up event listeners...");
+            window.setupPlaylistsPageListeners(userId);
+            console.log("✅ Event listeners setup");
+            
+            console.log("\n✅ ✅ ✅ INITIALIZATION COMPLETE ✅ ✅ ✅\n");
+            window.playlistInitReady = true;
+            
+          } catch (err) {
+            console.error("\n❌ ❌ ❌ ERROR IN INITIALIZATION ❌ ❌ ❌");
+            console.error("Error:", err.message);
+            console.error("Stack:", err.stack);
+            const grid = document.getElementById("playlistsGrid");
+            if (grid) {
+              grid.innerHTML = `<div style="padding: 20px; color: red;"><strong>Error:</strong> ${err.message}</div>`;
+            }
           }
-          console.log("✅ DOM ready");
-          
-          // Give modules time to load and attach to window
-          console.log("⏳ Waiting for modules to load (500ms)...");
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Check for required functions
-          console.log("🔍 Checking window for functions...");
-          console.log("window.getAuthToken:", typeof window.getAuthToken);
-          console.log("window.parseJwt:", typeof window.parseJwt);
-          console.log("window.PlaylistManager:", !!window.PlaylistManager);
-          
-          if (typeof window.getAuthToken !== "function") {
-            console.error("❌ getAuthToken not found");
-            throw new Error("getAuthToken not available");
-          }
-          
-          if (typeof window.parseJwt !== "function") {
-            console.error("❌ parseJwt not found");
-            throw new Error("parseJwt not available");
-          }
-          
-          if (!window.PlaylistManager) {
-            console.error("❌ PlaylistManager not found");
-            throw new Error("PlaylistManager not available");
-          }
-          
-          console.log("✅ All modules loaded");
-          
-          // Extract functions for easier use
-          const { createPlaylist, getUserPlaylists, renderPlaylists } = window.PlaylistManager;
-          const { getAuthToken, parseJwt } = window;
-          
-          // Now run the initialization
-          console.log("🎵 Getting auth token...");
-          const token = getAuthToken();
-          
-          if (!token) {
-            console.warn("⚠️ No token found, redirecting to login");
-            window.location.href = "../index.html";
-            return;
-          }
-          
-          console.log("🔑 Token found, parsing...");
-          const payload = parseJwt(token);
-          const userId = payload.sub;
-          console.log("👤 User ID:", userId);
-          
-          // Load and render playlists
-          console.log("📥 Fetching playlists...");
-          await getUserPlaylists(userId);
-          console.log("📤 Rendering playlists...");
-          renderPlaylists();
-          console.log("✅ Playlists rendered successfully");
-          
-          // Setup event listeners
-          console.log("🔌 Setting up event listeners...");
-          setupPlaylistsPageListeners(userId);
-          console.log("✅ Page fully initialized");
-          
-        } catch (err) {
-          console.error("❌ Error in playlist initialization:", err);
-          console.error("Stack:", err.stack);
-          const grid = document.getElementById("playlistsGrid");
-          if (grid) {
-            grid.innerHTML = `<p>Error: ${err.message}</p>`;
-          }
-        }
-      }
-      
-      function setupPlaylistsPageListeners(userId) {
-        console.log("🔌 setupPlaylistsPageListeners called");
+        };
+        
+        console.log("✅ Setup complete, will call initPlaylistsPageNow() after delay");
+        
+        // Delay to let modules load
+        setTimeout(() => {
+          console.log("\n⏱️  500ms delay passed, calling initPlaylistsPageNow()");
+          window.initPlaylistsPageNow();
+        }, 500);
+        
+      })();
+    </script>
+    
+    <!-- Define setupPlaylistsPageListeners function -->
+    <script>
+      window.setupPlaylistsPageListeners = function(userId) {
+        console.log("🔌 setupPlaylistsPageListeners called for userId:", userId);
+        
         const createBtn = document.getElementById("createPlaylistBtn");
         const modal = document.getElementById("createPlaylistModal");
         const modalClose = document.getElementById("modalClose");
         const form = document.getElementById("createPlaylistForm");
 
-        console.log("Elements found:", { createBtn: !!createBtn, modal: !!modal, modalClose: !!modalClose, form: !!form });
+        console.log("Elements found:", {
+          createBtn: !!createBtn,
+          modal: !!modal,
+          modalClose: !!modalClose,
+          form: !!form
+        });
 
         if (!createBtn) {
           console.error("❌ createPlaylistBtn not found");
@@ -501,11 +510,9 @@
             });
           });
         }
-      }
+      };
       
-      // Start the initialization
-      console.log("🚀 Starting playlist initialization...");
-      initPlaylistsPage();
+      console.log("✅ setupPlaylistsPageListeners function defined on window");
     </script>
 
     <!-- PLAYER BAR (same as listener.html) -->
@@ -515,7 +522,12 @@
           <input type="range" id="progressBar" value="0" min="0" max="100" />
           <div class="player-bottom">
             <div class="track-info">
-              <img id="currentTrackArt" src="" alt="Album Art" class="player-art" />
+              <img
+                id="currentTrackArt"
+                src=""
+                alt="Album Art"
+                class="player-art"
+              />
               <div class="track-text">
                 <div class="track-name-container">
                   <span id="currentTrackName">No track playing</span>
@@ -525,22 +537,70 @@
             </div>
             <div class="player-controls">
               <button id="prevBtn" class="icon-button" aria-label="Previous">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1)">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="transform: scaleX(-1)"
+                >
                   <polygon points="5 4 15 12 5 20 5 4"></polygon>
                   <line x1="19" y1="5" x2="19" y2="19"></line>
                 </svg>
               </button>
-              <button id="playPause" class="icon-button" aria-label="Play or pause">
-                <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+              <button
+                id="playPause"
+                class="icon-button"
+                aria-label="Play or pause"
+              >
+                <svg
+                  id="playIcon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="34"
+                  height="34"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display: none">
+                <svg
+                  id="pauseIcon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="34"
+                  height="34"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: none"
+                >
                   <rect x="6" y="4" width="4" height="16"></rect>
                   <rect x="14" y="4" width="4" height="16"></rect>
                 </svg>
               </button>
               <button id="nextBtn" class="icon-button" aria-label="Next">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polygon points="5 4 15 12 5 20 5 4"></polygon>
                   <line x1="19" y1="5" x2="19" y2="19"></line>
                 </svg>
@@ -548,7 +608,16 @@
             </div>
             <div class="player-options">
               <button id="repeatBtn" class="icon-button" aria-label="Repeat">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline points="17 1 21 5 17 9"></polyline>
                   <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
                   <polyline points="7 23 3 19 7 15"></polyline>
@@ -556,7 +625,16 @@
                 </svg>
               </button>
               <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline points="16 3 21 3 21 8"></polyline>
                   <line x1="4" y1="20" x2="21" y2="3"></line>
                   <polyline points="21 16 21 21 16 21"></polyline>
@@ -564,8 +642,22 @@
                   <line x1="4" y1="4" x2="9" y2="9"></line>
                 </svg>
               </button>
-              <button id="optionsBtn" class="icon-button" aria-label="More options">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <button
+                id="optionsBtn"
+                class="icon-button"
+                aria-label="More options"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  viewBox="0 0 24 24"
+                >
                   <circle cx="12" cy="5" r="1.5"></circle>
                   <circle cx="12" cy="12" r="1.5"></circle>
                   <circle cx="12" cy="19" r="1.5"></circle>
@@ -588,13 +680,33 @@
     <div id="fullPlayer" class="full-player hidden">
       <div class="full-player-header">
         <button id="closeFullPlayer" class="icon-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
         <span class="full-player-title-header">Now Playing</span>
         <button id="fullPlayerMenuBtn" class="icon-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="26"
+            height="26"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            viewBox="0 0 24 24"
+          >
             <circle cx="12" cy="5" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>
             <circle cx="12" cy="19" r="1.5"></circle>
@@ -617,7 +729,16 @@
       </div>
       <div class="full-player-controls">
         <button id="fullShuffleBtn" class="icon-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <polyline points="16 3 21 3 21 8"></polyline>
             <line x1="4" y1="20" x2="21" y2="3"></line>
             <polyline points="21 16 21 21 16 21"></polyline>
@@ -626,28 +747,81 @@
           </svg>
         </button>
         <button id="fullPrevBtn" class="icon-button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1)">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="transform: scaleX(-1)"
+          >
             <polygon points="5 4 15 12 5 20 5 4"></polygon>
             <line x1="19" y1="5" x2="19" y2="19"></line>
           </svg>
         </button>
         <button id="fullPlayPauseBtn" class="play-button-large">
-          <svg id="fullPlayIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            id="fullPlayIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="40"
+            height="40"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
-          <svg id="fullPauseIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display: none">
+          <svg
+            id="fullPauseIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="40"
+            height="40"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="display: none"
+          >
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>
           </svg>
         </button>
         <button id="fullNextBtn" class="icon-button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <polygon points="5 4 15 12 5 20 5 4"></polygon>
             <line x1="19" y1="5" x2="19" y2="19"></line>
           </svg>
         </button>
         <button id="fullRepeatBtn" class="icon-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <polyline points="17 1 21 5 17 9"></polyline>
             <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
             <polyline points="7 23 3 19 7 15"></polyline>
@@ -656,3 +830,5 @@
         </button>
       </div>
     </div>
+  </body>
+</html>
