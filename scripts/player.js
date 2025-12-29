@@ -534,8 +534,8 @@ export async function addToPlaylist(song) {
         action: "add",
         song: {
           songId: song.songId || song.file,
-          title: song.title,
-          artist: song.artist,
+          songName: song.title,
+          artistName: song.artist,
           file: song.file,
           bucket: song.bucket,
         },
