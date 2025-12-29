@@ -1,15 +1,21 @@
 import { API_URL, parseJwt, getAuthToken, apiFetch } from "../scripts/general.js";
 
+// Ensure player bar starts hidden when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const pb = document.getElementById("playerBar");
+    if (pb) pb.classList.add("hidden");
+  });
+} else {
+  const pb = document.getElementById("playerBar");
+  if (pb) pb.classList.add("hidden");
+}
+
 // ===============================
 // DOM ELEMENTS
 // ===============================
 const audio = document.getElementById("globalAudio");
 const playerBar = document.getElementById("playerBar");
-
-// Ensure player bar starts hidden
-if (playerBar && !playerBar.classList.contains("hidden")) {
-  playerBar.classList.add("hidden");
-}
 
 const playIcon = document.getElementById("playIcon");
 const pauseIcon = document.getElementById("pauseIcon");
