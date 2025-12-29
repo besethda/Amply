@@ -336,6 +336,8 @@
     <!-- Shared Scripts -->
     <script type="module" src="../scripts/listener/playlists.js"></script>
     <script type="module">
+      console.log("📦 Playlists module script loading...");
+      
       import {
         getUserPlaylists,
         renderPlaylists,
@@ -343,38 +345,7 @@
       } from "../scripts/listener/playlists.js";
       import { getAuthToken, parseJwt } from "../scripts/general.js";
 
-      // Initialize playlists page
-      document.addEventListener("DOMContentLoaded", async () => {
-        try {
-          console.log("🎵 Playlists page DOMContentLoaded starting...");
-          const token = getAuthToken();
-          if (!token) {
-            console.warn("⚠️ No token found, redirecting to login");
-            window.location.href = "../index.html";
-            return;
-          }
-
-          const payload = parseJwt(token);
-          const userId = payload.sub;
-          console.log("👤 User ID:", userId);
-
-          // Load and render playlists
-          console.log("📥 Fetching playlists...");
-          await getUserPlaylists(userId);
-          console.log("📤 Rendering playlists...");
-          renderPlaylists();
-          console.log("✅ Playlists rendered successfully");
-
-          // Setup event listeners
-          console.log("🔌 Setting up event listeners...");
-          setupPlaylistsPageListeners(userId);
-          console.log("✅ Page fully initialized");
-        } catch (err) {
-          console.error("❌ Error loading playlists page:", err);
-          console.error("Stack:", err.stack);
-          document.getElementById("playlistsGrid").innerHTML = `<p>Error loading playlists: ${err.message}</p>`;
-        }
-      });
+      console.log("✅ Imports successful");
 
       function setupPlaylistsPageListeners(userId) {
         console.log("🔌 setupPlaylistsPageListeners called for user:", userId);
@@ -453,6 +424,50 @@
             overlay.classList.remove("active");
           });
         });
+      }
+
+      // Initialize playlists page when DOM is ready
+      console.log("🎵 Playlists module script: registering DOMContentLoaded listener");
+      
+      if (document.readyState === "loading") {
+        // DOM is still loading, add listener
+        document.addEventListener("DOMContentLoaded", initializePlaylists);
+      } else {
+        // DOM is already loaded, run immediately
+        console.log("⚡ DOM already loaded, initializing immediately");
+        initializePlaylists();
+      }
+
+      async function initializePlaylists() {
+        try {
+          console.log("🎵 Playlists page initialization starting...");
+          const token = getAuthToken();
+          if (!token) {
+            console.warn("⚠️ No token found, redirecting to login");
+            window.location.href = "../index.html";
+            return;
+          }
+
+          const payload = parseJwt(token);
+          const userId = payload.sub;
+          console.log("👤 User ID:", userId);
+
+          // Load and render playlists
+          console.log("📥 Fetching playlists...");
+          await getUserPlaylists(userId);
+          console.log("📤 Rendering playlists...");
+          renderPlaylists();
+          console.log("✅ Playlists rendered successfully");
+
+          // Setup event listeners
+          console.log("🔌 Setting up event listeners...");
+          setupPlaylistsPageListeners(userId);
+          console.log("✅ Page fully initialized");
+        } catch (err) {
+          console.error("❌ Error loading playlists page:", err);
+          console.error("Stack:", err.stack);
+          document.getElementById("playlistsGrid").innerHTML = `<p>Error loading playlists: ${err.message}</p>`;
+        }
       }
     </script>
 
