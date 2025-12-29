@@ -538,6 +538,8 @@ export async function addToPlaylist(song) {
           artistName: song.artist,
           file: song.file,
           bucket: song.bucket,
+          cloudfrontDomain: song.cloudfrontDomain,
+          coverImage: song.coverImage || song.albumArt,
         },
       }),
     });

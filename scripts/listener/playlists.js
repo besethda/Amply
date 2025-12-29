@@ -69,14 +69,16 @@ export async function addSongToPlaylist(playlistId, song) {
           artistName: song.artistName,
           bucket: song.bucket,
           cloudfrontDomain: song.cloudfrontDomain,
+          file: song.file,
+          coverImage: song.coverImage || song.albumArt,
         },
       }),
     });
 
-    console.log("✅ Song added to playlist");
+    console.log("Song added to playlist");
     return response;
   } catch (err) {
-    console.error("❌ Error adding song to playlist:", err);
+    console.error("Error adding song to playlist:", err);
     throw err;
   }
 }
@@ -257,6 +259,8 @@ function openPlaylistListView(playlistId) {
         artist: s.artistName || "Unknown Artist",
         file: s.file,
         bucket: s.bucket,
+        cloudfrontDomain: s.cloudfrontDomain,
+        coverImage: s.coverImage,
       }));
 
       renderSongsToDom({
