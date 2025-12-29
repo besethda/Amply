@@ -8,6 +8,24 @@
   font-weight: 400;
 }
 
+/* Delete playlist button styling */
+#deletePlaylistBtn {
+  color: var(--text-secondary);
+  padding: 8px;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#deletePlaylistBtn:hover {
+  color: #ff6b6b;
+}
+
+#deletePlaylistBtn:active {
+  transform: scale(0.95);
+}
+
 /* Grid layout - responsive */
 #trackList,
 #recentlyListened,

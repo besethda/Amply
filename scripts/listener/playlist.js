@@ -1,5 +1,6 @@
-import { loadSongs, $, requireAuth } from "../general.js";
+import { loadSongs, $, requireAuth, getAuthToken, parseJwt } from "../general.js";
 import { initPlayer, renderSongsToDom } from "../player.js";
+import { deletePlaylist, getUserPlaylists, initPlaylistsView } from "./playlists.js";
 
 requireAuth();
 
@@ -56,6 +57,28 @@ export async function initPlaylistView(playlistId) {
     });
 
     initPlayer(songs);
+
+    // Add delete playlist button handler
+    const deleteBtn = root.querySelector("#deletePlaylistBtn");
+    if (deleteBtn && actualPlaylistId) {
+      deleteBtn.addEventListener("click", async () => {
+        if (confirm(`Are you sure you want to delete "${playlistName}"? This cannot be undone.`)) {
+          try {
+            await deletePlaylist(actualPlaylistId);
+            // Refresh playlists list and navigate back to playlists view
+            const token = getAuthToken();
+            if (token) {
+              const payload = parseJwt(token);
+              await getUserPlaylists(payload.sub);
+            }
+            window.location.hash = "playlists";
+          } catch (err) {
+            console.error("Error deleting playlist:", err);
+            alert("Failed to delete playlist");
+          }
+        }
+      });
+    }
   } catch (err) {
     console.error("Failed to load playlist songs:", err);
     container.innerHTML = "<p>Error loading songs.</p>";
