@@ -24,15 +24,17 @@ export async function initPlaylistView(playlistId) {
         if (playlist) {
           playlistName = playlist.playlistName || "Playlist";
           if (playlist.songs && playlist.songs.length > 0) {
-            // Convert stored songs to playable format
+            // Convert stored songs to playable format with proper art_url mapping
             songs = playlist.songs.map((s) => ({
               songId: s.songId,
+              id: s.songId,
               title: s.songName || "Unknown",
               artist: s.artistName || "Unknown Artist",
               file: s.file,
               bucket: s.bucket,
               cloudfrontDomain: s.cloudfrontDomain,
               coverImage: s.coverImage,
+              art_url: s.coverImage, // Map coverImage to art_url for rendering
             }));
           }
         }

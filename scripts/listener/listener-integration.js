@@ -63,8 +63,10 @@ function setupAddToPlaylistButtons() {
         songId,
         songName,
         artistName,
+        file: target.dataset.file || "unknown",
         bucket: target.dataset.bucket || "unknown",
         cloudfrontDomain: target.dataset.cloudfrontDomain || "unknown",
+        coverImage: target.dataset.coverImage || target.dataset.artUrl,
       });
 
       // Show success
