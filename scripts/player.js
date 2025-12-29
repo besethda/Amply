@@ -804,6 +804,7 @@ export function renderSongsToDom({
   songs = [],
   layout = "grid",
   container = "#trackList",
+  playlistId = null,
 }) {
   const trackList = document.querySelector(container);
   if (!trackList) {
@@ -899,6 +900,16 @@ export function renderSongsToDom({
     }
 
     setupPlayButton(div, { ...song, id: safeId }, songs);
+    
+    // Add context menu handler for song options (3-dot menu)
+    const optionBtn = div.querySelector(".song-option");
+    if (optionBtn) {
+      optionBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showSongContextMenu(optionBtn, { ...song, id: safeId }, playlistId);
+      });
+    }
+    
     trackList.appendChild(div);
   });
 }
@@ -964,6 +975,99 @@ function setupPlayButton(div, song, fullList) {
 
     handlePlay();
   });
+}
+
+// ===============================
+// SONG CONTEXT MENU
+// ===============================
+function showSongContextMenu(triggerElement, song, playlistId) {
+  // Remove any existing menu
+  const existingMenu = document.querySelector(".song-context-menu");
+  if (existingMenu) existingMenu.remove();
+
+  // Create context menu
+  const menu = document.createElement("div");
+  menu.className = "song-context-menu";
+  menu.style.cssText = `
+    position: fixed;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    min-width: 180px;
+  `;
+
+  // Add to Playlist option
+  const addToPlaylistItem = document.createElement("div");
+  addToPlaylistItem.style.cssText = `
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+  `;
+  addToPlaylistItem.textContent = "Add to Playlist";
+  addToPlaylistItem.addEventListener("mouseenter", () => {
+    addToPlaylistItem.style.backgroundColor = "var(--bg-tertiary)";
+  });
+  addToPlaylistItem.addEventListener("mouseleave", () => {
+    addToPlaylistItem.style.backgroundColor = "transparent";
+  });
+  addToPlaylistItem.addEventListener("click", () => {
+    menu.remove();
+    window.addToPlaylist?.(song);
+  });
+  menu.appendChild(addToPlaylistItem);
+
+  // Remove from Playlist option (only if viewing a playlist)
+  if (playlistId) {
+    const removeItem = document.createElement("div");
+    removeItem.style.cssText = `
+      padding: 12px 16px;
+      cursor: pointer;
+      color: var(--text-danger, #ff6b6b);
+      transition: background-color 0.2s;
+    `;
+    removeItem.textContent = "Remove from Playlist";
+    removeItem.addEventListener("mouseenter", () => {
+      removeItem.style.backgroundColor = "var(--bg-tertiary)";
+    });
+    removeItem.addEventListener("mouseleave", () => {
+      removeItem.style.backgroundColor = "transparent";
+    });
+    removeItem.addEventListener("click", async () => {
+      menu.remove();
+      try {
+        // Import dynamically to avoid circular dependency
+        const { removeSongFromPlaylist } = await import("./listener/playlists.js");
+        await removeSongFromPlaylist(playlistId, song.songId || song.id);
+        
+        // Refresh the playlist view
+        const { initPlaylistView } = await import("./listener/playlist.js");
+        await initPlaylistView(playlistId);
+      } catch (err) {
+        console.error("Error removing song:", err);
+        alert("Failed to remove song from playlist");
+      }
+    });
+    menu.appendChild(removeItem);
+  }
+
+  // Position menu near cursor
+  const rect = triggerElement.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 5) + "px";
+  menu.style.left = (rect.left - 150) + "px";
+
+  document.body.appendChild(menu);
+
+  // Close menu when clicking elsewhere
+  const closeMenu = (e) => {
+    if (!menu.contains(e.target) && !triggerElement.contains(e.target)) {
+      menu.remove();
+      document.removeEventListener("click", closeMenu);
+    }
+  };
+  document.addEventListener("click", closeMenu);
 }
 
 // ===============================

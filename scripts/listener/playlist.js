@@ -51,7 +51,8 @@ export async function initPlaylistView(playlistId) {
     renderSongsToDom({
       songs,
       layout: "list",
-      container: "#playlistTrackList"
+      container: "#playlistTrackList",
+      playlistId: actualPlaylistId
     });
 
     initPlayer(songs);
