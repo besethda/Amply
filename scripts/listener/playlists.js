@@ -223,7 +223,7 @@ function openPlaylistListView(playlistId) {
   if (!playlist) return;
 
   // Import player functions
-  import("./player.js").then(({ initPlayer, renderSongsToDom }) => {
+  import("../player.js").then(({ initPlayer, renderSongsToDom }) => {
     const root = document.getElementById("viewRoot") || document;
     const mainContent = root.querySelector(".main-content");
     
