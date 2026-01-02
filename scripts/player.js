@@ -1,4 +1,5 @@
 import { API_URL, parseJwt, getAuthToken, apiFetch } from "../scripts/general.js";
+import { SimpleWaveformRenderer } from "../scripts/waveform-simple.js";
 
 // Ensure player bar starts hidden when DOM is ready
 if (document.readyState === 'loading') {
@@ -19,7 +20,7 @@ const playerBar = document.getElementById("playerBar");
 
 const playIcon = document.getElementById("playIcon");
 const pauseIcon = document.getElementById("pauseIcon");
-const progressBar = document.getElementById("progressBar");
+const waveformCanvas = document.getElementById("waveformCanvas");
 const currentTrackName = document.getElementById("currentTrackName");
 const currentTrackArtist = document.getElementById("currentTrackArtist");
 const currentTrackArt = document.getElementById("currentTrackArt");
@@ -48,6 +49,10 @@ const fullPrevBtn = document.getElementById("fullPrevBtn");
 const fullShuffleBtn = document.getElementById("fullShuffleBtn");
 const fullRepeatBtn = document.getElementById("fullRepeatBtn");
 
+// Waveform Analyzer and Renderer
+let waveformAnalyzer = null;
+let waveformRenderer = null;
+
 // ===============================
 // PLAYER STATE
 // ===============================
@@ -64,6 +69,16 @@ let eventsBound = false;
 let listenTracked = new Set(); // Track songs that have been counted to prevent duplicates
 let currentSongReady = false; // Track if current song has properly loaded and started
 let currentSongStartTime = 0; // When current song started playing
+
+// ===============================
+// WAVEFORM STATE
+// ===============================
+let waveformAnimationId = null;
+let staticWaveformData = []; // Static waveform data for the current song
+
+// Drag-to-seek state accessible to button handlers
+let isDraggingWaveform = false;
+let hasMovedEnoughWaveform = false;
 
 // ===============================
 // PLAYER STATE PERSISTENCE
@@ -197,8 +212,169 @@ export function initPlayer(songs = []) {
     }));
   }
 
+  // Initialize waveform
+  initializeWaveform();
+
   restoreSettings();
   setupEvents();
+}
+
+// ===============================
+// WAVEFORM INITIALIZATION
+// ===============================
+function initializeWaveform() {
+  const canvas = document.getElementById('waveformCanvas');
+  const audio = document.getElementById('globalAudio');
+  
+  if (!canvas || !audio) {
+    console.log('🎵 [Waveform] Canvas or audio element not found');
+    return;
+  }
+
+  console.log('🎵 [Waveform] Initializing simple waveform renderer...');
+  
+  // Create or reset waveform renderer
+  if (!window.waveformRenderer) {
+    window.waveformRenderer = new SimpleWaveformRenderer(canvas);
+    window.waveformRenderer.setColors('rgba(100, 100, 100, 0.6)', 'rgba(0, 255, 136, 1)');
+  }
+  
+  // If audio is currently playing, regenerate waveform
+  if (!audio.paused && audio.src) {
+    const duration = audio.duration || 180;
+    window.waveformRenderer.generateWaveform(duration);
+    console.log('🎵 [Waveform] Regenerated waveform for current song');
+  }
+  
+  // Set canvas size - IMPORTANT: must set actual width/height attributes for drawing
+  const resizeCanvas = () => {
+    const rect = canvas.getBoundingClientRect();
+    // Set devicePixelRatio for better quality
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    // Scale canvas context if using high DPI
+    if (dpr > 1) {
+      canvas.getContext('2d').scale(dpr, dpr);
+    }
+    
+    console.log('📐 Canvas resized to:', { width: canvas.width, height: canvas.height, dpr });
+    // Only redraw if waveform has been generated
+    if (window.waveformRenderer && window.waveformRenderer.waveformBars.length > 0) {
+      window.waveformRenderer.draw();
+    }
+  };
+
+  // Wait for DOM to be fully laid out
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resizeCanvas);
+  } else {
+    // Use timeout to ensure layout is complete
+    setTimeout(resizeCanvas, 100);
+  }
+  
+  window.addEventListener('resize', resizeCanvas);
+
+  // Track dragging state with threshold
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  const DRAG_THRESHOLD = 5; // pixels
+  let hasMovedEnough = false;
+
+  // Helper function to seek to position
+  const seekToPosition = (e) => {
+    if (!audio.duration || !window.waveformRenderer) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const progress = x / rect.width;
+    audio.currentTime = progress * audio.duration;
+    console.log('🎯 [Seek] Moved to', (progress * 100).toFixed(1) + '%');
+  };
+
+  // Mouse down - start drag detection from anywhere in player bar
+  playerBar?.addEventListener('mousedown', (e) => {
+    // Only start dragging on primary mouse button (left click)
+    if (e.button !== 0) return;
+    
+    // Don't start drag if clicking on artist name (let click handler work)
+    if (e.target === currentTrackArtist || currentTrackArtist?.contains(e.target)) {
+      // Reset drag state for this click
+      isDragging = false;
+      hasMovedEnough = false;
+      isDraggingWaveform = false;
+      hasMovedEnoughWaveform = false;
+      return;
+    }
+    
+    isDragging = true;
+    hasMovedEnough = false;
+    isDraggingWaveform = true;
+    hasMovedEnoughWaveform = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    // Don't seek yet - wait to see if it's a drag or click
+  }, true);
+
+  // Mouse move - check if drag threshold is exceeded
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    // Check if movement exceeds threshold
+    const deltaX = Math.abs(e.clientX - dragStartX);
+    const deltaY = Math.abs(e.clientY - dragStartY);
+    if (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD) {
+      hasMovedEnough = true;
+      hasMovedEnoughWaveform = true;
+      seekToPosition(e);
+    }
+  }, true); // Use capture phase to intercept early
+
+  // Mouse up - stop dragging
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    isDraggingWaveform = false;
+  });
+
+  // Click-to-seek on canvas (single click without dragging)
+  canvas.addEventListener('click', (e) => {
+    if (hasMovedEnough) {
+      // Drag occurred, don't seek again and stop propagation to prevent button clicks
+      e.stopPropagation();
+      return;
+    }
+    
+    // Pure click without dragging - seek but allow button clicks to propagate
+    seekToPosition(e);
+  }, true);
+
+  console.log('✅ Simple waveform initialized');
+}
+
+function startWaveformAnimation() {
+  if (!window.waveformRenderer || !audio) return;
+
+  const animate = () => {
+    // Update progress
+    if (audio.duration) {
+      const progress = audio.currentTime / audio.duration;
+      window.waveformRenderer.setProgress(progress);
+    }
+
+    // Update waveform from live audio analysis
+    window.waveformRenderer.updateFromAudio();
+    
+    window.waveformRenderer.draw();
+    window.waveformAnimationId = requestAnimationFrame(animate);
+  };
+
+  // Cancel previous animation
+  if (window.waveformAnimationId) {
+    cancelAnimationFrame(window.waveformAnimationId);
+  }
+
+  animate();
 }
 
 // ===============================
@@ -284,6 +460,7 @@ async function recordListen(song) {
 // PLAY SONG
 // ===============================
 export async function playSong(song, list = playlist) {
+  console.log('🎵 [Player] playSong() called with song:', song?.title);
   if (!song) return;
 
   const safeId = song.id || song.songId || song.file || song.title;
@@ -341,8 +518,27 @@ export async function playSong(song, list = playlist) {
     }
     
     try {
+      console.log('[Player] Attempting to play audio:', { src: audio.src, ready: currentSongReady });
       await audio.play();
       currentSongReady = true; // Song has started playing
+      console.log('[Player] Audio playing successfully');
+
+      // Initialize Web Audio API on first play (after user gesture)
+      if (window.waveformRenderer && !window.waveformRenderer.isConnected) {
+        window.waveformRenderer.initAudioContext(audio);
+      }
+
+      // Generate waveform and start animation
+      if (window.waveformRenderer) {
+        // Use duration if available, otherwise use a default
+        const duration = audio.duration || 180;
+        console.log('🎵 [Player] Generating waveform for duration:', duration);
+        window.waveformRenderer.generateWaveform(duration);
+        window.waveformRenderer.draw();
+        startWaveformAnimation();
+      } else {
+        console.warn('⚠️ [Player] Waveform renderer not available');
+      }
     } catch (err) {
       console.error("❌ Play failed:", err.message);
     }
@@ -438,6 +634,11 @@ function setupEvents() {
 
   // Play/pause in player bar
   playPauseBtn?.addEventListener("click", () => {
+    // Don't activate if we just dragged the waveform
+    if (hasMovedEnoughWaveform) {
+      return;
+    }
+    
     if (!audio.src) return;
 
     if (audio.paused) {
@@ -455,6 +656,11 @@ function setupEvents() {
 
   // Previous track
   prevBtn?.addEventListener("click", () => {
+    // Don't activate if we just dragged the waveform
+    if (hasMovedEnoughWaveform) {
+      return;
+    }
+    
     if (!playlist.length) return;
 
     currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
@@ -463,6 +669,11 @@ function setupEvents() {
 
   // Next track
   nextBtn?.addEventListener("click", () => {
+    // Don't activate if we just dragged the waveform
+    if (hasMovedEnoughWaveform) {
+      return;
+    }
+    
     if (!playlist.length) return;
 
     if (isShuffle) {
@@ -474,12 +685,7 @@ function setupEvents() {
     playSong(playlist[currentIndex], playlist);
   });
 
-  // Seek
-  progressBar?.addEventListener("input", () => {
-    if (audio.duration) {
-      audio.currentTime = (progressBar.value / 100) * audio.duration;
-    }
-  });
+  // Seek (waveform canvas is handled in initializeWaveform)
 
   // Repeat toggle
   repeatBtn?.addEventListener("click", () => {
@@ -497,12 +703,40 @@ function setupEvents() {
     localStorage.setItem("amplyShuffle", isShuffle);
   });
 
+  // Navigate to artist page when clicking artist name
+  currentTrackArtist?.addEventListener("click", async (e) => {
+    // Reset drag state for clean click detection
+    hasMovedEnoughWaveform = false;
+    isDraggingWaveform = false;
+    
+    if (!currentSong) return;
+    
+    const artistName = currentSong.artist;
+    console.log('🎨 [Artist Click] Looking up artist:', artistName);
+    
+    try {
+      // Search for the artist to get their ID
+      const response = await apiFetch(`${API_URL}/search?q=${encodeURIComponent(artistName)}&type=artist`);
+      const results = await response.json();
+      
+      if (results.artists && results.artists.length > 0) {
+        const artist = results.artists[0];
+        console.log('🎨 [Artist Click] Found artist:', artist);
+        window.location.hash = `artist:${artist.id}`;
+      } else {
+        console.warn('🎨 [Artist Click] No artist found in search results');
+      }
+    } catch (err) {
+      console.error('🎨 [Artist Click] Error searching for artist:', err);
+    }
+  });
+
   // Progress bar update and listening tracking
   audio.addEventListener("timeupdate", () => {
     if (audio.duration) {
       const progress = (audio.currentTime / audio.duration) * 100;
-      if (progressBar) progressBar.value = progress;
       if (fullProgressBar) fullProgressBar.value = progress;
+      // Waveform is updated in the animation loop
 
       // Update time stamps
       if (fullCurrentTime) fullCurrentTime.textContent = formatTime(audio.currentTime);
@@ -975,27 +1209,22 @@ export function renderSongsToDom({
 // PLAY BUTTON LOGIC PER CARD
 // ===============================
 function setupPlayButton(div, song, fullList) {
-  // For list layout, select the play button specifically; for grid, select the first button
-  const btn = div.querySelector(".song-play-btn-list") || div.querySelector(".song-play-btn-box") || div.querySelector("button:last-of-type");
-  
-  // Get the specific SVG icons for this button
-  const playIconEl = btn?.querySelector(".play-icon-list, .play-icon-box");
-  const pauseIconEl = btn?.querySelector(".pause-icon-list, .pause-icon-box");
+  // Get the specific SVG icons if they exist
+  const playIconEl = div.querySelector(".play-icon-list, .play-icon-box");
+  const pauseIconEl = div.querySelector(".pause-icon-list, .pause-icon-box");
 
-  // Click handler for the play button
+  // Click handler for playing the song
   const handlePlay = () => {
+    console.log('🎵 [Player] Playing song:', song.title);
+    
     // Toggle if already playing
     if (window.currentSong && window.currentSong.id === song.id) {
       if (audio.paused) {
         // Resume playback
         audio.play();
-        if (playIconEl) playIconEl.style.display = "none";
-        if (pauseIconEl) pauseIconEl.style.display = "block";
       } else {
         // Pause playback
         audio.pause();
-        if (playIconEl) playIconEl.style.display = "block";
-        if (pauseIconEl) pauseIconEl.style.display = "none";
       }
 
       // Sync all cards with the current state
@@ -1003,42 +1232,22 @@ function setupPlayButton(div, song, fullList) {
       return;
     }
 
-    // Reset icons on all cards
-    document
-      .querySelectorAll(".pause-icon, .pause-icon-box, .pause-icon-list")
-      .forEach((el) => (el.style.display = "none"));
-
-    document
-      .querySelectorAll(".play-icon, .play-icon-box, .play-icon-list")
-      .forEach((el) => (el.style.display = "block"));
-
-    // Update this specific button's icons
-    if (playIconEl) playIconEl.style.display = "none";
-    if (pauseIconEl) pauseIconEl.style.display = "block";
-
     // Play the newly selected song
     playSong(song, fullList);
   };
 
-  btn?.addEventListener("click", (e) => {
-    e.stopPropagation(); // Prevent bubbling if we add listener to div
-    handlePlay();
-  });
-
-  // Click on the box itself (for mobile)
+  // Make entire song box clickable (except for restricted areas)
   div.addEventListener("click", (e) => {
-    // Only in portrait (mobile)
-    if (!window.matchMedia("(orientation: portrait)").matches) return;
-
-    // Ignore if clicking the button directly (handled above)
-    if (e.target.closest("button")) return;
-
     // Ignore if clicking artist name (user request)
     if (e.target.closest(".song-artist-box") || e.target.closest(".song-artist-list")) return;
-
-    // Also ignore if clicking options
+    
+    // Ignore if clicking song title 
+    if (e.target.closest(".song-title-box") || e.target.closest(".song-title-list")) return;
+    
+    // Ignore if clicking options menu
     if (e.target.closest(".song-option")) return;
 
+    console.log('🎵 [Player] Song box clicked for:', song.title);
     handlePlay();
   });
 }

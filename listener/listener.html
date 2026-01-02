@@ -254,10 +254,10 @@
     <!-- PLAYER BAR -->
     <div class="player-container">
       <div id="playerBar" class="player-bar hidden">
-        <div class="player-inner">
-          <!-- PROGRESS BAR (FULL WIDTH) -->
-          <input type="range" id="progressBar" value="0" min="0" max="100" />
+        <!-- WAVEFORM CANVAS BACKGROUND -->
+        <canvas id="waveformCanvas" class="waveform-canvas-background"></canvas>
 
+        <div class="player-inner">
           <!-- BOTTOM SECTION -->
           <div class="player-bottom">
             <!-- LEFT: SONG INFO -->
@@ -282,8 +282,8 @@
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="28"
-                  height="28"
+                  width="36"
+                  height="36"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.2"
@@ -305,8 +305,8 @@
                   id="playIcon"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="34"
-                  height="34"
+                  width="42"
+                  height="42"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.2"
@@ -319,8 +319,8 @@
                   id="pauseIcon"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="34"
-                  height="34"
+                  width="42"
+                  height="42"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.2"
@@ -337,8 +337,8 @@
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="28"
-                  height="28"
+                  width="36"
+                  height="36"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.2"

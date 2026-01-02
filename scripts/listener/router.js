@@ -183,6 +183,11 @@ async function loadRoute(routeKey, routeParam = null) {
     }
 
     setActive(key);
+    
+    // Re-initialize waveform after route changes
+    if (typeof window.initializeWaveform === 'function') {
+      window.initializeWaveform();
+    }
   } catch (err) {
     console.error("❌ Route load failed:", err);
     if (viewRoot) {
