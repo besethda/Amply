@@ -269,8 +269,9 @@ li {
 .waveform-canvas-background {
   width: 100%;
   height: 100%;
-  z-index: 0;
   cursor: pointer;
+  z-index: 2;
+  position: relative;
 }
 
 /* Gradient overlay to fade text visibility */
@@ -283,13 +284,13 @@ li {
   bottom: 0;
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.4) 0%,
-    transparent 15%,
-    transparent 85%,
-    rgba(0, 0, 0, 0.5) 100%
+    rgba(0, 0, 0, 0.05) 0%,
+    transparent 20%,
+    transparent 80%,
+    rgba(0, 0, 0, 0.05) 100%
   );
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
   border-radius: 12px;
 }
 
@@ -434,9 +435,14 @@ li {
 
 #playerOptionsMenu {
   position: absolute;
-  background: transparent;
+  background: linear-gradient(
+    35deg,
+    rgba(33, 33, 33, 0.869),
+    rgba(55, 55, 55, 0.805)
+  );
+  backdrop-filter: blur(2px);
   z-index: 10000 !important;
-  bottom: 126%;
+  bottom: 58px;
   right: -13px;
 }
 

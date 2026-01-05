@@ -12,7 +12,7 @@ export class SimpleWaveformRenderer {
     this.waveColor = 'rgba(100, 100, 100, 0.6)';
     this.fillColor = 'rgba(0, 255, 136, 1)';
     this.barCount = 120;
-    this.barGap = 5;
+    this.barGap = 4;
     
     // Web Audio API
     this.audioContext = null;

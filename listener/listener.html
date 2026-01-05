@@ -363,12 +363,20 @@
         </button>
 
         <div id="playerOptionsMenu" class="player-options-menu">
+          <div class="option" data-action="playlist">Add to playlist</div>
+          <div class="option" data-action="queue">Add to queue</div>
+          <div class="option" data-action="library">Add to library</div>
+          <div class="option" data-action="artist">View artist</div>
           <div class="player-menu-controls">
-            <button id="repeatBtn" class="icon-button" aria-label="Repeat">
+            <button
+              id="repeatBtn"
+              class="player-menu-toggle-btn"
+              aria-label="Repeat"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
+                width="24"
+                height="24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.2"
@@ -382,11 +390,15 @@
               </svg>
             </button>
 
-            <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
+            <button
+              id="shuffleBtn"
+              class="player-menu-toggle-btn"
+              aria-label="Shuffle"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
+                width="24"
+                height="24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.2"
@@ -401,10 +413,6 @@
               </svg>
             </button>
           </div>
-          <div class="option" data-action="playlist">Add to playlist</div>
-          <div class="option" data-action="queue">Add to queue</div>
-          <div class="option" data-action="library">Add to library</div>
-          <div class="option" data-action="artist">View artist</div>
         </div>
       </div>
 

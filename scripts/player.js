@@ -628,8 +628,11 @@ function setupEvents() {
     }
   });
 
-  // Play/pause in player bar
-  playPauseBtn?.addEventListener("click", (e) => {
+  // Play/pause in player bar - attach to SVGs
+  const playPausePlaySvg = playIcon;
+  const playPausePauseSvg = pauseIcon;
+  
+  playPausePlaySvg?.addEventListener("click", (e) => {
     e.stopPropagation();
     
     // Don't activate if we just dragged the waveform
@@ -650,6 +653,56 @@ function setupEvents() {
     }
 
     syncPlayerIcons();
+  });
+
+  playPausePauseSvg?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    
+    // Don't activate if we just dragged the waveform
+    if (hasMovedEnoughWaveform) {
+      return;
+    }
+    
+    if (!audio.src) return;
+
+    if (audio.paused) {
+      audio.play();
+      playIcon.style.display = "none";
+      pauseIcon.style.display = "block";
+    } else {
+      audio.pause();
+      playIcon.style.display = "block";
+      pauseIcon.style.display = "none";
+    }
+
+    syncPlayerIcons();
+  });
+
+  // Previous track in player bar
+  const prevBtn = document.getElementById("prevBtn");
+  const prevSvg = prevBtn?.querySelector("svg");
+  prevSvg?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!playlist.length) return;
+
+    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+    playSong(playlist[currentIndex], playlist);
+  });
+
+  // Next track in player bar
+  const nextBtn = document.getElementById("nextBtn");
+  const nextSvg = nextBtn?.querySelector("svg");
+  nextSvg?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!playlist.length) return;
+
+    if (isShuffle) {
+      currentIndex = Math.floor(Math.random() * playlist.length);
+    } else {
+      currentIndex = (currentIndex + 1) % playlist.length;
+    }
+
+    playSong(playlist[currentIndex], playlist);
   });
 
   // Navigate to artist page when clicking artist name
@@ -732,8 +785,9 @@ function setupEvents() {
     savePlayerState();
   });
 
-  // Player options menu button
-  playerMenuBtn?.addEventListener("click", (e) => {
+  // Player options menu button - attach to SVG
+  const playerMenuSvg = playerMenuBtn?.querySelector("svg");
+  playerMenuSvg?.addEventListener("click", (e) => {
     e.stopPropagation();
     optionsMenu?.classList.toggle("show");
   });
@@ -750,18 +804,20 @@ function setupEvents() {
     opt.addEventListener("click", () => handleOptionClick(opt.dataset.action));
   });
 
-  // Repeat toggle in menu
+  // Repeat toggle in menu - attach to SVG
   const repeatBtn = document.getElementById("repeatBtn");
-  repeatBtn?.addEventListener("click", (e) => {
+  const repeatSvg = repeatBtn?.querySelector("svg");
+  repeatSvg?.addEventListener("click", (e) => {
     e.stopPropagation();
     isRepeat = !isRepeat;
     repeatBtn.classList.toggle("active", isRepeat);
     localStorage.setItem("amplyRepeat", isRepeat);
   });
 
-  // Shuffle toggle in menu
+  // Shuffle toggle in menu - attach to SVG
   const shuffleBtn = document.getElementById("shuffleBtn");
-  shuffleBtn?.addEventListener("click", (e) => {
+  const shuffleSvg = shuffleBtn?.querySelector("svg");
+  shuffleSvg?.addEventListener("click", (e) => {
     e.stopPropagation();
     isShuffle = !isShuffle;
     shuffleBtn.classList.toggle("active", isShuffle);
