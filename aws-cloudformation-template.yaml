@@ -226,9 +226,9 @@ Resources:
           import urllib.error
           import os
           from datetime import datetime
-          
+
           cfn = boto3.client('cloudformation')
-          
+
           def handler(event, context):
               try:
                   # Get stack outputs

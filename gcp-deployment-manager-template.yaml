@@ -1,0 +1,198 @@
+info:
+  title: Amply Artist Environment on Google Cloud
+  description: >
+    Amply Artist Environment — Cloud Storage bucket, Cloud CDN, Service Account,
+    and Cloud Function for automatic callback notification to Amply on deployment completion.
+  author: Amply
+  version: 1.0.0
+
+imports:
+  - path: https://www.googleapis.com/storage/v1
+  - path: https://www.googleapis.com/compute/v1
+
+properties:
+  artistName:
+    type: string
+    description: "Artist name (lowercase, no spaces — e.g. skywave)"
+  amplyCallbackUrl:
+    type: string
+    description: "Amply API endpoint for deployment completion"
+    default: "https://amply.app/api/complete-artist-setup"
+  amplyApiKey:
+    type: string
+    description: "API key for authenticating callback to Amply"
+  region:
+    type: string
+    description: "GCP region for resources"
+    default: "europe-north1"
+  returnUrl:
+    type: string
+    description: "Return link to Amply setup completion page"
+    default: "https://amply.app/artist/setup-complete.html"
+
+resources:
+  # --- Cloud Storage Bucket ---
+  - name: {{ properties.artistName }}-bucket
+    type: gcp-types/storage-v1:buckets
+    properties:
+      project: {{ env["project"] }}
+      name: amply-{{ properties.artistName }}-{{ env["project"] }}
+      location: {{ properties.region }}
+      storageClass: STANDARD
+      versioning:
+        enabled: true
+      cors:
+        - maxAgeSeconds: 3600
+          method: ["GET", "PUT", "POST", "HEAD"]
+          origin: ["*"]
+          responseHeader: ["*"]
+      iamConfiguration:
+        uniformBucketLevelAccess:
+          enabled: true
+
+  # --- Service Account for Amply ---
+  - name: amply-access-account
+    type: gcp-types/iam-v1:serviceAccounts
+    properties:
+      projectId: {{ env["project"] }}
+      accountId: amply-{{ properties.artistName }}
+      displayName: Amply Access Account for {{ properties.artistName }}
+
+  # --- IAM Binding: Service Account can read/write to bucket ---
+  - name: bucket-iam-binding
+    type: gcp-types/storage-v1:buckets.iamMemberBinding
+    properties:
+      resource: {{ properties.artistName }}-bucket
+      role: roles/storage.objectAdmin
+      member: serviceAccount:$(ref.amply-access-account.email)
+
+  # --- Cloud Function for Callback (Python) ---
+  - name: amply-callback-function
+    type: gcp-types/cloudfunctions-v1:projects.locations.functions
+    properties:
+      projectId: {{ env["project"] }}
+      location: {{ properties.region }}
+      functionName: amply-callback-{{ properties.artistName }}
+      runtime: python311
+      timeout: 60s
+      availableMemoryMb: 256
+      sourceArchiveUrl: gs://{{ properties.artistName }}-callback-source/function-source.zip
+      entryPoint: notify_amply
+      environmentVariables:
+        ARTIST_ID: {{ properties.artistName }}
+        CALLBACK_URL: {{ properties.amplyCallbackUrl }}
+        API_KEY: {{ properties.amplyApiKey }}
+        PROJECT_ID: {{ env["project"] }}
+        BUCKET_NAME: amply-{{ properties.artistName }}-{{ env["project"] }}
+        SERVICE_ACCOUNT_EMAIL: $(ref.amply-access-account.email)
+      httpsTrigger:
+        securityLevel: SECURE_ALWAYS
+
+  # --- Deployment Output File (for reference) ---
+  - name: deployment-info
+    type: gcp-types/storage-v1:buckets.objects
+    properties:
+      bucket: {{ properties.artistName }}-bucket
+      name: .amply-deployment-info.json
+      contentType: application/json
+      data: |
+        {
+          "artistName": "{{ properties.artistName }}",
+          "provider": "gcp",
+          "deploymentName": "{{ env["deployment"] }}",
+          "projectId": "{{ env["project"] }}",
+          "bucketName": "amply-{{ properties.artistName }}-{{ env["project"] }}",
+          "serviceAccountEmail": "$(ref.amply-access-account.email)",
+          "callbackFunction": "amply-callback-{{ properties.artistName }}",
+          "deploymentTime": "{{ env["current_time"] }}",
+          "returnUrl": "{{ properties.returnUrl }}"
+        }
+
+outputs:
+  - name: bucket-name
+    value: amply-{{ properties.artistName }}-{{ env["project"] }}
+    description: Cloud Storage bucket for artist content
+  
+  - name: service-account-email
+    value: $(ref.amply-access-account.email)
+    description: Service account email for Amply to assume permissions
+  
+  - name: service-account-key-url
+    value: https://console.cloud.google.com/iam-admin/serviceaccounts/details/{{ properties.artistName }}
+    description: Link to create service account key if needed
+  
+  - name: callback-function-url
+    value: https://{{ properties.region }}-{{ env["project"] }}.cloudfunctions.net/amply-callback-{{ properties.artistName }}
+    description: Cloud Function endpoint (for testing)
+  
+  - name: return-to-amply
+    value: {{ properties.returnUrl }}
+    description: Return to Amply setup page
+
+---
+# Cloud Function Source Code (save separately as function-source/main.py)
+# This should be uploaded to GCS before deploying the template
+#
+# import functions_framework
+# import json
+# import requests
+# from google.cloud import storage
+# from datetime import datetime
+# import os
+#
+# @functions_framework.http
+# def notify_amply(request):
+#     """HTTP Cloud Function to notify Amply of successful deployment."""
+#     try:
+#         artist_id = os.environ.get('ARTIST_ID')
+#         callback_url = os.environ.get('CALLBACK_URL')
+#         api_key = os.environ.get('API_KEY')
+#         project_id = os.environ.get('PROJECT_ID')
+#         bucket_name = os.environ.get('BUCKET_NAME')
+#         service_account_email = os.environ.get('SERVICE_ACCOUNT_EMAIL')
+#
+#         # Prepare callback payload
+#         callback_payload = {
+#             "artistId": artist_id,
+#             "provider": "gcp",
+#             "project_id": project_id,
+#             "bucket_name": bucket_name,
+#             "service_account_email": service_account_email,
+#             "callback_timestamp": datetime.utcnow().isoformat() + "Z",
+#             "callback_token": api_key,
+#             "outputs": {
+#                 "bucketName": bucket_name,
+#                 "serviceAccountEmail": service_account_email,
+#                 "projectId": project_id
+#             }
+#         }
+#
+#         # Send to Amply API
+#         headers = {
+#             'Content-Type': 'application/json',
+#             'User-Agent': 'AmplyGCPDeployment/1.0'
+#         }
+#
+#         response = requests.post(
+#             callback_url,
+#             json=callback_payload,
+#             headers=headers,
+#             timeout=10
+#         )
+#
+#         print(f"✅ Callback sent to Amply, status: {response.status_code}")
+#
+#         return {
+#             'status': 'success',
+#             'message': 'Callback sent to Amply',
+#             'amplyResponse': response.status_code
+#         }, 200
+#
+#     except Exception as e:
+#         print(f"❌ Error: {str(e)}")
+#         # Return 200 anyway so deployment isn't blocked
+#         return {
+#             'status': 'error',
+#             'message': str(e),
+#             'note': 'Deployment completed but callback failed. Use polling to verify.'
+#         }, 200

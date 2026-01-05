@@ -65,6 +65,78 @@ export const PROVIDERS = {
     storageType: "azure",
     supported: false
   },
+
+  digitalocean: {
+    id: "digitalocean",
+    name: "DigitalOcean",
+    icon: "💧",
+    storage: "Spaces",
+    cdn: "DigitalOcean CDN",
+    description: "Privacy-friendly, GDPR-compliant, global performance",
+    configFields: {
+      bucketName: "Spaces Bucket Name",
+      endpoint: "Spaces Endpoint",
+      cdnDomain: "CDN Domain"
+    },
+    uploadEndpoint: (artistId) => `/get-digitalocean-signed-url?artist=${artistId}`,
+    cdnUrlPattern: (cdnDomain, key) => `https://${cdnDomain}/${key}`,
+    storageType: "spaces",
+    supported: false
+  },
+
+  linode: {
+    id: "linode",
+    name: "Linode",
+    icon: "🎯",
+    storage: "Object Storage",
+    cdn: "Linode CDN",
+    description: "Affordable, transparent pricing, excellent support",
+    configFields: {
+      bucketName: "Object Storage Bucket",
+      clusterId: "Cluster ID",
+      cdnDomain: "CDN Domain"
+    },
+    uploadEndpoint: (artistId) => `/get-linode-signed-url?artist=${artistId}`,
+    cdnUrlPattern: (cdnDomain, key) => `https://${cdnDomain}/${key}`,
+    storageType: "linode-object-storage",
+    supported: false
+  },
+
+  vultr: {
+    id: "vultr",
+    name: "Vultr",
+    icon: "⚡",
+    storage: "Object Storage",
+    cdn: "Vultr CDN",
+    description: "Fast deployment, 28+ global locations",
+    configFields: {
+      bucketName: "Object Storage Bucket",
+      region: "Storage Region",
+      cdnDomain: "CDN Domain"
+    },
+    uploadEndpoint: (artistId) => `/get-vultr-signed-url?artist=${artistId}`,
+    cdnUrlPattern: (cdnDomain, key) => `https://${cdnDomain}/${key}`,
+    storageType: "vultr-object-storage",
+    supported: false
+  },
+
+  hetzner: {
+    id: "hetzner",
+    name: "Hetzner Storage Box",
+    icon: "🇩🇪",
+    storage: "Storage Box",
+    cdn: "Hetzner CDN",
+    description: "European data centers, strong privacy, cost-effective",
+    configFields: {
+      storageBoxUsername: "Storage Box Username",
+      storageBoxPassword: "Storage Box Password",
+      cdnDomain: "CDN Domain"
+    },
+    uploadEndpoint: (artistId) => `/get-hetzner-signed-url?artist=${artistId}`,
+    cdnUrlPattern: (cdnDomain, key) => `https://${cdnDomain}/${key}`,
+    storageType: "hetzner-storage",
+    supported: false
+  },
   
   "self-hosted": {
     id: "self-hosted",
