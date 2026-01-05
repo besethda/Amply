@@ -186,16 +186,23 @@ async function loadRoute(routeKey, routeParam = null) {
     
     // Restore player bar display and album art after route changes
     const playerBar = document.getElementById("playerBar");
-    if (playerBar) {
-      // Restore player bar visibility if a song is playing
-      if (typeof window.currentSong !== 'undefined' && window.currentSong) {
-        playerBar.classList.remove("hidden");
-        
-        // Ensure album art is displayed
-        const albumArt = document.getElementById("currentTrackArt");
-        if (albumArt && window.currentSong) {
-          albumArt.src = window.currentSong.art_url || window.currentSong.coverImage || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
-        }
+    const albumArt = document.getElementById("currentTrackArt");
+    
+    console.log('🎵 [Router] Route changed to:', key);
+    console.log('🎵 [Router] currentSong:', window.currentSong);
+    console.log('🎵 [Router] playerBar:', playerBar);
+    console.log('🎵 [Router] albumArt:', albumArt);
+    
+    if (playerBar && window.currentSong) {
+      // Show player bar
+      playerBar.classList.remove("hidden");
+      playerBar.style.display = "flex";
+      
+      // Ensure album art is displayed and has correct src
+      if (albumArt) {
+        albumArt.style.display = "block";
+        albumArt.src = window.currentSong.art_url || window.currentSong.coverImage || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
+        console.log('🎵 [Router] Album art src set to:', albumArt.src);
       }
     }
     
