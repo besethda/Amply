@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Artist Setup</title>
+    <title>Amply – Choose Your Hosting</title>
     <link rel="icon" type="image/png" href="../images/Amply_lgofav.png" />
     <link rel="apple-touch-icon" href="../images/Amply.png" />
 
@@ -11,10 +11,11 @@
     <link rel="stylesheet" href="../Styles/core.css" />
     <link rel="stylesheet" href="../Styles/fonts.css" />
     <link rel="stylesheet" href="../Styles/artist/setup.css" />
+    <link rel="stylesheet" href="../Styles/artist/setup-template.css" />
 
     <!-- SCRIPTS -->
     <script type="module" src="../scripts/general.js" defer></script>
-    <script type="module" src="../scripts/artist/setup.js" defer></script>
+    <script type="module" src="../scripts/artist/setup-template.js" defer></script>
     <script type="module" src="../scripts/artist/general.js" defer></script>
   </head>
 
@@ -23,7 +24,7 @@
     <header class="header">
       <img class="logo" src="../images/Amply_lgo.png" alt="Amply Logo" />
     </header>
-    <a href="setup-template.html" class="back-arrow" aria-label="Go back">
+    <a href="../listener/listener.html" class="back-arrow" aria-label="Go back">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -42,37 +43,15 @@
 
     <!-- MAIN CONTENT -->
     <main>
-      <h1>🎤 AWS Setup</h1>
-
       <section class="section fade-in">
-        <h2>Step 1 — Create Your Artist Environment</h2>
-        <p>
-          Amply will create your own private AWS environment for music uploads.
-          This includes an S3 bucket, IAM role, and CloudFront delivery system —
-          all automatically linked to Amply.
-        </p>
+        <h1>🎤 Choose Your Hosting Solution</h1>
+        <p>Select how you'd like to host and distribute your music.</p>
 
-        <label for="artistName">Artist Name (no spaces):</label>
-        <input type="text" id="artistName" placeholder="e.g. skywave" />
-
-        <button id="connectAwsBtn">🚀 Create My Environment</button>
+        <div class="templates-grid" id="templatesGrid">
+          <!-- Templates will be inserted here by JavaScript -->
+        </div>
 
         <p id="setupStatus" class="note"></p>
-
-        <p class="note">
-          Once you click the button, AWS will open in a new tab. After the setup
-          finishes, click the “Return to Amply” button in AWS.
-        </p>
-      </section>
-
-      <section id="postSetup" class="section hidden">
-        <h2>Setup Complete 🎉</h2>
-        <p>
-          Great job! Once AWS finishes creating your environment, you'll be
-          redirected automatically. If not, you can return manually below.
-        </p>
-
-        <a href="setup-complete.html" class="continue-btn">Continue →</a>
       </section>
     </main>
   </body>

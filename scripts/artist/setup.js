@@ -4,6 +4,17 @@ const connectAwsBtn = document.getElementById("connectAwsBtn");
 const postSetup = document.getElementById("postSetup");
 const setupStatus = document.getElementById("setupStatus");
 
+// Check if user came from template selection
+window.addEventListener("DOMContentLoaded", () => {
+  const selectedTemplate = localStorage.getItem("selectedTemplate");
+  if (selectedTemplate && selectedTemplate !== "aws") {
+    // User selected wrong template, redirect them back
+    setupStatus.textContent = "⚠️ Please select AWS template to continue.";
+    setupStatus.style.color = "#ff8080";
+    connectAwsBtn.disabled = true;
+  }
+});
+
 connectAwsBtn.addEventListener("click", () => {
   const artistInput = document.getElementById("artistName").value.trim();
 

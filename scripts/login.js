@@ -466,7 +466,8 @@ loginBtn?.addEventListener("click", async () => {
     const complete = isArtistProfileComplete();
 
     if (!complete) {
-      setTimeout(() => goTo("/artist/setup-profile.html"), 400);
+      // New artist - route to template selection first
+      setTimeout(() => goTo("/artist/setup-template.html"), 400);
     } else {
       setTimeout(() => goTo("/artist/dashboard.html"), 400);
     }

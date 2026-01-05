@@ -2,6 +2,7 @@ import { API_URL} from "../general.js";
 import { saveArtistConfig} from "./general.js";
 
 const setupMessage = document.getElementById("setupMessage");
+const nextStepMessage = document.getElementById("nextStepMessage");
 
 async function checkStackStatus() {
   const artistId = localStorage.getItem("artistId");
@@ -18,7 +19,7 @@ async function checkStackStatus() {
     const data = await res.json();
 
     if (data.status === "CREATE_COMPLETE") {
-      setupMessage.textContent = "✅ Environment ready! Redirecting…";
+      setupMessage.textContent = "✅ Environment ready! Setting up your profile…";
 
       saveArtistConfig({
         artistId,
@@ -27,8 +28,13 @@ async function checkStackStatus() {
         cloudfrontDomain: data.cloudfrontDomain,
       });
 
+      if (nextStepMessage) {
+        nextStepMessage.style.display = "block";
+        nextStepMessage.textContent = "Redirecting to profile setup...";
+      }
+
       setTimeout(() => {
-        window.location.href = "/Amply-artist/dashboard.html";
+        window.location.href = "/artist/setup-profile.html";
       }, 1500);
       return true;
     }
