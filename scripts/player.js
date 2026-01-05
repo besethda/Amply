@@ -680,7 +680,7 @@ function setupEvents() {
   });
 
   // Navigate to artist page when clicking artist name
-  currentTrackArtist?.addEventListener("click", async (e) => {
+  currentTrackArtist?.addEventListener("click", (e) => {
     e.stopPropagation();
     
     // Reset drag state for clean click detection
@@ -690,23 +690,10 @@ function setupEvents() {
     if (!currentSong) return;
     
     const artistName = currentSong.artist;
-    console.log('🎨 [Artist Click] Looking up artist:', artistName);
+    console.log('🎨 [Artist Click] Navigating to artist:', artistName);
     
-    try {
-      // Search for the artist to get their ID
-      const response = await apiFetch(`${API_URL}/search?q=${encodeURIComponent(artistName)}&type=artist`);
-      const results = await response.json();
-      
-      if (results.artists && results.artists.length > 0) {
-        const artist = results.artists[0];
-        console.log('🎨 [Artist Click] Found artist:', artist);
-        window.location.hash = `artist:${artist.id}`;
-      } else {
-        console.warn('🎨 [Artist Click] No artist found in search results');
-      }
-    } catch (err) {
-      console.error('🎨 [Artist Click] Error searching for artist:', err);
-    }
+    // Navigate to artist profile using artist name (same pattern as song boxes)
+    window.location.hash = `artist:${encodeURIComponent(artistName)}`;
   });
 
   // Progress bar update and listening tracking
