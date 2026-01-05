@@ -481,9 +481,20 @@ export async function playSong(song, list = playlist) {
 
   const safeId = song.id || song.songId || song.file || song.title;
 
+  // Preserve metadata from previous currentSong if the new song doesn't have it
+  const previousMetadata = window.currentSong;
+  const mergedSong = {
+    ...song,
+    id: safeId,
+    // Preserve art_url if the new song doesn't have it
+    art_url: song.art_url || previousMetadata?.art_url,
+    coverImage: song.coverImage || previousMetadata?.coverImage,
+  };
+
   // Apply normalized ID to the current song
-  currentSong = { ...song, id: safeId };
+  currentSong = mergedSong;
   window.currentSong = currentSong;
+  window.fullSongMetadata = currentSong; // Store full metadata separately
   
   // Reset listen tracking for new song
   listenTracked.clear();

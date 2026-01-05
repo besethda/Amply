@@ -190,24 +190,27 @@ async function loadRoute(routeKey, routeParam = null) {
     const currentTrackName = document.getElementById("currentTrackName");
     const currentTrackArtist = document.getElementById("currentTrackArtist");
     
-    console.log('🎵 [Router] Route changed to:', key);
-    console.log('🎵 [Router] currentSong:', window.currentSong);
-    console.log('🎵 [Router] playerBar:', playerBar);
-    console.log('🎵 [Router] albumArt:', albumArt);
+    // Use fullSongMetadata if available (has all properties), otherwise fall back to currentSong
+    const songMetadata = window.fullSongMetadata || window.currentSong;
     
-    if (playerBar && window.currentSong) {
+    console.log('🎵 [Router] Route changed to:', key);
+    console.log('🎵 [Router] fullSongMetadata:', window.fullSongMetadata);
+    console.log('🎵 [Router] currentSong:', window.currentSong);
+    console.log('🎵 [Router] songMetadata:', songMetadata);
+    
+    if (playerBar && songMetadata) {
       // Show player bar
       playerBar.classList.remove("hidden");
       playerBar.style.display = "flex";
       
       // Restore all track info
-      if (currentTrackName) currentTrackName.textContent = window.currentSong.title || "No track playing";
-      if (currentTrackArtist) currentTrackArtist.textContent = window.currentSong.artist || "—";
+      if (currentTrackName) currentTrackName.textContent = songMetadata.title || "No track playing";
+      if (currentTrackArtist) currentTrackArtist.textContent = songMetadata.artist || "—";
       
       // Ensure album art is displayed and has correct src
       if (albumArt) {
         albumArt.style.display = "block";
-        const artUrl = window.currentSong.art_url || window.currentSong.coverImage;
+        const artUrl = songMetadata.art_url || songMetadata.coverImage;
         if (artUrl) {
           albumArt.src = artUrl;
           console.log('🎵 [Router] Album art src set to:', artUrl);
