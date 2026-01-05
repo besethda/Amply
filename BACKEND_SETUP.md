@@ -53,12 +53,13 @@ ArtistConfigsTable:
         KeyType: HASH
     BillingMode: PAY_PER_REQUEST
     StreamSpecification:
-      StreamViewType: NEW_AND_OLD_IMAGES  # Optional: for audit trail
+      StreamViewType: NEW_AND_OLD_IMAGES # Optional: for audit trail
 ```
 
 ### 2. Update Lambda Execution Role
 
 Your Lambda needs permissions to:
+
 - Read/write to `amply-artist-configs-*` table
 - Update the central `amply-index.json` in S3
 
@@ -82,31 +83,33 @@ Add to your Lambda's IAM role:
 Before deploying CloudFormation templates, you need to generate API keys that artists will use. These tokens are short-lived and tied to specific artists.
 
 **Option A: Pre-generate keys (Recommended)**
+
 ```javascript
 // In your admin panel or setup flow
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 function generateArtistCallbackToken(artistId) {
   const timestamp = Date.now();
-  const random = crypto.randomBytes(16).toString('hex');
+  const random = crypto.randomBytes(16).toString("hex");
   const token = `amply_${artistId}_${timestamp}_${random}`;
-  
+
   // Store in DynamoDB temporarily (expires after 24 hours)
   return token;
 }
 
 // Artist gets token when starting setup
-const token = generateArtistCallbackToken('skywave');
+const token = generateArtistCallbackToken("skywave");
 // Token: amply_skywave_1704499200_a1b2c3d4...
 ```
 
 **Option B: Validate via Cognito**
 Modify the endpoint to extract artistId from Cognito token and validate ownership:
+
 ```javascript
 // Check that the callback's artistId matches the authenticated user
 const token = getAuthToken(event);
 const user = parseJwt(token);
-const cognitoArtistId = user.email.split('@')[0]; // or custom attribute
+const cognitoArtistId = user.email.split("@")[0]; // or custom attribute
 
 if (artistId !== cognitoArtistId) {
   return { statusCode: 403, error: "Artist ID mismatch" };
@@ -126,6 +129,7 @@ Parameters:
 ```
 
 When artists start setup, they'll need to:
+
 1. Get an API key from your setup page
 2. Paste it into the CloudFormation parameters
 3. Key validates on callback
@@ -150,6 +154,7 @@ aws lambda update-function-code \
 ### 6. Test the Endpoint
 
 **Local Testing:**
+
 ```bash
 curl -X POST http://localhost:3000/complete-artist-setup \
   -H "Content-Type: application/json" \
@@ -168,6 +173,7 @@ curl -X POST http://localhost:3000/complete-artist-setup \
 ```
 
 **Expected Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -180,6 +186,7 @@ curl -X POST http://localhost:3000/complete-artist-setup \
 ### 7. Test End-to-End
 
 1. **Create test CloudFormation stack:**
+
    - Visit AWS CloudFormation console
    - Upload `aws-cloudformation-template.yaml`
    - Provide:
@@ -188,6 +195,7 @@ curl -X POST http://localhost:3000/complete-artist-setup \
      - AmplyCallbackUrl: `https://your-domain.com/complete-artist-setup`
 
 2. **Monitor deployment:**
+
    - Watch CloudFormation stack status
    - Check Lambda logs for callback
    - Verify artist config saved in DynamoDB
@@ -216,23 +224,25 @@ If callback fails, the frontend continues polling `/verify-stack` every 10 secon
 ```javascript
 // Add to Lambda
 if (path.endsWith("/verify-stack") && method === "POST") {
-    const { artistId, stackName, provider } = JSON.parse(event.body || "{}");
-    
-    if (provider === "aws") {
-        const cfn = new CloudFormationClient({ region });
-        const response = await cfn.send(new DescribeStacksCommand({
-            StackName: stackName
-        }));
-        
-        const stack = response.Stacks[0];
-        if (stack.StackStatus === "CREATE_COMPLETE") {
-            // Extract outputs and save config
-            // Same logic as complete-artist-setup
-            return { statusCode: 200, success: true };
-        }
+  const { artistId, stackName, provider } = JSON.parse(event.body || "{}");
+
+  if (provider === "aws") {
+    const cfn = new CloudFormationClient({ region });
+    const response = await cfn.send(
+      new DescribeStacksCommand({
+        StackName: stackName,
+      })
+    );
+
+    const stack = response.Stacks[0];
+    if (stack.StackStatus === "CREATE_COMPLETE") {
+      // Extract outputs and save config
+      // Same logic as complete-artist-setup
+      return { statusCode: 200, success: true };
     }
-    
-    return { statusCode: 202, message: "Stack still creating..." };
+  }
+
+  return { statusCode: 202, message: "Stack still creating..." };
 }
 ```
 
@@ -250,6 +260,7 @@ if (path.endsWith("/verify-stack") && method === "POST") {
 ## Troubleshooting
 
 **Callback not received?**
+
 1. Check Lambda logs: `aws logs tail /aws/lambda/amply-api --follow`
 2. Verify CloudFormation Custom Resource created
 3. Check Lambda has correct environment variables
@@ -257,12 +268,14 @@ if (path.endsWith("/verify-stack") && method === "POST") {
 5. Check CORS headers allow callback origin
 
 **Artist config not saved?**
+
 1. Verify DynamoDB table exists: `aws dynamodb describe-table --table-name amply-artist-configs-dev`
 2. Check Lambda IAM role has PutItem permission
 3. Look for marshalling errors in logs
 4. Verify artistId is unique (no duplicates)
 
 **Frontend not redirecting?**
+
 1. Check callback was received by Lambda
 2. Verify response includes `success: true`
 3. Check browser console for CallbackListener errors
@@ -281,6 +294,7 @@ if (path.endsWith("/verify-stack") && method === "POST") {
 ✅ Verify end-to-end flow
 
 Once complete, artists can:
+
 1. Click "Become an Artist"
 2. Select hosting provider (AWS/GCP/Azure/etc)
 3. Provide artist name and API key

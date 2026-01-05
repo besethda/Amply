@@ -1,5 +1,4 @@
 "use strict";
-// Updated: 2025-12-29 17:07:00
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
@@ -17,7 +16,7 @@ const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
 const LIKES_TABLE = `amply-listen-history-${environment}`; // Reuse listen table with GSI for likes
-const ARTIST_CONFIG_TABLE = `amply-artist-config-${environment}`; // Artist cloud provider configurations (singular: amply-artist-config-dev)
+const ARTIST_CONFIG_TABLE = `amply-artist-configs-${environment}`; // Artist cloud provider configurations
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
@@ -825,7 +824,6 @@ const handler = async (event) => {
         }
 
         // === RECORD LISTEN (30+ seconds) ===
-        console.log("🔍 Checking /record-listen... path:", path, "method:", method, "match:", path.endsWith("/record-listen"));
         if (path.endsWith("/record-listen") && method === "POST") {
             try {
                 // Extract userId from JWT token directly instead of authorizer
@@ -866,10 +864,12 @@ const handler = async (event) => {
                 const listenId = `${userId}#${songId}#${now}`;
 
                 // Record the listen event
+                const title = requestBody.title || "Unknown";
                 await dynamodb.send(new client_dynamodb_1.PutItemCommand({
                     TableName: LIKES_TABLE,
                     Item: (0, util_dynamodb_1.marshall)({
                         songId: listenId,
+                        title,
                         timestamp: now,
                         userId,
                         actualSongId: songId,

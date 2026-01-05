@@ -5,6 +5,7 @@ Artists on Amply can choose from multiple hosting providers based on their prior
 ## Supported Providers (Quick Deployment)
 
 ### ☁️ Amazon AWS (Recommended for Scale)
+
 - **Best for**: Artists expecting high traffic
 - **Advantages**: Enterprise reliability, 100+ availability zones, 99.99% uptime SLA
 - **Storage**: S3 (Simple Storage Service)
@@ -15,6 +16,7 @@ Artists on Amply can choose from multiple hosting providers based on their prior
 - **Template**: `aws-cloudformation-template.yaml`
 
 **How it works:**
+
 1. Artist opens CloudFormation link with your template
 2. Provides artist name and Amply API key
 3. Stack creates S3 bucket, CloudFront distribution, and IAM role
@@ -26,6 +28,7 @@ Artists on Amply can choose from multiple hosting providers based on their prior
 ## Coming Soon (Available Templates)
 
 ### 🔵 Google Cloud Platform (GCP)
+
 - **Best for**: Artists who trust Google's infrastructure
 - **Advantages**: Competitive pricing, excellent for AI/ML features
 - **Storage**: Cloud Storage
@@ -36,6 +39,7 @@ Artists on Amply can choose from multiple hosting providers based on their prior
 - **Template**: `gcp-deployment-manager-template.yaml`
 
 ### 🟦 Microsoft Azure
+
 - **Best for**: Enterprise artists, Windows-focused workflows
 - **Advantages**: Hybrid cloud support, strong compliance certifications
 - **Storage**: Blob Storage
@@ -52,6 +56,7 @@ Artists on Amply can choose from multiple hosting providers based on their prior
 These providers are excellent for artists who distrust Big Tech or prefer European data residency.
 
 ### 💧 DigitalOcean (Privacy-Friendly, GDPR-Compliant)
+
 - **Best for**: Artists who value simplicity and privacy
 - **Advantages**: GDPR-compliant, transparent pricing, community-friendly, data centers in EU
 - **Storage**: Spaces (S3-compatible)
@@ -63,6 +68,7 @@ These providers are excellent for artists who distrust Big Tech or prefer Europe
 - **Why Artists Love It**: Simple dashboard, no surprise charges, EU data centers
 
 ### 🎯 Linode (Community-Focused, Affordable)
+
 - **Best for**: Indie artists on a tight budget
 - **Advantages**: Nanode servers starting at $5, transparent pricing, excellent docs
 - **Storage**: Object Storage ($5/month + $0.02/GB)
@@ -73,6 +79,7 @@ These providers are excellent for artists who distrust Big Tech or prefer Europe
 - **Why Artists Love It**: Affordable, no vendor lock-in, generous free tier
 
 ### ⚡ Vultr (Speed & Locations)
+
 - **Best for**: Artists with global audiences
 - **Advantages**: 28+ data center locations, DDoS protection built-in
 - **Storage**: Object Storage
@@ -83,6 +90,7 @@ These providers are excellent for artists who distrust Big Tech or prefer Europe
 - **Why Artists Love It**: Blazing fast, flexible, no bandwidth overage charges
 
 ### 🇩🇪 Hetzner Storage Box (European Privacy)
+
 - **Best for**: European artists, privacy advocates
 - **Advantages**: German data centers (GDPR guarantees), extremely affordable
 - **Storage**: Storage Box (secure FTP/SSH access)
@@ -93,6 +101,7 @@ These providers are excellent for artists who distrust Big Tech or prefer Europe
 - **Why Artists Love It**: Rock-bottom pricing, European-based, strong privacy
 
 ### 🖥️ Self-Hosted
+
 - **Best for**: Developers and artists with technical skills
 - **Advantages**: Complete control, no vendor lock-in, privacy guaranteed
 - **Storage**: Your own server/NAS
@@ -106,16 +115,16 @@ These providers are excellent for artists who distrust Big Tech or prefer Europe
 
 ## Provider Comparison Matrix
 
-| Provider | Price/Month | Uptime SLA | Setup Time | EU Data | Callback | Best For |
-|----------|------------|-----------|-----------|---------|----------|----------|
-| **AWS** | Variable | 99.99% | 2-3 min | ✓ (Frankfurt) | ✅ Auto | Scale & reliability |
-| **GCP** | Variable | 99.99% | 2-3 min | ✓ (Belgium) | ✅ Auto | Google ecosystem |
-| **Azure** | Variable | 99.99% | 2-3 min | ✓ (Multiple) | ✅ Auto | Microsoft ecosystem |
-| **DigitalOcean** | $5+ | 99.99% | 5-10 min | ✓ (Amsterdam) | ✅ Auto | Privacy + simplicity |
-| **Linode** | $5+ | 99.99% | ~5 min | ✗ | 🔄 Soon | Budget-conscious |
-| **Vultr** | $5+ | 99.99% | ~5 min | ✓ (London) | 🔄 Soon | Global reach |
-| **Hetzner** | €4+ | 99.9% | ~10 min | ✓ (Germany) | 🔄 Soon | Ultra-budget |
-| **Self-Hosted** | Varies | Custom | 30+ min | ✓ | 🔄 Custom | Full control |
+| Provider         | Price/Month | Uptime SLA | Setup Time | EU Data       | Callback  | Best For             |
+| ---------------- | ----------- | ---------- | ---------- | ------------- | --------- | -------------------- |
+| **AWS**          | Variable    | 99.99%     | 2-3 min    | ✓ (Frankfurt) | ✅ Auto   | Scale & reliability  |
+| **GCP**          | Variable    | 99.99%     | 2-3 min    | ✓ (Belgium)   | ✅ Auto   | Google ecosystem     |
+| **Azure**        | Variable    | 99.99%     | 2-3 min    | ✓ (Multiple)  | ✅ Auto   | Microsoft ecosystem  |
+| **DigitalOcean** | $5+         | 99.99%     | 5-10 min   | ✓ (Amsterdam) | ✅ Auto   | Privacy + simplicity |
+| **Linode**       | $5+         | 99.99%     | ~5 min     | ✗             | 🔄 Soon   | Budget-conscious     |
+| **Vultr**        | $5+         | 99.99%     | ~5 min     | ✓ (London)    | 🔄 Soon   | Global reach         |
+| **Hetzner**      | €4+         | 99.9%      | ~10 min    | ✓ (Germany)   | 🔄 Soon   | Ultra-budget         |
+| **Self-Hosted**  | Varies      | Custom     | 30+ min    | ✓             | 🔄 Custom | Full control         |
 
 ---
 
@@ -124,6 +133,7 @@ These providers are excellent for artists who distrust Big Tech or prefer Europe
 When artists complete setup on any provider, Amply receives configuration automatically:
 
 ### AWS Example Flow
+
 ```
 1. Artist creates CloudFormation stack
 2. Stack finishes (2-3 mins)
@@ -147,7 +157,9 @@ When artists complete setup on any provider, Amply receives configuration automa
 ```
 
 ### Fallback to Polling
+
 If callback fails to arrive within 3 minutes:
+
 - Frontend continues polling `/verify-stack`
 - Artist can still complete setup via manual verification
 - Ensures non-technical users always succeed
@@ -157,19 +169,22 @@ If callback fails to arrive within 3 minutes:
 ## Implementation Timeline
 
 ### Phase 1 (Current) ✅
+
 - ✅ AWS CloudFormation with callback Lambda
 - ✅ GCP template with Cloud Functions
-- ✅ Azure template with Azure Functions  
+- ✅ Azure template with Azure Functions
 - ✅ DigitalOcean setup script
 - ✅ Backend `/complete-artist-setup` endpoint (needed)
 
 ### Phase 2 (Next)
+
 - 🔄 Linode Object Storage templates
 - 🔄 Vultr Object Storage templates
 - 🔄 Hetzner Storage Box integration
 - 🔄 Self-hosted documentation
 
 ### Phase 3 (Future)
+
 - 🔄 One-click provider setup UI
 - 🔄 Wallet-style provider card selection
 - 🔄 Multi-provider account management
@@ -182,6 +197,7 @@ If callback fails to arrive within 3 minutes:
 **We recommend:** DigitalOcean or AWS (whichever they've heard of)
 
 **Why:** Both provide one-click setup with automatic credential delivery to Amply. Artists never need to:
+
 - Copy bucket names
 - Create IAM policies
 - Manage credentials
@@ -194,18 +210,21 @@ Just click a button, wait 3 minutes, and it's done.
 ## Security Notes
 
 ### API Key Management
+
 - Each artist gets a unique API key
 - Keys are short-lived (expire after setup)
 - Backend validates callback signature
 - Tokens sent over HTTPS only
 
 ### Callback Validation
+
 - Verify artist ID matches request
 - Check callback timestamp (prevent replay)
 - Validate against stored provider schema
 - Rate-limit callback attempts
 
 ### Provider Credentials
+
 - Never stored in Amply frontend
 - Sent directly from provider → Amply backend
 - Backend assumes artist's IAM role (AWS)
@@ -216,6 +235,7 @@ Just click a button, wait 3 minutes, and it's done.
 ## Testing Callback System
 
 ### Local Testing
+
 ```bash
 # Simulate callback
 curl -X POST http://localhost:3000/api/complete-artist-setup \
@@ -232,6 +252,7 @@ curl -X POST http://localhost:3000/api/complete-artist-setup \
 ```
 
 ### Cloud Testing
+
 1. Create test CloudFormation stack
 2. Monitor Lambda logs during deployment
 3. Check CloudWatch for callback POST
@@ -243,6 +264,7 @@ curl -X POST http://localhost:3000/api/complete-artist-setup \
 ## Provider-Specific Setup Instructions
 
 See individual template files for detailed setup:
+
 - `aws-cloudformation-template.yaml` - AWS setup
 - `gcp-deployment-manager-template.yaml` - GCP setup
 - `azure-resource-manager-template.json` - Azure setup

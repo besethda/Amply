@@ -91,12 +91,13 @@ This document summarizes the complete artist onboarding system with multi-provid
 ## File Structure
 
 ### Frontend Files
+
 ```
 listener/
   listener.html                    # Main listener page (profile modal in header)
   views/
     settings.html                  # Listener settings page
-    
+
 Styles/
   listener/settings.css            # Settings page styling
   core.css                         # Profile modal styles (+ artist card)
@@ -106,12 +107,12 @@ scripts/
     settings.js                    # Settings page logic (hide/show artist button)
     general.js                     # Profile modal logic + artist card init
     listener.js                    # Home view
-    
+
 artist/
   setup-template.html              # Provider selection (AWS, GCP, Azure, etc)
   setup-complete.html              # Waiting for callback/polling
   setup-profile.html               # Create artist profile (after setup complete)
-  
+
 scripts/artist/
   provider-config.js               # Defines all 8 hosting providers
   callback-config.js               # Callback schema validation
@@ -122,6 +123,7 @@ scripts/artist/
 ```
 
 ### Backend Files
+
 ```
 index.js                           # Lambda handler with new /complete-artist-setup route
   → Receives callback from cloud providers
@@ -131,6 +133,7 @@ index.js                           # Lambda handler with new /complete-artist-se
 ```
 
 ### Template Files
+
 ```
 aws-cloudformation-template.yaml   # AWS: S3 + CloudFront + IAM + Lambda callback
 gcp-deployment-manager-template.yaml # GCP: Cloud Storage + CDN + Cloud Function
@@ -139,6 +142,7 @@ digitalocean-setup.sh              # DigitalOcean: Spaces + App Platform
 ```
 
 ### Documentation Files
+
 ```
 CALLBACK_SYSTEM.md                 # Callback architecture and provider templates
 PROVIDER_SYSTEM.md                 # Provider abstraction layer technical details
@@ -151,6 +155,7 @@ BACKEND_SETUP.md                   # Backend implementation guide (DynamoDB, etc
 ### ✅ Completed
 
 1. **Frontend**
+
    - ✅ "Become an Artist" button in listener settings
    - ✅ "Become an Artist" card in profile modal (Settings tab)
    - ✅ Provider selection UI (setup-template.html)
@@ -161,6 +166,7 @@ BACKEND_SETUP.md                   # Backend implementation guide (DynamoDB, etc
    - ✅ Role-based button visibility (listener vs artist)
 
 2. **Backend**
+
    - ✅ `/complete-artist-setup` endpoint
    - ✅ Callback token validation
    - ✅ Provider-specific output mapping
@@ -169,6 +175,7 @@ BACKEND_SETUP.md                   # Backend implementation guide (DynamoDB, etc
    - ✅ Error handling and fallback support
 
 3. **Cloud Provider Templates**
+
    - ✅ AWS CloudFormation with callback Lambda
    - ✅ GCP Deployment Manager with Cloud Functions
    - ✅ Azure Resource Manager with Azure Functions
@@ -183,6 +190,7 @@ BACKEND_SETUP.md                   # Backend implementation guide (DynamoDB, etc
 ### 🔄 In Progress / TODO
 
 1. **Backend Setup (Your Action)**
+
    - [ ] Create `amply-artist-configs-{env}` DynamoDB table
    - [ ] Update Lambda IAM role for DynamoDB access
    - [ ] Implement API key generation endpoint
@@ -191,12 +199,14 @@ BACKEND_SETUP.md                   # Backend implementation guide (DynamoDB, etc
    - [ ] Test with AWS CloudFormation
 
 2. **Frontend Integration**
+
    - [ ] Add provider card images/icons
    - [ ] Link templates to setup pages (setup-aws.html, setup-gcp.html, etc)
    - [ ] Add deep link to cloud provider console
    - [ ] Handle provider-specific setup flows
 
 3. **Cloud Provider Templates**
+
    - [ ] Test AWS template end-to-end
    - [ ] Finish GCP template (Cloud Function code upload)
    - [ ] Finish Azure template (Function code deployment)
@@ -212,6 +222,7 @@ BACKEND_SETUP.md                   # Backend implementation guide (DynamoDB, etc
 ## How It Works - Step by Step
 
 ### 1. Artist Clicks "Become an Artist"
+
 ```
 listener/listener.html (Profile Modal > Settings)
   ↓
@@ -225,6 +236,7 @@ Redirects to /artist/setup-template.html
 ```
 
 ### 2. Artist Selects Provider
+
 ```
 setup-template.html (shows 4 provider cards)
   ↓
@@ -236,6 +248,7 @@ Redirects to /artist/setup-aws.html (or selected provider)
 ```
 
 ### 3. Artist Opens Cloud Provider Console
+
 ```
 setup-aws.html shows CloudFormation link
   ↓
@@ -249,6 +262,7 @@ CloudFormation creates stack (2-3 minutes)
 ```
 
 ### 4. Cloud Provider Deploys & Sends Callback
+
 ```
 CloudFormation stack completes
   ↓
@@ -263,6 +277,7 @@ Lambda POSTs to https://amply.app/api/complete-artist-setup
 ```
 
 ### 5. Amply Backend Receives Callback
+
 ```
 POST /complete-artist-setup
   ↓
@@ -284,6 +299,7 @@ Returns 200 OK
 ```
 
 ### 6. Frontend Redirects to Profile Setup
+
 ```
 setup-complete.html running CallbackListener
   ↓
@@ -305,6 +321,7 @@ Setup complete!
 ## Testing Checklist
 
 ### Local Testing
+
 - [ ] Test CallbackListener with manual postMessage
 - [ ] Test callback payload validation
 - [ ] Test provider config mapping
@@ -312,6 +329,7 @@ Setup complete!
 - [ ] Test central index update
 
 ### AWS CloudFormation Test
+
 - [ ] Create test CloudFormation stack
 - [ ] Monitor Lambda logs
 - [ ] Check callback is received
@@ -320,6 +338,7 @@ Setup complete!
 - [ ] Test fallback polling
 
 ### Full End-to-End Test
+
 - [ ] Register as listener
 - [ ] Go to settings
 - [ ] Click "Become an Artist"
@@ -333,6 +352,7 @@ Setup complete!
 ## Security Summary
 
 ✅ **Frontend**
+
 - Role-based button visibility (Cognito custom:role)
 - Callback token validation (callback-config.js)
 - Polling fallback if callback fails
@@ -340,6 +360,7 @@ Setup complete!
 - CORS headers properly set
 
 ✅ **Backend**
+
 - Token validation (to be implemented)
 - Artist ID verification
 - Rate limiting (to be implemented)
@@ -348,6 +369,7 @@ Setup complete!
 - Audit logging (to be implemented)
 
 ✅ **Cloud Providers**
+
 - Private buckets (no public access)
 - IAM roles restrict Amply access
 - HTTPS callbacks only
@@ -357,17 +379,20 @@ Setup complete!
 ## Cost Implications
 
 ### AWS
+
 - S3 storage: ~$0.023/GB transfer
 - CloudFront: ~$0.085/GB
 - Lambda callback: ~$0.20 per million requests
 - DynamoDB: ~$1.25/month for artist configs (on-demand)
 
 ### DigitalOcean
+
 - Spaces: $5/month + $0.02/GB transfer
 - App Platform: Free tier available
 - Much cheaper than AWS for small artists
 
 ### GCP
+
 - Cloud Storage: ~$0.020/GB
 - Cloud CDN: ~$0.12/GB
 - Cloud Functions: $0.40M invocations free per month
@@ -375,17 +400,20 @@ Setup complete!
 ## Next Steps
 
 1. **Immediate** (This week)
+
    - [ ] Create DynamoDB table
    - [ ] Deploy updated Lambda
    - [ ] Test AWS callback flow
 
 2. **Short-term** (Next week)
+
    - [ ] Implement token validation
    - [ ] Test GCP and Azure templates
    - [ ] Add /verify-stack polling endpoint
    - [ ] Test fallback flow
 
 3. **Medium-term** (This month)
+
    - [ ] Set up callback signing (HMAC-SHA256)
    - [ ] Add rate limiting
    - [ ] Complete Linode/Vultr templates
@@ -408,6 +436,7 @@ Setup complete!
 ## Support
 
 For questions on specific parts:
+
 - **Frontend callback**: See `scripts/artist/callback-listener.js`
 - **Provider config**: See `scripts/artist/provider-config.js`
 - **Backend endpoint**: See `index.js` `/complete-artist-setup` route
