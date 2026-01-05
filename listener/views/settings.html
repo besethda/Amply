@@ -1,4 +1,33 @@
 <header class="top-bar"><h2 class="head">Settings & Account</h2></header>
+
 <section class="settings-section">
-  <div class="settings-card"><span id="userEmail"></span></div>
-</section>
+  <!-- Account Info -->
+  <div class="settings-card">
+    <h3>Account Information</h3>
+    <div class="settings-item">
+      <label>Email</label>
+      <span id="userEmail">—</span>
+    </div>
+  </div>
+
+  <!-- Become an Artist -->
+  <div class="settings-card artist-promo">
+    <h3>🎤 Become an Artist</h3>
+    <p>Start uploading your music and building your fanbase on Amply.</p>
+    <button id="becomeArtistBtn" class="artist-btn">Get Started as an Artist</button>
+  </div>
+
+  <!-- Preferences -->
+  <div class="settings-card">
+    <h3>Preferences</h3>
+    <div class="settings-item">
+      <label for="darkModeToggle">Dark Mode</label>
+      <input type="checkbox" id="darkModeToggle" />
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="settings-card danger-zone">
+    <h3>Account Actions</h3>
+    <button id="managePayments" class="secondary-btn">Manage Payments</button>
+  </div>

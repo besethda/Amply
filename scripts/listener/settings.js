@@ -21,7 +21,17 @@ export function initSettingsView() {
   });
 
   document.getElementById("becomeArtistBtn")?.addEventListener("click", () => {
-    window.location.href = "../artist/setup.html";
+    // Check if user has a role
+    const userRole = localStorage.getItem("role");
+    
+    if (userRole === "artist") {
+      // Already an artist, redirect to dashboard
+      window.location.href = "../artist/dashboard.html";
+    } else {
+      // New artist, start onboarding
+      localStorage.setItem("role", "artist");
+      window.location.href = "../artist/setup-template.html";
+    }
   });
 
   document.getElementById("managePayments")?.addEventListener("click", () => {

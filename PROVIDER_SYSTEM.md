@@ -10,24 +10,28 @@ The provider abstraction system allows artists to choose between equivalent host
 ## Supported Providers
 
 ### AWS (Currently Active)
+
 - **Storage**: S3 (Simple Storage Service)
 - **CDN**: CloudFront
 - **Config Fields**: `roleArn`, `bucketName`, `cloudfrontDomain`
 - **CDN URL Pattern**: `https://{cloudfrontDomain}/{fileKey}`
 
 ### Google Cloud (Template Ready)
+
 - **Storage**: Cloud Storage (GCS)
 - **CDN**: Cloud CDN
 - **Config Fields**: `projectId`, `bucketName`, `cdnDomain`
 - **CDN URL Pattern**: `https://{cdnDomain}/{fileKey}`
 
 ### Microsoft Azure (Template Ready)
+
 - **Storage**: Blob Storage
 - **CDN**: Azure CDN
 - **Config Fields**: `storageAccount`, `container`, `cdnEndpoint`
 - **CDN URL Pattern**: `https://{cdnEndpoint}/{fileKey}`
 
 ### Self-Hosted (Template Ready)
+
 - **Storage**: Custom API
 - **CDN**: Custom CDN
 - **Config Fields**: `apiEndpoint`, `uploadUrl`, `cdnUrl`
@@ -36,6 +40,7 @@ The provider abstraction system allows artists to choose between equivalent host
 ## How It Works
 
 ### 1. Artist Selects Provider
+
 ```
 /artist/setup-template.html
 ↓
@@ -45,6 +50,7 @@ localStorage.setItem("selectedTemplate", providerId)
 ```
 
 ### 2. Provider-Specific Setup
+
 ```
 setup.html (AWS) OR setup-gcp.html OR setup-azure.html
 ↓
@@ -54,6 +60,7 @@ saveArtistConfig() stores with provider: "aws/gcp/azure/self-hosted"
 ```
 
 ### 3. File Upload
+
 ```
 Artist uploads audio/image files
 ↓
@@ -67,6 +74,7 @@ Metadata saved to database with CDN URL
 ```
 
 ### 4. Listener Download
+
 ```
 Database returns CDN URL: "https://{cdn}/{fileKey}"
 ↓
@@ -88,7 +96,9 @@ setup-complete.js           - Stores provider in config
 ## Key Functions
 
 ### `generateCdnUrl(artistConfig, fileKey)`
+
 **Purpose**: Create consistent CDN URLs regardless of provider
+
 ```javascript
 const url = generateCdnUrl(config, "songs/artist/song.wav");
 // AWS: https://cloudfront-domain.cdn.amazonaws.com/songs/artist/song.wav
@@ -98,7 +108,9 @@ const url = generateCdnUrl(config, "songs/artist/song.wav");
 ```
 
 ### `getUploadEndpoint(artistConfig)`
+
 **Purpose**: Get provider-specific API endpoint for presigned URLs
+
 ```javascript
 const endpoint = getUploadEndpoint(config);
 // AWS: /get-presigned-url?artist=artistId
@@ -107,7 +119,9 @@ const endpoint = getUploadEndpoint(config);
 ```
 
 ### `validateArtistConfig(config, providerId)`
+
 **Purpose**: Ensure all required fields are present
+
 ```javascript
 if (validateArtistConfig(config, "aws")) {
   // Config has roleArn, bucketName, cloudfrontDomain
@@ -117,6 +131,7 @@ if (validateArtistConfig(config, "aws")) {
 ## Adding a New Provider
 
 1. **Add provider config** in `provider-config.js`:
+
 ```javascript
 newprovider: {
   id: "newprovider",
@@ -143,17 +158,20 @@ newprovider: {
 ## Consistency Guarantees
 
 ✅ **For Artists**:
+
 - Simple template selection at onboarding
 - Provider-specific setup flows
 - Credentials stored securely
 
 ✅ **For Listeners**:
+
 - All songs work the same way
 - CDN URLs follow same format
 - No difference in playback experience
 - Seamless provider migration if needed
 
 ✅ **For Developers**:
+
 - Centralized provider configuration
 - Easy to add new providers
 - No hardcoded provider logic in upload/playback
@@ -162,6 +180,7 @@ newprovider: {
 ## Future Expansion
 
 When ready to support a new provider:
+
 1. Update `provider-config.js` (change `supported: true`)
 2. Implement backend endpoints
 3. Create provider-specific setup pages

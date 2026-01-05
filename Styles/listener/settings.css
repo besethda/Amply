@@ -78,3 +78,92 @@ body {
   color: var(--accent-color);
   color: #111;
 }
+/* Artist Promotion Card */
+.settings-card.artist-promo {
+  background: linear-gradient(135deg, rgba(108, 204, 255, 0.15) 0%, rgba(100, 180, 255, 0.1) 100%);
+  border: 2px solid var(--accent-color);
+  border-radius: 12px;
+}
+
+.settings-card.artist-promo h3 {
+  font-size: 1.5rem;
+  color: var(--accent-color);
+}
+
+.settings-card.artist-promo p {
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  justify-content: flex-start;
+}
+
+.artist-btn {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.artist-btn:hover {
+  background: #5bbbf0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(108, 204, 255, 0.3);
+}
+
+/* Settings Item Structure */
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.settings-item label {
+  margin-bottom: 0;
+  font-weight: 500;
+}
+
+.settings-item span {
+  color: var(--text-secondary);
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.danger-zone {
+  border-left: 3px solid #ff6b6b;
+}
+
+.danger-zone h3 {
+  color: #ff6b6b;
+}
