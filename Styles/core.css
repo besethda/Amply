@@ -252,7 +252,7 @@ li {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   z-index: 9999;
   transition: opacity 0.3s ease, transform 0.3s ease;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -434,9 +434,10 @@ li {
 
 #playerOptionsMenu {
   position: absolute;
+  background: transparent;
   z-index: 10000 !important;
-  top: 100%;
-  right: 0;
+  bottom: 126%;
+  right: -13px;
 }
 
 /* ICON BUTTONS */
@@ -461,7 +462,6 @@ li {
 
 /* Player options (right side) icons */
 .player-options .icon-button {
-  background: #444444;
   width: 38px;
   height: 38px;
 }

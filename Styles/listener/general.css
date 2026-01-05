@@ -111,13 +111,13 @@ h2 {
 
 .player-options-menu {
   position: absolute;
-  bottom: 45px;
+  bottom: 90px;
   right: 0;
   width: max-content;
-  padding: 6px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   background-color: #222;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
@@ -135,9 +135,41 @@ h2 {
   pointer-events: auto;
 }
 
-.option {
+.player-menu-controls {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-menu-controls .icon-button {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: none;
+  background: transparent;
   color: #eee;
-  background-color: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.player-menu-controls .icon-button:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.player-menu-controls .icon-button.active {
+  color: var(--accent-color);
+}
+
+.option {
+  background: transparent;
+  color: #eee;
   padding: 0.6rem 1rem;
   margin: 0;
   width: 100%;

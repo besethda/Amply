@@ -750,6 +750,24 @@ function setupEvents() {
     opt.addEventListener("click", () => handleOptionClick(opt.dataset.action));
   });
 
+  // Repeat toggle in menu
+  const repeatBtn = document.getElementById("repeatBtn");
+  repeatBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    isRepeat = !isRepeat;
+    repeatBtn.classList.toggle("active", isRepeat);
+    localStorage.setItem("amplyRepeat", isRepeat);
+  });
+
+  // Shuffle toggle in menu
+  const shuffleBtn = document.getElementById("shuffleBtn");
+  shuffleBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    isShuffle = !isShuffle;
+    shuffleBtn.classList.toggle("active", isShuffle);
+    localStorage.setItem("amplyShuffle", isShuffle);
+  });
+
   setupFullPlayerEvents();
 }
 
