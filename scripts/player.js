@@ -628,34 +628,8 @@ function setupEvents() {
     }
   });
 
-  // Play/pause in player bar - attach to SVGs
-  const playPausePlaySvg = playIcon;
-  const playPausePauseSvg = pauseIcon;
-  
-  playPausePlaySvg?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    
-    // Don't activate if we just dragged the waveform
-    if (hasMovedEnoughWaveform) {
-      return;
-    }
-    
-    if (!audio.src) return;
-
-    if (audio.paused) {
-      audio.play();
-      playIcon.style.display = "none";
-      pauseIcon.style.display = "block";
-    } else {
-      audio.pause();
-      playIcon.style.display = "block";
-      pauseIcon.style.display = "none";
-    }
-
-    syncPlayerIcons();
-  });
-
-  playPausePauseSvg?.addEventListener("click", (e) => {
+  // Play/pause in player bar
+  playPauseBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     
     // Don't activate if we just dragged the waveform
