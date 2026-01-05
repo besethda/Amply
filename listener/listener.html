@@ -252,169 +252,125 @@
     </main>
 
     <!-- PLAYER BAR -->
-    <div class="player-container">
-      <div id="playerBar" class="player-bar hidden">
-        <!-- CONTROLS (appear on hover above the bar) -->
-        <div class="player-controls-hover">
-          <button id="prevBtn" class="icon-button" aria-label="Previous">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="36"
-              height="36"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="transform: scaleX(-1)"
-            >
-              <polygon points="5 4 15 12 5 20 5 4"></polygon>
-              <line x1="19" y1="5" x2="19" y2="19"></line>
-            </svg>
-          </button>
+    <div id="playerBar" class="player-bar hidden">
+      <!-- LEFT: ALBUM ART -->
+      <img
+        id="currentTrackArt"
+        src=""
+        alt="Album art"
+        class="player-album-art"
+      />
 
-          <button id="playPause" class="icon-button" aria-label="Play or pause">
-            <svg
-              id="playIcon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="42"
-              height="42"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            <svg
-              id="pauseIcon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="42"
-              height="42"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="display: none"
-            >
-              <rect x="6" y="4" width="4" height="16"></rect>
-              <rect x="14" y="4" width="4" height="16"></rect>
-            </svg>
-          </button>
-
-          <button id="nextBtn" class="icon-button" aria-label="Next">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="36"
-              height="36"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polygon points="5 4 15 12 5 20 5 4"></polygon>
-              <line x1="19" y1="5" x2="19" y2="19"></line>
-            </svg>
-          </button>
-        </div>
-
-        <!-- OPTIONS (appear on hover on the right) -->
-        <div class="player-options">
-          <!-- REPEAT -->
-          <button id="repeatBtn" class="icon-button" aria-label="Repeat">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="26"
-              height="26"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="17 1 21 5 17 9"></polyline>
-              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-              <polyline points="7 23 3 19 7 15"></polyline>
-              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-            </svg>
-          </button>
-
-          <!-- SHUFFLE -->
-          <button id="shuffleBtn" class="icon-button" aria-label="Shuffle">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="26"
-              height="26"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="16 3 21 3 21 8"></polyline>
-              <line x1="4" y1="20" x2="21" y2="3"></line>
-              <polyline points="21 16 21 21 16 21"></polyline>
-              <line x1="15" y1="15" x2="21" y2="21"></line>
-              <line x1="4" y1="4" x2="9" y2="9"></line>
-            </svg>
-          </button>
-
-          <!-- OPTIONS (THREE DOTS) -->
-          <button id="optionsBtn" class="icon-button" aria-label="More options">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="26"
-              height="26"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="12" cy="5" r="1.5"></circle>
-              <circle cx="12" cy="12" r="1.5"></circle>
-              <circle cx="12" cy="19" r="1.5"></circle>
-            </svg>
-          </button>
-
-          <!-- DROPDOWN MENU -->
-          <div id="playerOptionsMenu" class="player-options-menu">
-            <div class="option" data-action="playlist">Add to playlist</div>
-            <div class="option" data-action="queue">Add to queue</div>
-            <div class="option" data-action="library">Add to library</div>
-            <div class="option" data-action="artist">View artist</div>
-          </div>
-        </div>
-
-        <div class="player-inner">
-          <!-- LEFT: SONG INFO -->
-          <div class="track-info">
-            <div class="track-text">
-              <div class="track-name-container">
-                <span id="currentTrackName">No track playing</span>
-              </div>
-              <div class="progress-line-divider"></div>
-              <span id="currentTrackArtist">—</span>
-            </div>
-          </div>
-
-          <!-- WAVEFORM CANVAS BACKGROUND -->
-          <canvas
-            id="waveformCanvas"
-            class="waveform-canvas-background"
-          ></canvas>
-        </div>
-
-        <audio id="globalAudio" hidden></audio>
+      <!-- MIDDLE: SONG INFO -->
+      <div class="track-info">
+        <span id="currentTrackName">No track playing</span>
+        <span id="currentTrackArtist">—</span>
       </div>
+
+      <!-- WAVEFORM CANVAS BACKGROUND -->
+      <canvas id="waveformCanvas" class="waveform-canvas-background"></canvas>
+
+      <!-- RIGHT: PLAYBACK CONTROLS -->
+      <div class="player-controls-container">
+        <button
+          id="prevBtn"
+          class="player-control-btn"
+          aria-label="Previous track"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="26"
+            height="26"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="transform: scaleX(-1)"
+          >
+            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19"></line>
+          </svg>
+        </button>
+
+        <button
+          id="playPause"
+          class="player-play-pause"
+          aria-label="Play or pause"
+        >
+          <svg
+            id="playIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="30"
+            height="30"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+          >
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <svg
+            id="pauseIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="30"
+            height="30"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            style="display: none"
+          >
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </button>
+
+        <button id="nextBtn" class="player-control-btn" aria-label="Next track">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="26"
+            height="26"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19"></line>
+          </svg>
+        </button>
+
+        <button
+          id="playerMenuBtn"
+          class="player-menu-btn"
+          aria-label="Player options"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            fill="currentColor"
+          >
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+
+        <div id="playerOptionsMenu" class="player-options-menu">
+          <div class="option" data-action="playlist">Add to playlist</div>
+          <div class="option" data-action="queue">Add to queue</div>
+          <div class="option" data-action="library">Add to library</div>
+          <div class="option" data-action="artist">View artist</div>
+        </div>
+      </div>
+
+      <audio id="globalAudio" hidden></audio>
     </div>
 
     <!-- FULL SCREEN PLAYER OVERLAY -->

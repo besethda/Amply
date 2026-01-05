@@ -111,8 +111,8 @@ h2 {
 
 .player-options-menu {
   position: absolute;
-  right: -10px;
-  bottom: 180%; /* sits above player bar */
+  bottom: 45px;
+  right: 0;
   width: max-content;
   padding: 6px;
   display: flex;

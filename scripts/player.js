@@ -24,12 +24,8 @@ const waveformCanvas = document.getElementById("waveformCanvas");
 const currentTrackName = document.getElementById("currentTrackName");
 const currentTrackArtist = document.getElementById("currentTrackArtist");
 const currentTrackArt = document.getElementById("currentTrackArt");
-const repeatBtn = document.getElementById("repeatBtn");
-const shuffleBtn = document.getElementById("shuffleBtn");
 const playPauseBtn = document.getElementById("playPause");
-const nextBtn = document.getElementById("nextBtn");
-const prevBtn = document.getElementById("prevBtn");
-const optionsBtn = document.getElementById("optionsBtn");
+const playerMenuBtn = document.getElementById("playerMenuBtn");
 const optionsMenu = document.getElementById("playerOptionsMenu");
 
 // Full Player Elements
@@ -633,7 +629,9 @@ function setupEvents() {
   });
 
   // Play/pause in player bar
-  playPauseBtn?.addEventListener("click", () => {
+  playPauseBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    
     // Don't activate if we just dragged the waveform
     if (hasMovedEnoughWaveform) {
       return;
@@ -654,57 +652,10 @@ function setupEvents() {
     syncPlayerIcons();
   });
 
-  // Previous track
-  prevBtn?.addEventListener("click", () => {
-    // Don't activate if we just dragged the waveform
-    if (hasMovedEnoughWaveform) {
-      return;
-    }
-    
-    if (!playlist.length) return;
-
-    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-    playSong(playlist[currentIndex], playlist);
-  });
-
-  // Next track
-  nextBtn?.addEventListener("click", () => {
-    // Don't activate if we just dragged the waveform
-    if (hasMovedEnoughWaveform) {
-      return;
-    }
-    
-    if (!playlist.length) return;
-
-    if (isShuffle) {
-      currentIndex = Math.floor(Math.random() * playlist.length);
-    } else {
-      currentIndex = (currentIndex + 1) % playlist.length;
-    }
-
-    playSong(playlist[currentIndex], playlist);
-  });
-
-  // Seek (waveform canvas is handled in initializeWaveform)
-
-  // Repeat toggle
-  repeatBtn?.addEventListener("click", () => {
-    isRepeat = !isRepeat;
-    repeatBtn.classList.toggle("active", isRepeat);
-    fullRepeatBtn?.classList.toggle("active", isRepeat);
-    localStorage.setItem("amplyRepeat", isRepeat);
-  });
-
-  // Shuffle toggle
-  shuffleBtn?.addEventListener("click", () => {
-    isShuffle = !isShuffle;
-    shuffleBtn.classList.toggle("active", isShuffle);
-    fullShuffleBtn?.classList.toggle("active", isShuffle);
-    localStorage.setItem("amplyShuffle", isShuffle);
-  });
-
   // Navigate to artist page when clicking artist name
   currentTrackArtist?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    
     // Reset drag state for clean click detection
     hasMovedEnoughWaveform = false;
     isDraggingWaveform = false;
@@ -781,12 +732,13 @@ function setupEvents() {
     savePlayerState();
   });
 
-  // Options menu
-  optionsBtn?.addEventListener("click", (e) => {
+  // Player options menu button
+  playerMenuBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     optionsMenu?.classList.toggle("show");
   });
 
+  // Options menu
   document.addEventListener("click", () => {
     optionsMenu?.classList.remove("show");
   });
@@ -805,13 +757,12 @@ function setupEvents() {
 // FULL PLAYER LOGIC
 // ===============================
 function setupFullPlayerEvents() {
-  // Open Full Player
+  // Open Full Player when clicking player bar (except buttons)
   playerBar?.addEventListener("click", (e) => {
-    // Don't open if clicking buttons or progress bar
-    if (e.target.closest("button") || e.target.closest("input")) return;
-
-    // Only open in portrait mode (mobile)
-    if (!window.matchMedia("(orientation: portrait)").matches) return;
+    // Don't open if clicking the play button itself
+    if (e.target.closest(".player-play-pause") || e.target.closest(".player-album-art")) {
+      return;
+    }
 
     fullPlayer.classList.remove("hidden");
     updateFullPlayerUI();
@@ -831,15 +782,39 @@ function setupFullPlayerEvents() {
     }
   });
 
-  fullNextBtn?.addEventListener("click", () => nextBtn?.click());
-  fullPrevBtn?.addEventListener("click", () => prevBtn?.click());
+  // Next track in full player
+  fullNextBtn?.addEventListener("click", () => {
+    if (!playlist.length) return;
 
-  fullShuffleBtn?.addEventListener("click", () => {
-    shuffleBtn?.click();
+    if (isShuffle) {
+      currentIndex = Math.floor(Math.random() * playlist.length);
+    } else {
+      currentIndex = (currentIndex + 1) % playlist.length;
+    }
+
+    playSong(playlist[currentIndex], playlist);
   });
 
+  // Previous track in full player
+  fullPrevBtn?.addEventListener("click", () => {
+    if (!playlist.length) return;
+
+    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+    playSong(playlist[currentIndex], playlist);
+  });
+
+  // Shuffle toggle
+  fullShuffleBtn?.addEventListener("click", () => {
+    isShuffle = !isShuffle;
+    fullShuffleBtn?.classList.toggle("active", isShuffle);
+    localStorage.setItem("amplyShuffle", isShuffle);
+  });
+
+  // Repeat toggle
   fullRepeatBtn?.addEventListener("click", () => {
-    repeatBtn?.click();
+    isRepeat = !isRepeat;
+    fullRepeatBtn?.classList.toggle("active", isRepeat);
+    localStorage.setItem("amplyRepeat", isRepeat);
   });
 
   // Full Progress Bar
