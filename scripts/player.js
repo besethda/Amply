@@ -201,11 +201,31 @@ function clearPlayerState() {
 // INIT PLAYER
 // ===============================
 export function initPlayer(songs = []) {
+  // Preserve current song's art_url when re-initializing player with new playlist
+  const preservedArtUrl = window.currentSong?.art_url;
+  const preservedCoverImage = window.currentSong?.coverImage;
+  
   if (songs?.length) {
     playlist = songs.map((s) => ({
       ...s,
       id: s.id || s.songId || s.file || s.title,
+      // Preserve art_url if it's missing from this song but was in the previous currentSong
+      art_url: s.art_url || preservedArtUrl,
+      coverImage: s.coverImage || preservedCoverImage,
     }));
+  }
+
+  // If we have a current song, update it in the playlist with preserved metadata
+  if (window.currentSong && playlist.length > 0) {
+    const currentIndex = playlist.findIndex(s => s.id === window.currentSong.id);
+    if (currentIndex >= 0) {
+      // Merge current song with updated playlist song while preserving metadata
+      window.currentSong = {
+        ...playlist[currentIndex],
+        art_url: window.currentSong.art_url || playlist[currentIndex].art_url,
+        coverImage: window.currentSong.coverImage || playlist[currentIndex].coverImage,
+      };
+    }
   }
 
   // Initialize waveform
