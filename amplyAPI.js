@@ -17,6 +17,7 @@ const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
 const LIKES_TABLE = `amply-listen-history-${environment}`; // Reuse listen table with GSI for likes
+const ARTIST_CONFIG_TABLE = `amply-artist-configs-${environment}`; // Artist cloud provider configurations
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
@@ -934,6 +935,174 @@ const handler = async (event) => {
             }
             catch (err) {
                 console.error("❌ Get listening history error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === COMPLETE ARTIST SETUP (Cloud Provider Callback) ===
+        if (path.endsWith("/complete-artist-setup") && method === "POST") {
+            console.log("📤 Received artist setup completion callback");
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { artistId, provider, outputs, callback_token, callback_timestamp, stack_id, deployment_name, resource_group } = body;
+
+                // Validate required fields
+                if (!artistId || !provider || !outputs || !callback_token) {
+                    console.warn("❌ Missing required callback fields");
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing required fields: artistId, provider, outputs, callback_token" }),
+                    };
+                }
+
+                // Validate callback token (should match a stored token for this artist)
+                // TODO: Implement token validation (compare against stored callback token in DynamoDB or secret)
+                if (!callback_token || callback_token.length < 10) {
+                    console.warn("❌ Invalid callback token");
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Invalid or missing callback token" }),
+                    };
+                }
+
+                console.log(`✅ Processing callback for artist: ${artistId}, provider: ${provider}`);
+
+                // Map provider-specific outputs to standardized config
+                const artistConfig = {
+                    artistId,
+                    provider,
+                    createdAt: new Date().toISOString(),
+                    callbackTimestamp: callback_timestamp || new Date().toISOString(),
+                    outputs: outputs,
+                };
+
+                // Add provider-specific fields
+                if (provider === "aws") {
+                    artistConfig.bucketName = outputs.BucketName || outputs.bucketName;
+                    artistConfig.cloudfrontDomain = outputs.CloudFrontDomain || outputs.cloudfrontDomain;
+                    artistConfig.roleArn = outputs.RoleArn || outputs.roleArn;
+                    artistConfig.stackId = stack_id || outputs.StackId;
+                } else if (provider === "gcp") {
+                    artistConfig.bucketName = outputs.bucketName || outputs.bucket_name;
+                    artistConfig.projectId = outputs.projectId || outputs.project_id;
+                    artistConfig.serviceAccountEmail = outputs.serviceAccountEmail || outputs.service_account_email;
+                    artistConfig.deploymentName = deployment_name;
+                    artistConfig.cdnDomain = outputs.cdnDomain || outputs.cdn_domain;
+                } else if (provider === "azure") {
+                    artistConfig.storageAccount = outputs.storageAccountName || outputs.storage_account;
+                    artistConfig.container = outputs.containerName || outputs.container;
+                    artistConfig.cdnEndpoint = outputs.cdnEndpoint || outputs.cdn_endpoint;
+                    artistConfig.managedIdentityId = outputs.managedIdentityId;
+                    artistConfig.resourceGroup = resource_group;
+                } else if (provider === "digitalocean") {
+                    artistConfig.bucketName = outputs.bucketName || outputs.bucket_name;
+                    artistConfig.endpoint = outputs.endpoint || outputs.bucket_endpoint;
+                    artistConfig.cdnDomain = outputs.cdnDomain || outputs.cdn_domain;
+                } else if (provider === "linode") {
+                    artistConfig.bucketName = outputs.bucketName;
+                    artistConfig.region = outputs.region;
+                    artistConfig.cdnDomain = outputs.cdnDomain;
+                } else if (provider === "vultr") {
+                    artistConfig.bucketName = outputs.bucketName;
+                    artistConfig.region = outputs.region;
+                    artistConfig.cdnDomain = outputs.cdnDomain;
+                } else if (provider === "hetzner") {
+                    artistConfig.storageBoxUsername = outputs.storageBoxUsername;
+                    artistConfig.cdnDomain = outputs.cdnDomain;
+                } else if (provider === "self-hosted") {
+                    artistConfig.apiEndpoint = outputs.apiEndpoint;
+                    artistConfig.uploadUrl = outputs.uploadUrl;
+                    artistConfig.cdnUrl = outputs.cdnUrl;
+                }
+
+                // Save to DynamoDB
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: ARTIST_CONFIG_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)({
+                        artistId: artistId,
+                        ...artistConfig,
+                    }),
+                }));
+
+                console.log(`✅ Saved artist config for ${artistId} (${provider})`);
+
+                // Also update the central index with essential info
+                try {
+                    const s3 = new client_s3_1.S3Client({ region });
+                    const indexKey = "amply-index.json";
+                    let indexData = { artists: [] };
+
+                    // Load existing index
+                    try {
+                        const existing = await s3.send(new client_s3_1.GetObjectCommand({ Bucket: centralBucket, Key: indexKey }));
+                        const text = await existing.Body.transformToString();
+                        indexData = JSON.parse(text);
+                    } catch (e) {
+                        console.log("ℹ️ Creating new index file");
+                    }
+
+                    // Find or create artist entry
+                    let artistEntry = indexData.artists.find((a) => a.artistId === artistId);
+                    if (!artistEntry) {
+                        artistEntry = {
+                            artistId,
+                            provider,
+                            songs: [],
+                        };
+                        indexData.artists.push(artistEntry);
+                    }
+
+                    // Update with callback data
+                    artistEntry.provider = provider;
+                    artistEntry.lastUpdated = new Date().toISOString();
+
+                    if (provider === "aws") {
+                        artistEntry.bucket = artistConfig.bucketName;
+                        artistEntry.cloudfrontDomain = artistConfig.cloudfrontDomain;
+                    } else if (provider === "gcp") {
+                        artistEntry.bucketName = artistConfig.bucketName;
+                        artistEntry.cdnDomain = artistConfig.cdnDomain;
+                    } else if (provider === "azure") {
+                        artistEntry.storageAccount = artistConfig.storageAccount;
+                        artistEntry.cdnEndpoint = artistConfig.cdnEndpoint;
+                    } else if (provider === "digitalocean") {
+                        artistEntry.bucketName = artistConfig.bucketName;
+                        artistEntry.cdnDomain = artistConfig.cdnDomain;
+                    }
+
+                    // Save updated index
+                    await s3.send(new client_s3_1.PutObjectCommand({
+                        Bucket: centralBucket,
+                        Key: indexKey,
+                        ContentType: "application/json",
+                        Body: JSON.stringify(indexData, null, 2),
+                    }));
+
+                    console.log("✅ Updated central index");
+                } catch (e) {
+                    console.warn("⚠️ Failed to update central index:", e.message);
+                    // Don't fail the callback if index update fails
+                }
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({
+                        success: true,
+                        artistId,
+                        provider,
+                        message: "Artist configuration saved successfully",
+                    }),
+                };
+            } catch (err) {
+                console.error("❌ Complete artist setup error:", err);
                 return {
                     statusCode: 500,
                     headers: corsHeaders,
