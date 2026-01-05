@@ -1278,6 +1278,63 @@ body.modal-open {
 .account-info strong {
   color: var(--text-main-color);
 }
+
+/* ===== SETTINGS CONTAINER ===== */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-option {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: var(--secondary-bg, #2a2a2a);
+  border: 1px solid var(--border-color, #444);
+}
+
+.settings-option.artist-option {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(147, 112, 219, 0.1));
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.option-header {
+  margin-bottom: 12px;
+}
+
+.option-header h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--text-main-color);
+}
+
+.option-header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary-color, #aaa);
+}
+
+.artist-btn {
+  padding: 10px 16px;
+  background-color: var(--accent-color, #ff6b6b);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.artist-btn:hover {
+  background-color: #ff5252;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.artist-btn:active {
+  transform: translateY(0);
+}
 /* ===== LIKE BUTTON ===== */
 .song-like-btn {
   background: none;

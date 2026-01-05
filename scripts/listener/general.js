@@ -207,10 +207,47 @@ document.addEventListener("DOMContentLoaded", () => {
         if (tabName === "stats") {
           await loadListeningStats();
         }
+        
+        // Initialize artist card visibility when settings tab is clicked
+        if (tabName === "settings") {
+          initializeArtistCard();
+        }
       }
     });
   });
+
+  // Initialize artist card on modal open
+  initializeArtistCard();
 });
+
+// === INITIALIZE ARTIST CARD ===
+function initializeArtistCard() {
+  const token = localStorage.getItem("amplyIdToken");
+  if (!token) return;
+
+  try {
+    const payload = parseJwt(token);
+    const userRole = payload?.["custom:role"]?.toLowerCase() || "listener";
+    const artistCard = document.getElementById("becomeArtistCard");
+    const becomeArtistBtn = document.getElementById("becomeArtistBtnModal");
+
+    // Hide artist card if user is already an artist
+    if (userRole === "artist" && artistCard) {
+      artistCard.style.display = "none";
+    } else if (artistCard) {
+      artistCard.style.display = "block";
+    }
+
+    // Add click handler for become artist button
+    if (becomeArtistBtn) {
+      becomeArtistBtn.addEventListener("click", () => {
+        localStorage.setItem("role", "artist");
+        window.location.href = "/artist/setup-template.html";
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error initializing artist card:", err);
+  }
 
 // === LISTENING STATS ===
 async function loadListeningStats() {
