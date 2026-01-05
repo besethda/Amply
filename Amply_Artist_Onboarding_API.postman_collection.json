@@ -1,0 +1,396 @@
+{
+  "info": {
+    "name": "Amply Artist Onboarding API",
+    "description": "Complete test collection for artist onboarding endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "1. Initialize Setup",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artistName\": \"Test Artist {{$randomInt}}\"\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/connect",
+          "host": ["{{API_URL}}"],
+          "path": ["connect"]
+        },
+        "description": "Initiates artist setup by creating a CloudFormation stack"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Check Stack Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{API_URL}}/stack-status/{{stackName}}",
+          "host": ["{{API_URL}}"],
+          "path": ["stack-status", "{{stackName}}"]
+        },
+        "description": "Poll the status of CloudFormation stack creation. Continue polling until status is CREATE_COMPLETE."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Complete Artist Setup (Callback)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{JWT_TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artistId\": \"test-artist-{{$randomInt}}\",\n  \"provider\": \"aws\",\n  \"outputs\": {\n    \"BucketName\": \"amply-test-bucket-{{$randomInt}}\",\n    \"CloudFrontDomain\": \"d{{$randomInt}}.cloudfront.net\",\n    \"RoleArn\": \"arn:aws:iam::{{AWS_ACCOUNT_ID}}:role/AmplyArtistRole\",\n    \"StackId\": \"arn:aws:cloudformation:eu-north-1:{{AWS_ACCOUNT_ID}}:stack/amply-test/uuid\"\n  },\n  \"callback_token\": \"secure_callback_token_{{$randomInt}}\",\n  \"callback_timestamp\": \"{{$timestamp}}\",\n  \"stack_id\": \"arn:aws:cloudformation:eu-north-1:{{AWS_ACCOUNT_ID}}:stack/amply-test/uuid\"\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/complete-artist-setup",
+          "host": ["{{API_URL}}"],
+          "path": ["complete-artist-setup"]
+        },
+        "description": "Receives callback from cloud provider and saves artist configuration to DynamoDB"
+      },
+      "response": []
+    },
+    {
+      "name": "4. List Bucket Files",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artistRoleArn\": \"{{ROLE_ARN}}\",\n  \"bucketName\": \"{{BUCKET_NAME}}\"\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/list",
+          "host": ["{{API_URL}}"],
+          "path": ["list"]
+        },
+        "description": "Lists all files in the artist's S3 bucket"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Generate Upload URL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileName\": \"my-song-{{$randomInt}}.mp3\",\n  \"artistRoleArn\": \"{{ROLE_ARN}}\",\n  \"bucketName\": \"{{BUCKET_NAME}}\",\n  \"contentType\": \"audio/mpeg\"\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/get-upload-url",
+          "host": ["{{API_URL}}"],
+          "path": ["get-upload-url"]
+        },
+        "description": "Generates a presigned URL for uploading files to the artist's bucket. URL expires in 5 minutes."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Update Central Index",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artistId\": \"test-artist\",\n  \"artistName\": \"Test Artist\",\n  \"cloudfrontDomain\": \"d{{$randomInt}}.cloudfront.net\",\n  \"bucketName\": \"amply-test-bucket\",\n  \"profilePhoto\": \"https://d{{$randomInt}}.cloudfront.net/profile.jpg\",\n  \"coverPhoto\": \"https://d{{$randomInt}}.cloudfront.net/cover.jpg\",\n  \"bio\": \"A talented artist creating amazing music\",\n  \"socials\": {\n    \"spotify\": \"https://open.spotify.com/artist/123\",\n    \"instagram\": \"@testartist\"\n  },\n  \"song\": {\n    \"id\": \"song-{{$randomInt}}\",\n    \"title\": \"My First Song\",\n    \"duration\": 240,\n    \"url\": \"https://d{{$randomInt}}.cloudfront.net/my-song.mp3\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/update-index",
+          "host": ["{{API_URL}}"],
+          "path": ["update-index"]
+        },
+        "description": "Updates the central index with artist profile and songs"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: Connect Missing Name",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/connect",
+          "host": ["{{API_URL}}"],
+          "path": ["connect"]
+        },
+        "description": "Should return 400 error - missing artist name"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: Stack Status Not Found",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{API_URL}}/stack-status/amply-does-not-exist",
+          "host": ["{{API_URL}}"],
+          "path": ["stack-status", "amply-does-not-exist"]
+        },
+        "description": "Should return 404 error - stack not found"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: Complete Setup Missing Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{JWT_TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artistId\": \"test\"\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/complete-artist-setup",
+          "host": ["{{API_URL}}"],
+          "path": ["complete-artist-setup"]
+        },
+        "description": "Should return 400 error - missing required fields"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: Invalid Callback Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{JWT_TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artistId\": \"test-artist\",\n  \"provider\": \"aws\",\n  \"outputs\": {\n    \"BucketName\": \"test-bucket\"\n  },\n  \"callback_token\": \"short\"\n}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/complete-artist-setup",
+          "host": ["{{API_URL}}"],
+          "path": ["complete-artist-setup"]
+        },
+        "description": "Should return 401 error - invalid callback token (too short)"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: List Missing Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/list",
+          "host": ["{{API_URL}}"],
+          "path": ["list"]
+        },
+        "description": "Should return 400 error - missing required fields"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: Upload URL Missing Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/get-upload-url",
+          "host": ["{{API_URL}}"],
+          "path": ["get-upload-url"]
+        },
+        "description": "Should return 400 error - missing required fields"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: Update Index Missing Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{API_URL}}/update-index",
+          "host": ["{{API_URL}}"],
+          "path": ["update-index"]
+        },
+        "description": "Should return 400 error - missing required fields"
+      },
+      "response": []
+    },
+    {
+      "name": "Test: CORS Preflight",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          {
+            "key": "Access-Control-Request-Method",
+            "value": "POST"
+          },
+          {
+            "key": "Access-Control-Request-Headers",
+            "value": "Content-Type"
+          }
+        ],
+        "url": {
+          "raw": "{{API_URL}}/connect",
+          "host": ["{{API_URL}}"],
+          "path": ["connect"]
+        },
+        "description": "Should return 204 with CORS headers"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set up environment variables if not already set",
+          "if (!pm.environment.get('stackName')) {",
+          "  pm.environment.set('stackName', 'amply-test-artist-' + Date.now());",
+          "}",
+          "",
+          "if (!pm.environment.get('API_URL')) {",
+          "  pm.environment.set('API_URL', 'https://api.amply.app');",
+          "}",
+          "",
+          "if (!pm.environment.get('AWS_ACCOUNT_ID')) {",
+          "  pm.environment.set('AWS_ACCOUNT_ID', '123456789');",
+          "}",
+          "",
+          "if (!pm.environment.get('ROLE_ARN')) {",
+          "  const accountId = pm.environment.get('AWS_ACCOUNT_ID');",
+          "  pm.environment.set('ROLE_ARN', `arn:aws:iam::${accountId}:role/AmplyArtistRole`);",
+          "}",
+          "",
+          "if (!pm.environment.get('BUCKET_NAME')) {",
+          "  pm.environment.set('BUCKET_NAME', 'amply-test-bucket');",
+          "}",
+          "",
+          "console.log('Environment ready:');",
+          "console.log('API_URL: ' + pm.environment.get('API_URL'));",
+          "console.log('AWS_ACCOUNT_ID: ' + pm.environment.get('AWS_ACCOUNT_ID'));",
+          "console.log('ROLE_ARN: ' + pm.environment.get('ROLE_ARN'));",
+          "console.log('BUCKET_NAME: ' + pm.environment.get('BUCKET_NAME'));",
+          "console.log('JWT_TOKEN: ' + (pm.environment.get('JWT_TOKEN') ? '✓ Set' : '✗ Not set'));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "API_URL",
+      "value": "https://api.amply.app",
+      "type": "string"
+    },
+    {
+      "key": "JWT_TOKEN",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "AWS_ACCOUNT_ID",
+      "value": "123456789",
+      "type": "string"
+    },
+    {
+      "key": "ROLE_ARN",
+      "value": "arn:aws:iam::123456789:role/AmplyArtistRole",
+      "type": "string"
+    },
+    {
+      "key": "BUCKET_NAME",
+      "value": "amply-test-bucket",
+      "type": "string"
+    },
+    {
+      "key": "stackName",
+      "value": "amply-test-artist",
+      "type": "string"
+    }
+  ]
+}

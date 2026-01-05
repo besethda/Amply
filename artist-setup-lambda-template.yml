@@ -1,0 +1,309 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amply Artist Setup - Creates S3, CloudFront, and IAM resources, then registers with Amply'
+
+Parameters:
+  ArtistName:
+    Type: String
+    Description: Artist name (lowercase, no spaces)
+    AllowedPattern: '^[a-z0-9-]+$'
+  
+  ArtistId:
+    Type: String
+    Description: Unique artist identifier
+  
+  AmplyAPIEndpoint:
+    Type: String
+    Default: 'https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com/complete-artist-setup'
+    Description: Amply API endpoint for callbacks
+
+Resources:
+  # IAM Role for the setup Lambda
+  SetupLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: AmplySetupPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:CreateBucket'
+                  - 's3:PutBucketPolicy'
+                  - 's3:PutBucketVersioning'
+                  - 's3:PutBucketAcl'
+                  - 'cloudfront:CreateCloudFrontOriginAccessIdentity'
+                  - 'cloudfront:CreateDistribution'
+                  - 'cloudfront:GetDistribution'
+                  - 'iam:CreateRole'
+                  - 'iam:PutRolePolicy'
+                Resource: '*'
+
+  # Lambda function that creates all resources
+  SetupLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt SetupLambdaRole.Arn
+      Timeout: 300
+      Environment:
+        Variables:
+          AMPLY_API_ENDPOINT: !Ref AmplyAPIEndpoint
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const https = require('https');
+          
+          const s3 = new AWS.S3();
+          const cloudfront = new AWS.CloudFront();
+          const iam = new AWS.IAM();
+          
+          exports.handler = async (event) => {
+            try {
+              console.log('Event:', JSON.stringify(event));
+              
+              // For Custom resource invocations
+              const artistName = event.ResourceProperties?.ArtistName || event.ArtistName;
+              const artistId = event.ResourceProperties?.ArtistId || event.ArtistId;
+              const accountId = event.Account || await getAccountId();
+              
+              console.log(`Creating resources for artist: ${artistName}`);
+              
+              if (!artistName) {
+                throw new Error('ArtistName is required');
+              }
+              
+              // Step 1: Create S3 bucket
+              const bucketName = `amply-${artistName}-${accountId}`;
+              console.log(`Creating S3 bucket: ${bucketName}`);
+              
+              await s3.createBucket({
+                Bucket: bucketName,
+                ACL: 'private'
+              }).promise();
+              
+              // Step 2: Create CloudFront OAI
+              console.log('Creating CloudFront OAI...');
+              const oaiResponse = await cloudfront.createCloudFrontOriginAccessIdentity({
+                CloudFrontOriginAccessIdentityConfig: {
+                  CallerReference: `amply-${artistName}-${Date.now()}`,
+                  Comment: `Amply OAI for ${artistName}`
+                }
+              }).promise();
+              
+              const oaiId = oaiResponse.CloudFrontOriginAccessIdentity.Id;
+              const oaiArn = oaiResponse.CloudFrontOriginAccessIdentity.S3CanonicalUserId;
+              
+              // Step 3: Create bucket policy for CloudFront OAI
+              const bucketPolicy = {
+                Version: '2012-10-17',
+                Statement: [{
+                  Effect: 'Allow',
+                  Principal: {
+                    CanonicalUser: oaiArn
+                  },
+                  Action: 's3:GetObject',
+                  Resource: `arn:aws:s3:::${bucketName}/*`
+                }]
+              };
+              
+              await s3.putBucketPolicy({
+                Bucket: bucketName,
+                Policy: JSON.stringify(bucketPolicy)
+              }).promise();
+              
+              // Step 4: Create CloudFront distribution
+              console.log('Creating CloudFront distribution...');
+              const cfResponse = await cloudfront.createDistribution({
+                DistributionConfig: {
+                  Enabled: true,
+                  CallerReference: `amply-${artistName}-${Date.now()}`,
+                  Comment: `Amply CDN for ${artistName}`,
+                  DefaultCacheBehavior: {
+                    ViewerProtocolPolicy: 'https-only',
+                    TargetOriginId: 's3-origin',
+                    TrustedSigners: {
+                      Enabled: false,
+                      Quantity: 0
+                    },
+                    ForwardedValues: {
+                      QueryString: false,
+                      Cookies: { Forward: 'none' }
+                    },
+                    MinTTL: 0
+                  },
+                  Origins: {
+                    Quantity: 1,
+                    Items: [{
+                      Id: 's3-origin',
+                      DomainName: `${bucketName}.s3.amazonaws.com`,
+                      S3OriginConfig: {
+                        OriginAccessIdentity: `origin-access-identity/cloudfront/${oaiId}`
+                      }
+                    }]
+                  }
+                }
+              }).promise();
+              
+              const cloudfrontDomain = cfResponse.Distribution.DomainName;
+              
+              // Step 5: Create IAM role for artist uploads
+              console.log('Creating IAM role...');
+              const roleName = `AmplyAccessRole-${artistName}`;
+              
+              const rolePolicy = {
+                Version: '2012-10-17',
+                Statement: [{
+                  Effect: 'Allow',
+                  Action: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
+                  Resource: [
+                    `arn:aws:s3:::${bucketName}`,
+                    `arn:aws:s3:::${bucketName}/*`
+                  ]
+                }]
+              };
+              
+              const roleDoc = {
+                Version: '2012-10-17',
+                Statement: [{
+                  Effect: 'Allow',
+                  Principal: {
+                    AWS: `arn:aws:iam::${accountId}:root`
+                  },
+                  Action: 'sts:AssumeRole'
+                }]
+              };
+              
+              const roleResponse = await iam.createRole({
+                RoleName: roleName,
+                AssumeRolePolicyDocument: JSON.stringify(roleDoc),
+                Description: `Amply access role for ${artistName}`
+              }).promise();
+              
+              const roleArn = roleResponse.Role.Arn;
+              
+              await iam.putRolePolicy({
+                RoleName: roleName,
+                PolicyName: 'AmplyS3Access',
+                PolicyDocument: JSON.stringify(rolePolicy)
+              }).promise();
+              
+              // Step 6: Call Amply callback endpoint
+              console.log('Registering with Amply...');
+              
+              const callbackToken = `amply-setup-${artistId}-${Date.now()}`;
+              
+              const callbackData = {
+                artistId: artistId,
+                provider: 'aws',
+                outputs: {
+                  BucketName: bucketName,
+                  CloudFrontDomain: cloudfrontDomain,
+                  RoleArn: roleArn
+                },
+                callback_token: callbackToken,
+                callback_timestamp: new Date().toISOString()
+              };
+              
+              await makeHttpRequest(
+                process.env.AMPLY_API_ENDPOINT,
+                'POST',
+                callbackData
+              );
+              
+              console.log('✅ Setup complete!');
+              
+              // Return success response for CloudFormation
+              return {
+                statusCode: 200,
+                body: JSON.stringify({
+                  success: true,
+                  artistId: artistId,
+                  bucketName: bucketName,
+                  cloudfrontDomain: cloudfrontDomain,
+                  roleArn: roleArn,
+                  message: 'Artist infrastructure created successfully'
+                })
+              };
+              
+            } catch (error) {
+              console.error('❌ Setup failed:', error);
+              return {
+                statusCode: 500,
+                body: JSON.stringify({
+                  success: false,
+                  error: error.message
+                })
+              };
+            }
+          };
+          
+          async function getAccountId() {
+            const sts = new AWS.STS();
+            const identity = await sts.getCallerIdentity().promise();
+            return identity.Account;
+          }
+          
+          function makeHttpRequest(url, method, data) {
+            return new Promise((resolve, reject) => {
+              const options = new URL(url);
+              const postData = JSON.stringify(data);
+              
+              const req = https.request({
+                hostname: options.hostname,
+                path: options.pathname + options.search,
+                method: method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Content-Length': Buffer.byteLength(postData)
+                }
+              }, (res) => {
+                let responseData = '';
+                res.on('data', chunk => responseData += chunk);
+                res.on('end', () => resolve({
+                  statusCode: res.statusCode,
+                  body: responseData
+                }));
+              });
+              
+              req.on('error', reject);
+              req.write(postData);
+              req.end();
+            });
+          }
+
+  # Custom resource to invoke the Lambda
+  SetupExecution:
+    Type: Custom::AmplySetup
+    Properties:
+      ServiceToken: !GetAtt SetupLambda.Arn
+      ArtistName: !Ref ArtistName
+      ArtistId: !Ref ArtistId
+      Account: !Ref 'AWS::AccountId'
+
+Outputs:
+  BucketName:
+    Description: S3 bucket for artist content
+    Value: !Sub 'amply-${ArtistName}-${AWS::AccountId}'
+  
+  CloudFrontDomain:
+    Description: CloudFront distribution domain
+    Value: !Sub 'https://${SetupExecution}'  # Will be populated by Lambda output
+  
+  RoleArn:
+    Description: IAM role for artist uploads
+    Value: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AmplyAccessRole-${ArtistName}'
+  
+  Status:
+    Description: Setup status
+    Value: 'Setup initiated - Lambda will create resources and register with Amply'

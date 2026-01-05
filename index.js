@@ -1,4 +1,5 @@
 "use strict";
+// Updated: 2025-12-29 17:07:00
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
@@ -16,7 +17,7 @@ const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
 const LIKES_TABLE = `amply-listen-history-${environment}`; // Reuse listen table with GSI for likes
-const ARTIST_CONFIG_TABLE = `amply-artist-configs-${environment}`; // Artist cloud provider configurations
+const ARTIST_CONFIG_TABLE = `amply-artist-config-${environment}`; // Artist cloud provider configurations (singular: amply-artist-config-dev)
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
@@ -101,26 +102,108 @@ const handler = async (event) => {
                     body: JSON.stringify({ error: "Missing artist name" }),
                 };
             const cf = new client_cloudformation_1.CloudFormationClient({ region });
-            const stackName = `amply-${artistName.replace(/\s+/g, "-").toLowerCase()}`;
+            const normalizedArtistName = artistName.replace(/\s+/g, "-").toLowerCase();
+            const stackName = `amply-${normalizedArtistName}`;
             await cf.send(new client_cloudformation_1.CreateStackCommand({
                 StackName: stackName,
                 TemplateURL: templateURL,
                 Capabilities: ["CAPABILITY_NAMED_IAM"],
                 Parameters: [
-                    { ParameterKey: "ArtistName", ParameterValue: artistName },
+                    { ParameterKey: "ArtistName", ParameterValue: normalizedArtistName },
                     { ParameterKey: "AmplyAccountId", ParameterValue: process.env.AWS_ACCOUNT_ID },
                     { ParameterKey: "Region", ParameterValue: region },
                 ],
             }));
-            await new Promise((r) => setTimeout(r, 8000));
-            const describe = await cf.send(new client_cloudformation_1.DescribeStacksCommand({ StackName: stackName }));
-            const outputs = describe.Stacks?.[0]?.Outputs || [];
-            const result = Object.fromEntries(outputs.map((o) => [o.OutputKey, o.OutputValue]));
+            console.log(`✅ CloudFormation stack creation initiated: ${stackName}`);
             return {
-                statusCode: 200,
+                statusCode: 202,
                 headers: corsHeaders,
-                body: JSON.stringify({ message: "Artist environment created!", ...result }),
+                body: JSON.stringify({
+                    message: "Artist environment setup initiated",
+                    stackName: stackName,
+                    status: "CREATE_IN_PROGRESS",
+                    estimatedTime: "5-10 minutes",
+                    pollUrl: `/stack-status/${stackName}`,
+                }),
             };
+        }
+        // === STACK STATUS (Polling endpoint) ===
+        if (path.match(/^\/stack-status\//) && method === "GET") {
+            const stackName = path.split("/").pop();
+            if (!stackName) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Missing stackName" }),
+                };
+            }
+            try {
+                const cf = new client_cloudformation_1.CloudFormationClient({ region });
+                const describe = await cf.send(new client_cloudformation_1.DescribeStacksCommand({ StackName: stackName }));
+                const stack = describe.Stacks?.[0];
+                if (!stack) {
+                    return {
+                        statusCode: 404,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Stack not found" }),
+                    };
+                }
+                const status = stack.StackStatus;
+                console.log(`📊 Stack ${stackName} status: ${status}`);
+                if (status === "CREATE_COMPLETE") {
+                    const outputs = stack.Outputs || [];
+                    const result = Object.fromEntries(outputs.map((o) => [o.OutputKey, o.OutputValue]));
+                    return {
+                        statusCode: 200,
+                        headers: corsHeaders,
+                        body: JSON.stringify({
+                            status: "CREATE_COMPLETE",
+                            stackName: stackName,
+                            message: "Artist environment ready!",
+                            ...result,
+                        }),
+                    };
+                } else if (status === "CREATE_IN_PROGRESS") {
+                    return {
+                        statusCode: 202,
+                        headers: corsHeaders,
+                        body: JSON.stringify({
+                            status: "CREATE_IN_PROGRESS",
+                            stackName: stackName,
+                            message: "Setup in progress, please check again in 30 seconds",
+                        }),
+                    };
+                } else if (status.includes("FAILED")) {
+                    const reason = stack.StackStatusReason || "Unknown error";
+                    console.error(`❌ Stack creation failed: ${reason}`);
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({
+                            status: status,
+                            stackName: stackName,
+                            error: `Stack creation failed: ${reason}`,
+                        }),
+                    };
+                } else {
+                    return {
+                        statusCode: 200,
+                        headers: corsHeaders,
+                        body: JSON.stringify({
+                            status: status,
+                            stackName: stackName,
+                            message: `Stack status: ${status}`,
+                        }),
+                    };
+                }
+            } catch (err) {
+                console.error("❌ Stack status check error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
         }
         // === LIST ===
         if (path.endsWith("/list") && method === "POST") {
@@ -824,6 +907,7 @@ const handler = async (event) => {
         }
 
         // === RECORD LISTEN (30+ seconds) ===
+        console.log("🔍 Checking /record-listen... path:", path, "method:", method, "match:", path.endsWith("/record-listen"));
         if (path.endsWith("/record-listen") && method === "POST") {
             try {
                 // Extract userId from JWT token directly instead of authorizer
@@ -864,12 +948,10 @@ const handler = async (event) => {
                 const listenId = `${userId}#${songId}#${now}`;
 
                 // Record the listen event
-                const title = requestBody.title || "Unknown";
                 await dynamodb.send(new client_dynamodb_1.PutItemCommand({
                     TableName: LIKES_TABLE,
                     Item: (0, util_dynamodb_1.marshall)({
                         songId: listenId,
-                        title,
                         timestamp: now,
                         userId,
                         actualSongId: songId,
@@ -1028,7 +1110,7 @@ const handler = async (event) => {
                     Item: (0, util_dynamodb_1.marshall)({
                         artistId: artistId,
                         ...artistConfig,
-                    }),
+                    }, { removeUndefinedValues: true }),
                 }));
 
                 console.log(`✅ Saved artist config for ${artistId} (${provider})`);
