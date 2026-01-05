@@ -1,47 +1,20 @@
-import { API_URL } from "../scripts/general.js";
+import { API_URL } from "../general.js";
+import { getAllProviders } from "./provider-config.js";
 
 const templatesGrid = document.getElementById("templatesGrid");
 const setupStatus = document.getElementById("setupStatus");
 
-// Define available hosting templates
-const templates = [
-  {
-    id: "aws",
-    name: "Amazon AWS",
-    icon: "☁️",
-    description: "Enterprise-grade hosting with S3, CloudFront, and IAM roles",
-    features: ["Scalable storage", "Global CDN", "Cost-effective", "Production-ready"],
-    recommended: true,
-    setupPath: "/artist/setup.html"
-  },
-  {
-    id: "gcp",
-    name: "Google Cloud",
-    icon: "🔵",
-    description: "Google Cloud Storage with Cloud CDN delivery",
-    features: ["Fast deployment", "Easy management", "Integrated analytics"],
-    coming: true,
-    setupPath: "/artist/setup-gcp.html"
-  },
-  {
-    id: "azure",
-    name: "Microsoft Azure",
-    icon: "🟦",
-    description: "Azure Storage with content delivery network",
-    features: ["Enterprise integration", "Strong security", "Hybrid support"],
-    coming: true,
-    setupPath: "/artist/setup-azure.html"
-  },
-  {
-    id: "self-hosted",
-    name: "Self-Hosted",
-    icon: "🖥️",
-    description: "Use your own server or storage solution",
-    features: ["Full control", "Custom configuration", "No vendor lock-in"],
-    coming: true,
-    setupPath: "/artist/setup-self-hosted.html"
-  }
-];
+// Use provider configuration from provider-config.js
+const templates = getAllProviders().map(provider => ({
+  id: provider.id,
+  name: provider.name,
+  icon: provider.icon,
+  description: provider.description,
+  features: [provider.storage, provider.cdn, "Easy setup"],
+  recommended: provider.id === "aws",
+  setupPath: provider.id === "aws" ? "/artist/setup.html" : `/artist/setup-${provider.id}.html`,
+  coming: !provider.supported
+}));
 
 // Render template cards
 function renderTemplates() {

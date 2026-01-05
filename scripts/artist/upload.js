@@ -3,6 +3,7 @@
 
 import { API_URL, logout } from "../general.js";
 import { requireArtistAWS, loadArtistConfig } from "./general.js";
+import { generateCdnUrl } from "./provider-config.js";
 
 // ===== STATE =====
 let currentStep = 1;
@@ -620,7 +621,8 @@ async function handleSingleUpload() {
         body: coverFile,
       });
 
-      coverUrl = `https://${config.cloudfrontDomain}/${coverKey}`;
+      // Generate CDN URLs using provider system
+      coverUrl = generateCdnUrl(config, coverKey);
     }
 
     // Upload audio
@@ -648,7 +650,8 @@ async function handleSingleUpload() {
     });
 
     // Update URLs to use uploaded versions
-    singleAudioUrl = `https://${config.cloudfrontDomain}/${songKey}`;
+    // Generate CDN URL using provider system
+    singleAudioUrl = generateCdnUrl(config, songKey);
     singleCoverUrl = coverUrl;
 
     // Upload metadata

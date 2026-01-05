@@ -1,4 +1,4 @@
-// 💾 Save AWS environment info for artist
+// 💾 Save artist hosting config (provider-agnostic)
 export function saveArtistConfig(data) {
   if (!data || !data.artistId) {
     console.error("Missing artist data:", data);
@@ -7,21 +7,47 @@ export function saveArtistConfig(data) {
 
   const config = {
     artistId: data.artistId,
+    provider: data.provider || "aws", // Default to AWS for backward compatibility
+    
+    // AWS fields
     roleArn: data.roleArn,
     bucketName: data.bucketName,
     cloudfrontDomain: data.cloudfrontDomain,
+    
+    // GCP fields
+    projectId: data.projectId,
+    cdnDomain: data.cdnDomain,
+    
+    // Azure fields
+    storageAccount: data.storageAccount,
+    container: data.container,
+    cdnEndpoint: data.cdnEndpoint,
+    
+    // Self-hosted fields
+    apiEndpoint: data.apiEndpoint,
+    uploadUrl: data.uploadUrl,
+    cdnUrl: data.cdnUrl,
+    
+    // Common fields
     displayName: data.displayName || data.artistId,
   };
 
   localStorage.setItem("amplyArtistConfig", JSON.stringify(config));
+  localStorage.setItem("artistProvider", data.provider || "aws");
   console.log("💾 Saved artist config:", config);
 }
 
-// 🔧 Load artist AWS config from localStorage
+// 🔧 Load artist config from localStorage (provider-agnostic)
 export function loadArtistConfig() {
   try {
     const config = JSON.parse(localStorage.getItem("amplyArtistConfig"));
     if (!config) throw new Error("No artist config found");
+    
+    // Ensure provider is set (backward compatibility with old configs)
+    if (!config.provider) {
+      config.provider = localStorage.getItem("artistProvider") || "aws";
+    }
+    
     return config;
   } catch (err) {
     console.error("❌ loadArtistConfig() failed:", err);

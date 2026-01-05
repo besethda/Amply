@@ -23,6 +23,7 @@ async function checkStackStatus() {
 
       saveArtistConfig({
         artistId,
+        provider: "aws", // Mark this as AWS-hosted
         roleArn: data.roleArn,
         bucketName: data.bucketName,
         cloudfrontDomain: data.cloudfrontDomain,
