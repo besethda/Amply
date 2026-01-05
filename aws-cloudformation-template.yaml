@@ -1,0 +1,343 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Amply Artist Environment — S3 bucket, CloudFront distribution, IAM role, and auto-callback Lambda
+  for secure streaming, uploads, and automatic Amply notification on stack completion.
+
+Parameters:
+  ArtistName:
+    Type: String
+    Description: "Enter your artist name (lowercase, no spaces — e.g. skywave)"
+
+  AmplyAccountId:
+    Type: String
+    Default: "596430611327"
+    Description: "Do not change this — connects your environment to Amply."
+
+  Region:
+    Type: String
+    Default: "eu-north-1"
+    Description: "Region (auto-set by Amply)."
+
+  ReturnUrl:
+    Type: String
+    Default: "https://amply.app/artist/setup-complete.html"
+    Description: "Return link shown after setup completes — users click this to return to Amply."
+
+  AmplyCallbackUrl:
+    Type: String
+    Default: "https://amply.app/api/complete-artist-setup"
+    Description: "Amply API endpoint to receive stack completion notification."
+
+  AmplyApiKey:
+    Type: String
+    NoEcho: true
+    Description: "API key for authenticating callback to Amply (provided by Amply setup)."
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Amply Artist Setup"
+        Parameters:
+          - ArtistName
+          - AmplyAccountId
+          - Region
+          - ReturnUrl
+      - Label:
+          default: "Amply Callback Configuration"
+        Parameters:
+          - AmplyCallbackUrl
+          - AmplyApiKey
+    ParameterLabels:
+      ArtistName:
+        default: "Artist ID"
+      AmplyAccountId:
+        default: "Amply Account ID"
+      Region:
+        default: "Region"
+      ReturnUrl:
+        default: "Return to Amply URL"
+      AmplyCallbackUrl:
+        default: "Amply Callback Endpoint"
+      AmplyApiKey:
+        default: "Amply API Key"
+
+Resources:
+  # --- S3 Bucket ---
+  ArtistBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "amply-${ArtistName}-${AWS::AccountId}"
+      AccessControl: Private
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ["*"]
+            AllowedMethods: ["GET", "PUT", "POST", "HEAD"]
+            AllowedHeaders: ["*"]
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  # --- CloudFront Origin Access Identity ---
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "OAI for Amply Artist ${ArtistName}"
+
+  # --- Bucket Policy ---
+  ArtistBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtistBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontAccess
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: "s3:GetObject"
+            Resource: !Sub "${ArtistBucket.Arn}/*"
+          - Sid: AllowAmplyAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AmplyAccountId}:root"
+            Action:
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:ListBucket"
+              - "s3:DeleteObject"
+            Resource:
+              - !Sub "${ArtistBucket.Arn}/*"
+              - !GetAtt ArtistBucket.Arn
+
+  # --- IAM Role trusted by Amply Lambdas ---
+  AmplyAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "AmplyAccessRole-${ArtistName}"
+      Description: !Sub "Access role for artist ${ArtistName}, assumed by Amply Lambdas for uploads, verification, and streaming."
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - arn:aws:iam::596430611327:role/service-role/AmplyAPI-role-6b8th3tv
+                - arn:aws:iam::596430611327:role/service-role/AmplyVerifyStack-role-dgsoyhm0
+                - arn:aws:iam::596430611327:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "ArtistS3Access-${ArtistName}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:PutObject"
+                  - "s3:GetObject"
+                  - "s3:DeleteObject"
+                Resource: !Sub "${ArtistBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - "s3:ListBucket"
+                Resource: !GetAtt ArtistBucket.Arn
+
+  # --- CloudFront Distribution ---
+  ArtistCloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "Amply Artist Distribution for ${ArtistName}"
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt ArtistBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOAI}"
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: ["GET", "HEAD"]
+          CachedMethods: ["GET", "HEAD"]
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 3600
+          MaxTTL: 86400
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  # --- Lambda Execution Role for Callback ---
+  CallbackLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "AmplyCallbackRole-${ArtistName}"
+      Description: "Execution role for Lambda that notifies Amply of stack completion"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeCloudFormation
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*"
+
+  # --- Lambda Function for Callback ---
+  CallbackLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "AmplyCallback-${ArtistName}"
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt CallbackLambdaRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          ARTIST_ID: !Ref ArtistName
+          CALLBACK_URL: !Ref AmplyCallbackUrl
+          API_KEY: !Ref AmplyApiKey
+          STACK_NAME: !Ref AWS::StackName
+          REGION: !Ref AWS::Region
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import urllib.request
+          import urllib.error
+          import os
+          from datetime import datetime
+          
+          cfn = boto3.client('cloudformation')
+          
+          def handler(event, context):
+              try:
+                  # Get stack outputs
+                  stack_name = os.environ['STACK_NAME']
+                  region = os.environ['REGION']
+                  
+                  response = cfn.describe_stacks(StackName=stack_name)
+                  stack = response['Stacks'][0]
+                  
+                  # Extract outputs
+                  outputs = {}
+                  if 'Outputs' in stack:
+                      for output in stack['Outputs']:
+                          outputs[output['OutputKey']] = output['OutputValue']
+                  
+                  # Prepare callback payload
+                  callback_payload = {
+                      "artistId": os.environ['ARTIST_ID'],
+                      "provider": "aws",
+                      "stack_name": stack_name,
+                      "stack_id": stack['StackId'],
+                      "stack_status": stack['StackStatus'],
+                      "outputs": outputs,
+                      "callback_timestamp": datetime.utcnow().isoformat() + "Z",
+                      "callback_token": os.environ['API_KEY']
+                  }
+                  
+                  # Log the payload (for debugging)
+                  print(f"📤 Sending callback: {json.dumps(callback_payload, indent=2)}")
+                  
+                  # Send to Amply API
+                  data = json.dumps(callback_payload).encode('utf-8')
+                  req = urllib.request.Request(
+                      os.environ['CALLBACK_URL'],
+                      data=data,
+                      headers={
+                          'Content-Type': 'application/json',
+                          'User-Agent': 'AmplyCloudFormation/1.0'
+                      },
+                      method='POST'
+                  )
+                  
+                  try:
+                      with urllib.request.urlopen(req, timeout=10) as response:
+                          response_data = response.read().decode('utf-8')
+                          print(f"✅ Callback successful, status: {response.status}")
+                          print(f"Response: {response_data}")
+                          return {
+                              'Status': 'SUCCESS',
+                              'PhysicalResourceId': stack_name,
+                              'Data': {
+                                  'message': 'Callback sent to Amply successfully'
+                              }
+                          }
+                  except urllib.error.HTTPError as e:
+                      error_msg = e.read().decode('utf-8')
+                      print(f"❌ HTTP Error {e.code}: {error_msg}")
+                      return {
+                          'Status': 'SUCCESS',
+                          'PhysicalResourceId': stack_name,
+                          'Data': {
+                              'message': f'Callback request sent (HTTP {e.code}), Amply may still process it'
+                          }
+                      }
+                          
+              except Exception as e:
+                  print(f"❌ Error: {str(e)}")
+                  # Return SUCCESS to not block stack creation
+                  # Artist can still complete setup via polling fallback
+                  return {
+                      'Status': 'SUCCESS',
+                      'PhysicalResourceId': 'callback-error',
+                      'Data': {
+                          'error': str(e),
+                          'message': 'Callback failed but stack is still valid. Use polling to complete setup.'
+                      }
+                  }
+
+  # --- Custom Resource to Trigger Lambda ---
+  CallbackCustomResource:
+    Type: Custom::AmplyCallback
+    Properties:
+      ServiceToken: !GetAtt CallbackLambda.Arn
+      StackName: !Ref AWS::StackName
+      Timestamp: !Sub "${AWS::StackName}-${AWS::StackId}"
+
+Outputs:
+  BucketName:
+    Description: The artist's private storage Amply connects to.
+    Value: !Ref ArtistBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketName"
+
+  RoleArn:
+    Description: IAM Role Amply can assume to manage artist uploads.
+    Value: !GetAtt AmplyAccessRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-RoleArn"
+
+  CloudFrontDomain:
+    Description: The domain for secure streaming and public delivery.
+    Value: !GetAtt ArtistCloudFront.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudFrontDomain"
+
+  CallbackStatus:
+    Description: Status of Amply callback notification.
+    Value: "Callback sent automatically when stack creation completes"
+
+  ReturnToAmply:
+    Description: "Your setup is complete! Return to Amply by clicking the button on the setup page, or use this link:"
+    Value: !Ref ReturnUrl

@@ -1294,7 +1294,11 @@ body.modal-open {
 }
 
 .settings-option.artist-option {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(147, 112, 219, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 107, 0.1),
+    rgba(147, 112, 219, 0.1)
+  );
   border: 1px solid rgba(255, 107, 107, 0.3);
 }
 

@@ -80,7 +80,11 @@ body {
 }
 /* Artist Promotion Card */
 .settings-card.artist-promo {
-  background: linear-gradient(135deg, rgba(108, 204, 255, 0.15) 0%, rgba(100, 180, 255, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(108, 204, 255, 0.15) 0%,
+    rgba(100, 180, 255, 0.1) 100%
+  );
   border: 2px solid var(--accent-color);
   border-radius: 12px;
 }

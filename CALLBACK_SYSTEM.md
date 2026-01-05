@@ -31,11 +31,13 @@
 ### Two Implementation Methods
 
 #### Method 1: Frontend PostMessage (Client-to-Client)
+
 - Cloud provider callback opens a child window
 - Child window posts message back to Amply setup page
 - Best for: Browser-based callbacks
 
 #### Method 2: Backend API (Server-to-Server) ⭐ **Recommended**
+
 - Cloud provider Lambda/Function calls Amply API directly
 - No user interaction needed
 - Best for: Reliable, non-technical users
@@ -47,7 +49,7 @@
 Add a Lambda function to your CloudFormation template:
 
 ```yaml
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
   ArtistName:
@@ -66,7 +68,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -85,7 +87,7 @@ Resources:
           import boto3
           import urllib.request
           import os
-          
+
           def handler(event, context):
               try:
                   # Get stack outputs
@@ -182,6 +184,7 @@ Response (200 OK):
 ```
 
 The endpoint should:
+
 1. Validate callback token
 2. Validate payload structure
 3. Map provider-specific outputs to standardized config
@@ -200,7 +203,7 @@ import requests
 @functions_framework.http
 def callback_on_deployment_complete(request):
     payload = request.get_json()
-    
+
     # Send to Amply
     response = requests.post(
         "https://amply.app/api/complete-artist-setup",
@@ -216,7 +219,7 @@ def callback_on_deployment_complete(request):
             "callback_token": payload['token']
         }
     )
-    
+
     return {"status": response.status_code}
 ```
 
@@ -231,7 +234,7 @@ public static async Task<IActionResult> Run(
     ILogger log)
 {
     var payload = JsonConvert.DeserializeObject(await req.Body.ReadAsStringAsync());
-    
+
     using (var client = new HttpClient())
     {
         var response = await client.PostAsJsonAsync(
@@ -248,7 +251,7 @@ public static async Task<IActionResult> Run(
                 callback_token = payload.token
             }
         );
-        
+
         return new OkResult();
     }
 }
@@ -261,12 +264,10 @@ The setup-complete.js already handles callbacks:
 ```javascript
 const callbackListener = new CallbackListener();
 
-callbackListener.start(
-  (callbackData) => {
-    // Auto-redirect to profile setup
-    window.location.href = "/artist/setup-profile.html";
-  }
-);
+callbackListener.start((callbackData) => {
+  // Auto-redirect to profile setup
+  window.location.href = "/artist/setup-profile.html";
+});
 
 // Falls back to polling if no callback received within 3 minutes
 ```
@@ -282,6 +283,7 @@ callbackListener.start(
 ## Testing
 
 ### Local Testing
+
 ```bash
 curl -X POST http://localhost:3000/complete-artist-setup \
   -H "Content-Type: application/json" \
@@ -296,6 +298,7 @@ curl -X POST http://localhost:3000/complete-artist-setup \
 ```
 
 ### Cloud Testing
+
 1. Create test CloudFormation stack with callback Lambda
 2. Monitor Lambda logs during deployment
 3. Verify Amply receives callback
@@ -304,6 +307,7 @@ curl -X POST http://localhost:3000/complete-artist-setup \
 ## Fallback Mechanism
 
 If callback fails:
+
 1. Frontend still polls `/verify-stack` every 10 seconds
 2. After 3 minutes of no callback, shows warning
 3. Polling continues as fallback

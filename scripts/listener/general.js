@@ -248,6 +248,7 @@ function initializeArtistCard() {
   } catch (err) {
     console.error("❌ Error initializing artist card:", err);
   }
+}
 
 // === LISTENING STATS ===
 async function loadListeningStats() {
