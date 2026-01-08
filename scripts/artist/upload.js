@@ -553,7 +553,7 @@ async function handleSingleUpload() {
     return;
   }
 
-  const config = loadArtistConfig();
+  const config = await loadArtistConfig();
   if (!config?.roleArn || !config?.bucketName) {
     statusDiv.textContent = "❌ Missing AWS info. Please reconnect your artist account.";
     return;
@@ -565,29 +565,10 @@ async function handleSingleUpload() {
   const genre = document.getElementById("trackGenre").value.trim();
 
   try {
-    statusDiv.innerHTML = `<span style="color:#8df;">Checking for duplicates...</span>`;
-
-    // Check if song with same name already exists
-    const metaKey = `songs/${file.name.replace(/\.[^/.]+$/, "")}.json`;
-    const headRes = await fetch(`${API_URL}/check-song-exists`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fileName: metaKey,
-        artistRoleArn: config.roleArn,
-        bucketName: config.bucketName,
-      }),
-    }).catch(() => null);
-
-    if (headRes?.ok) {
-      const existsData = await headRes.json();
-      if (existsData.exists) {
-        statusDiv.innerHTML = `⚠️ A song with this filename already exists. Please rename your file or go to <strong>My Songs</strong> to delete the old version.`;
-        return;
-      }
-    }
-
     statusDiv.innerHTML = `<span style="color:#8df;">Preparing upload...</span>`;
+
+    // Generate key for metadata (songKey is defined later)
+    const metaKey = `songs/${file.name.replace(/\.[^/.]+$/, "")}.json`;
 
     // Upload cover art
     let coverUrl = "";

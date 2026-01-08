@@ -59,10 +59,42 @@
 
         <p id="setupStatus" class="note"></p>
 
-        <p class="note">
-          Once you click the button, AWS will open in a new tab. After the setup
-          finishes, click the “Return to Amply” button in AWS.
-        </p>
+        <div
+          style="
+            background: #1a1a2e;
+            border-left: 4px solid #ff9500;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+          "
+        >
+          <h4 style="margin-top: 0; color: #ff9500">
+            📋 What You'll Need to Do in AWS:
+          </h4>
+          <ol style="margin: 10px 0; padding-left: 20px">
+            <li>
+              <strong>Log in with your AWS account</strong> (create one if you
+              don't have one)
+            </li>
+            <li>
+              <strong>Add a payment method</strong> (AWS requires this for your
+              account)
+            </li>
+            <li>
+              <strong>Scroll to the bottom</strong> of the CloudFormation
+              template page
+            </li>
+            <li>
+              <strong>Accept the terms</strong> (checkbox "I acknowledge that AWS CloudFormation might create IAM resources.")
+            </li>
+            <li><strong>Click "Create Stack"</strong> button</li>
+            <li><strong>Return to this page.</strong></li>
+          </ol>
+          <p style="color: #aaa; font-size: 13px; margin: 10px 0 0 0">
+            ⏱️ The process typically takes 3-5 minutes. Amply will automatically
+            detect when it's complete.
+          </p>
+        </div>
       </section>
 
       <section id="postSetup" class="section hidden">

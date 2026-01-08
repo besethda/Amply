@@ -15,9 +15,11 @@ const deleteModalSongName = document.getElementById("deleteModalSongName");
 const deleteCancelBtn = document.getElementById("deleteCancelBtn");
 const deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
 const logoutBtn = document.getElementById("logoutBtn");
+const filterBubbles = document.querySelectorAll(".filter-bubble");
 
 let allSongs = [];
 let selectedSongToDelete = null;
+let currentFilter = "all";
 
 // ===== INIT =====
 window.addEventListener("DOMContentLoaded", () => {
@@ -34,6 +36,16 @@ function setupEventListeners() {
   sortSelect.addEventListener("change", filterAndSortSongs);
   deleteCancelBtn.addEventListener("click", closeDeleteModal);
   deleteConfirmBtn.addEventListener("click", confirmDelete);
+  
+  // Filter bubble listeners
+  filterBubbles.forEach(bubble => {
+    bubble.addEventListener("click", (e) => {
+      filterBubbles.forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      currentFilter = e.target.dataset.filter;
+      filterAndSortSongs();
+    });
+  });
 }
 
 // ===== LOAD SONGS =====
@@ -41,7 +53,7 @@ async function loadSongs() {
   try {
     statusMessage.innerHTML = `<span style="color:#8df;">Loading songs...</span>`;
 
-    const config = loadArtistConfig();
+    const config = await loadArtistConfig();
     if (!config?.roleArn || !config?.bucketName) {
       statusMessage.textContent = "❌ Missing AWS config. Please reconnect your artist account.";
       return;
@@ -89,11 +101,21 @@ function filterAndSortSongs() {
   const searchTerm = searchInput.value.toLowerCase();
   const sortBy = sortSelect.value;
 
-  let filtered = allSongs.filter(song =>
-    song.title.toLowerCase().includes(searchTerm) ||
-    (song.artist && song.artist.toLowerCase().includes(searchTerm)) ||
-    (song.album && song.album.toLowerCase().includes(searchTerm))
-  );
+  let filtered = allSongs.filter(song => {
+    // Text search
+    const matchesSearch = 
+      song.title.toLowerCase().includes(searchTerm) ||
+      (song.artist && song.artist.toLowerCase().includes(searchTerm)) ||
+      (song.album && song.album.toLowerCase().includes(searchTerm));
+    
+    if (!matchesSearch) return false;
+
+    // Type filter
+    if (currentFilter === "all") return true;
+    
+    const songType = song.type || "songs"; // Default to "songs" if not specified
+    return songType === currentFilter;
+  });
 
   // Sort
   filtered.sort((a, b) => {
@@ -246,11 +268,13 @@ async function confirmDelete() {
       throw new Error(`Failed to delete song: ${errText}`);
     }
 
+    const messageContent = `✅ Deleted "<strong>${selectedSongToDelete.title}</strong>" successfully!`;
+    const songId = selectedSongToDelete.id || selectedSongToDelete.file;
     closeDeleteModal();
-    statusMessage.innerHTML = `✅ Deleted "<strong>${selectedSongToDelete.title}</strong>" successfully!`;
+    statusMessage.innerHTML = messageContent;
     
     // Remove from local array and re-render
-    allSongs = allSongs.filter(s => (s.id || s.file) !== (selectedSongToDelete.id || selectedSongToDelete.file));
+    allSongs = allSongs.filter(s => (s.id || s.file) !== songId);
     
     if (allSongs.length === 0) {
       songsList.classList.add("hidden");

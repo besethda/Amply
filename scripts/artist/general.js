@@ -37,11 +37,48 @@ export function saveArtistConfig(data) {
   console.log("💾 Saved artist config:", config);
 }
 
-// 🔧 Load artist config from localStorage (provider-agnostic)
-export function loadArtistConfig() {
+// 🔧 Load artist config from backend (or fallback to localStorage)
+export async function loadArtistConfig() {
   try {
-    const config = JSON.parse(localStorage.getItem("amplyArtistConfig"));
-    if (!config) throw new Error("No artist config found");
+    // First, try to fetch from backend
+    const token = getAuthToken();
+    if (token) {
+      try {
+        const res = await fetch(`${API_URL}/artist/get-config`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          try {
+            const config = await res.json();
+            console.log("✅ Artist config loaded from backend");
+            // Also save to localStorage for quick access
+            localStorage.setItem("amplyArtistConfig", JSON.stringify(config));
+            return config;
+          } catch (parseErr) {
+            console.warn("⚠️ Could not parse backend response:", parseErr.message);
+          }
+        } else {
+          console.warn(`⚠️ Backend returned ${res.status}: Config not found in backend`);
+        }
+      } catch (fetchErr) {
+        console.warn("⚠️ Could not fetch config from backend:", fetchErr.message);
+      }
+    }
+
+    // Fallback to localStorage
+    let config = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
+    if (!config || Object.keys(config).length === 0) {
+      config = JSON.parse(localStorage.getItem("artistConfig") || "{}");
+    }
+    
+    if (!config || Object.keys(config).length === 0) {
+      throw new Error("No artist config found");
+    }
     
     // Ensure provider is set (backward compatibility with old configs)
     if (!config.provider) {
@@ -51,6 +88,29 @@ export function loadArtistConfig() {
     return config;
   } catch (err) {
     console.error("❌ loadArtistConfig() failed:", err);
+    return {};
+  }
+}
+
+// Sync version for immediate checks (uses localStorage only)
+export function loadArtistConfigSync() {
+  try {
+    let config = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
+    if (!config || Object.keys(config).length === 0) {
+      config = JSON.parse(localStorage.getItem("artistConfig") || "{}");
+    }
+    
+    if (!config || Object.keys(config).length === 0) {
+      throw new Error("No artist config found");
+    }
+    
+    if (!config.provider) {
+      config.provider = localStorage.getItem("artistProvider") || "aws";
+    }
+    
+    return config;
+  } catch (err) {
+    console.error("❌ loadArtistConfigSync() failed:", err);
     return {};
   }
 }
@@ -69,7 +129,7 @@ export function requireArtistAWS() {
   const role = payload["custom:role"];
   const groups = payload["cognito:groups"] || [];
 
-  const config = loadArtistConfig();
+  const config = loadArtistConfigSync();
 
   // ✅ Allow access if they're an artist even if AWS isn't connected yet
   if (role === "artist" || groups.includes("artist") || groups.includes("admin")) {

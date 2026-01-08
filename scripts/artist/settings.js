@@ -7,7 +7,43 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 
 document.getElementById("logoutBtn").addEventListener("click", logout);
-document.getElementById("refreshBtn").addEventListener("click", displayArtistInfo);
+
+// Refresh info and credentials from backend
+const refreshBtn = document.getElementById("refreshBtn");
+refreshBtn.addEventListener("click", async () => {
+  try {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "⏳ Refreshing...";
+    
+    const config = await loadArtistConfig();
+    if (config && Object.keys(config).length > 0) {
+      console.log("✅ Credentials refreshed:", config);
+      localStorage.setItem("amplyArtistConfig", JSON.stringify(config));
+      refreshBtn.textContent = "✅ Refreshed!";
+      
+      // Refresh display
+      await displayArtistInfo();
+      
+      setTimeout(() => {
+        refreshBtn.textContent = "🔄 Refresh Info";
+        refreshBtn.disabled = false;
+      }, 2000);
+    } else {
+      refreshBtn.textContent = "❌ No credentials found";
+      setTimeout(() => {
+        refreshBtn.textContent = "🔄 Refresh Info";
+        refreshBtn.disabled = false;
+      }, 2000);
+    }
+  } catch (err) {
+    console.error("Error refreshing info:", err);
+    refreshBtn.textContent = "❌ Error";
+    setTimeout(() => {
+      refreshBtn.textContent = "🔄 Refresh Info";
+      refreshBtn.disabled = false;
+    }, 2000);
+  }
+});
 
 async function displayArtistInfo() {
   try {

@@ -3,47 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amply – Setup Complete</title>
+    <title>Amply – Redirecting…</title>
     <link rel="icon" type="image/png" href="../images/Amply_lgofav.png" />
-    <link rel="apple-touch-icon" href="../images/Amply.png" />
-
-    <link rel="stylesheet" href="../Styles/core.css" />
-    <link rel="stylesheet" href="../Styles/fonts.css" />
-    <link rel="stylesheet" href="../Styles/artist/setup.css" />
-    <link rel="stylesheet" href="../Styles/artist/setup-complete.css" />
-
-    <script
-      type="module"
-      src="../scripts/artist/setup-complete.js"
-      defer
-    ></script>
   </head>
 
-  <body class="centered">
-    <img class="logo" src="../images/Amply_lgo.png" alt="Amply Logo" />
-    <div class="loader-box">
-      <!-- 🎵 SVG Spinner -->
-      <svg
-        class="spinner"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 50 50"
-      >
-        <circle
-          class="path"
-          cx="25"
-          cy="25"
-          r="20"
-          fill="none"
-          stroke-width="1.2"
-        ></circle>
-      </svg>
-
-      <h2>Setting up your artist environment…</h2>
-      <p id="setupMessage">Please wait — this could take a few minutes.</p>
-      <p
-        id="nextStepMessage"
-        style="display: none; margin-top: 16px; color: #6cf"
-      ></p>
-    </div>
+  <body>
+    <script type="module">
+      // Redirect to profile setup
+      window.location.href = "/artist/setup-profile.html";
+    </script>
   </body>
 </html>

@@ -13,6 +13,8 @@ export class SimpleWaveformRenderer {
     this.fillColor = 'rgba(0, 255, 136, 1)';
     this.barCount = 120;
     this.barGap = 4;
+    this.isPlaying = false; // Track if audio is playing for animation
+    this.frozenBars = []; // Frozen snapshot of bars when paused
     
     // Web Audio API
     this.audioContext = null;
@@ -200,6 +202,21 @@ export class SimpleWaveformRenderer {
   }
 
   /**
+   * Set whether audio is currently playing
+   */
+  setPlaying(isPlaying) {
+    this.isPlaying = isPlaying;
+    
+    if (isPlaying) {
+      // Resume - clear frozen state to allow audio updates
+      this.frozenBars = [];
+    } else {
+      // Pause - freeze current bar heights
+      this.frozenBars = [...this.waveformBars];
+    }
+  }
+
+  /**
    * Update waveform from live audio analysis
    */
   updateFromAudio() {
@@ -278,11 +295,13 @@ export class SimpleWaveformRenderer {
       let barHeight = this.waveformBars[i] * maxBarHeight;
       const x = i * (barWidth + this.barGap);
       
-      // Add subtle fluctuation based on bar height and time
+      // Add subtle fluctuation based on bar height and time (only when playing)
       // Taller bars fluctuate more
-      const fluctuationAmount = barHeight * 0.08; // 8% fluctuation max
-      const fluctuation = Math.sin(now * 2 + i * 0.3) * fluctuationAmount;
-      barHeight += fluctuation;
+      if (this.isPlaying) {
+        const fluctuationAmount = barHeight * 0.08; // 8% fluctuation max
+        const fluctuation = Math.sin(now * 2 + i * 0.3) * fluctuationAmount;
+        barHeight += fluctuation;
+      }
       
       // Calculate bar progress position
       const barProgress = i / this.barCount;

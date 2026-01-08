@@ -69,6 +69,37 @@ h2 {
   box-shadow: 0 0 8px rgba(102, 204, 255, 0.4);
 }
 
+/* ===== FILTER BUBBLES ===== */
+.filter-bubbles {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-bubble {
+  padding: 0.6rem 1.2rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  background: rgba(40, 40, 40, 0.95);
+  color: #ccc;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-bubble:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.filter-bubble.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
 /* ===== STATUS MESSAGE ===== */
 .status-message {
   margin-bottom: 1.5rem;

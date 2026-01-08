@@ -379,6 +379,9 @@ loginBtn?.addEventListener("click", async () => {
     localStorage.setItem("amplyAccessToken", AccessToken);
     localStorage.setItem("amplyIdToken", IdToken);
     localStorage.setItem("amplyRefreshToken", RefreshToken);
+    
+    // Clear player state on login so user starts fresh
+    localStorage.removeItem('amplyPlayerState');
 
     const userInfo = parseJwt(IdToken);
 

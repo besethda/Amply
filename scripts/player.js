@@ -71,6 +71,9 @@ let currentSongStartTime = 0; // When current song started playing
 // ===============================
 let waveformAnimationId = null;
 let staticWaveformData = []; // Static waveform data for the current song
+let currentWaveformDuration = 0; // Duration of song with current waveform
+let waveformCanvasElement = null; // Track which canvas we're using
+let waveformDataGenerated = false; // Track if waveform data has been generated for current song
 
 // Drag-to-seek state accessible to button handlers
 let isDraggingWaveform = false;
@@ -231,6 +234,36 @@ export function initPlayer(songs = []) {
   // Initialize waveform
   initializeWaveform();
 
+  // Add resize listener to handle canvas resizing
+  window.addEventListener('resize', () => {
+    if (document.getElementById('waveformCanvas')) {
+      resizeWaveformCanvas();
+    }
+  });
+
+  // Watch for canvas element appearing/disappearing (in case we navigated away)
+  const observeCanvasChanges = () => {
+    // Check if canvas exists now
+    const canvas = document.getElementById('waveformCanvas');
+    
+    // If canvas appeared and we haven't initialized it yet
+    if (canvas && !waveformCanvasElement) {
+      console.log('🎵 [Waveform] Canvas element detected, reinitializing...');
+      initializeWaveform();
+    } 
+    // If canvas disappeared, reset reference
+    else if (!canvas) {
+      waveformCanvasElement = null;
+    }
+  };
+
+  // Use MutationObserver to watch for DOM changes
+  const observer = new MutationObserver(observeCanvasChanges);
+  observer.observe(document.body, { 
+    childList: true, 
+    subtree: true 
+  });
+
   restoreSettings();
   setupEvents();
 }
@@ -238,138 +271,118 @@ export function initPlayer(songs = []) {
 // ===============================
 // WAVEFORM INITIALIZATION
 // ===============================
-function initializeWaveform() {
+export function initializeWaveform() {
   const canvas = document.getElementById('waveformCanvas');
   const audio = document.getElementById('globalAudio');
   
-  if (!canvas || !audio) {
-    console.log('🎵 [Waveform] Canvas or audio element not found');
+  console.log('🎵 [Waveform] initializeWaveform called');
+  console.log('🎵 [Waveform] Canvas found:', !!canvas, canvas?.id);
+  console.log('🎵 [Waveform] Audio found:', !!audio, audio?.id);
+  
+  if (!audio) {
+    console.log('🎵 [Waveform] Audio element not found, skipping initialization');
+    return;
+  }
+  
+  // If no canvas yet, just initialize the renderer in the background
+  if (!canvas) {
+    console.log('🎵 [Waveform] Canvas not found, will reinitialize when canvas appears');
+    if (!window.waveformRenderer) {
+      window.waveformRenderer = new SimpleWaveformRenderer(document.createElement('canvas'));
+      window.waveformRenderer.setColors('rgba(100, 100, 100, 0.6)', 'rgba(0, 255, 136, 1)');
+    }
     return;
   }
 
+  // Canvas is available - fully initialize
   console.log('🎵 [Waveform] Initializing simple waveform renderer...');
+  waveformCanvasElement = canvas;
   
-  // Create or reset waveform renderer
+  // Create or reuse waveform renderer
   if (!window.waveformRenderer) {
     window.waveformRenderer = new SimpleWaveformRenderer(canvas);
     window.waveformRenderer.setColors('rgba(100, 100, 100, 0.6)', 'rgba(0, 255, 136, 1)');
+  } else {
+    // Update canvas reference
+    window.waveformRenderer.canvas = canvas;
+    window.waveformRenderer.ctx = canvas.getContext('2d');
   }
   
-  // If audio is currently playing, regenerate waveform
+  // If we already generated waveform data, don't regenerate - just resize and redraw
+  if (waveformDataGenerated && window.waveformRenderer.waveformBars.length > 0) {
+    console.log('🎵 [Waveform] Using existing waveform data');
+    // Wait for layout before resizing
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        resizeWaveformCanvas();
+        startWaveformAnimation();
+      }, 0);
+    });
+    return;
+  }
+  
+  // If audio is currently playing, generate new waveform
   if (!audio.paused && audio.src) {
     const duration = audio.duration || 180;
     window.waveformRenderer.generateWaveform(duration);
-    console.log('🎵 [Waveform] Regenerated waveform for current song');
+    waveformDataGenerated = true;
+    currentWaveformDuration = duration;
+    console.log('🎵 [Waveform] Generated waveform for current song');
   }
   
-  // Set canvas size - IMPORTANT: must set actual width/height attributes for drawing
-  const resizeCanvas = () => {
-    const rect = canvas.getBoundingClientRect();
-    // Set devicePixelRatio for better quality
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    
-    // Scale canvas context if using high DPI
-    if (dpr > 1) {
-      canvas.getContext('2d').scale(dpr, dpr);
-    }
-    
-    console.log('📐 Canvas resized to:', { width: canvas.width, height: canvas.height, dpr });
-    // Only redraw if waveform has been generated
-    if (window.waveformRenderer && window.waveformRenderer.waveformBars.length > 0) {
-      window.waveformRenderer.draw();
-    }
-  };
-
-  // Wait for DOM to be fully laid out
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resizeCanvas);
-  } else {
-    // Use timeout to ensure layout is complete
-    setTimeout(resizeCanvas, 100);
-  }
-  
-  window.addEventListener('resize', resizeCanvas);
-
-  // Track dragging state with threshold
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  const DRAG_THRESHOLD = 5; // pixels
-  let hasMovedEnough = false;
-
-  // Helper function to seek to position
-  const seekToPosition = (e) => {
-    if (!audio.duration || !window.waveformRenderer) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const progress = x / rect.width;
-    audio.currentTime = progress * audio.duration;
-    console.log('🎯 [Seek] Moved to', (progress * 100).toFixed(1) + '%');
-  };
-
-  // Mouse down - start drag detection from anywhere in player bar
-  playerBar?.addEventListener('mousedown', (e) => {
-    // Only start dragging on primary mouse button (left click)
-    if (e.button !== 0) return;
-    
-    // Don't start drag if clicking on artist name (let click handler work)
-    if (e.target === currentTrackArtist || currentTrackArtist?.contains(e.target)) {
-      // Reset drag state for this click
-      isDragging = false;
-      hasMovedEnough = false;
-      isDraggingWaveform = false;
-      hasMovedEnoughWaveform = false;
-      return;
-    }
-    
-    isDragging = true;
-    hasMovedEnough = false;
-    isDraggingWaveform = true;
-    hasMovedEnoughWaveform = false;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    // Don't seek yet - wait to see if it's a drag or click
-  }, true);
-
-  // Mouse move - check if drag threshold is exceeded
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    
-    // Check if movement exceeds threshold
-    const deltaX = Math.abs(e.clientX - dragStartX);
-    const deltaY = Math.abs(e.clientY - dragStartY);
-    if (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD) {
-      hasMovedEnough = true;
-      hasMovedEnoughWaveform = true;
-      seekToPosition(e);
-    }
-  }, true); // Use capture phase to intercept early
-
-  // Mouse up - stop dragging
-  document.addEventListener('mouseup', () => {
-    isDragging = false;
-    isDraggingWaveform = false;
+  // Wait for canvas layout to be complete before sizing
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        resizeWaveformCanvas();
+        startWaveformAnimation();
+      } else {
+        // Try again after a bit more time
+        setTimeout(() => {
+          resizeWaveformCanvas();
+          startWaveformAnimation();
+        }, 100);
+      }
+    }, 0);
   });
+}
 
-  // Click-to-seek on canvas (single click without dragging)
-  canvas.addEventListener('click', (e) => {
-    if (hasMovedEnough) {
-      // Drag occurred, don't seek again and stop propagation to prevent button clicks
-      e.stopPropagation();
-      return;
-    }
-    
-    // Pure click without dragging - seek but allow button clicks to propagate
-    seekToPosition(e);
-  }, true);
-
-  console.log('✅ Simple waveform initialized');
+function resizeWaveformCanvas() {
+  const canvas = waveformCanvasElement || document.getElementById('waveformCanvas');
+  if (!canvas) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  console.log('📐 Canvas rect:', { width: rect.width, height: rect.height });
+  
+  // Set devicePixelRatio for better quality
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  
+  // Scale canvas context if using high DPI
+  if (dpr > 1) {
+    canvas.getContext('2d').scale(dpr, dpr);
+  }
+  
+  console.log('📐 Canvas resized to:', { width: canvas.width, height: canvas.height, dpr });
+  
+  // Redraw waveform
+  if (window.waveformRenderer && window.waveformRenderer.waveformBars.length > 0) {
+    console.log('📐 Redrawing waveform');
+    window.waveformRenderer.draw();
+  }
 }
 
 function startWaveformAnimation() {
-  if (!window.waveformRenderer || !audio) return;
+  console.log('🎬 [Waveform] startWaveformAnimation called');
+  console.log('🎬 [Waveform] waveformRenderer exists:', !!window.waveformRenderer);
+  console.log('🎬 [Waveform] audio exists:', !!audio);
+  
+  if (!window.waveformRenderer || !audio) {
+    console.warn('⚠️ [Waveform] Cannot start animation - missing waveform renderer or audio');
+    return;
+  }
 
   const animate = () => {
     // Update progress
@@ -387,10 +400,19 @@ function startWaveformAnimation() {
 
   // Cancel previous animation
   if (window.waveformAnimationId) {
+    console.log('🎬 [Waveform] Cancelling previous animation');
     cancelAnimationFrame(window.waveformAnimationId);
   }
 
+  console.log('🎬 [Waveform] Starting animation loop');
   animate();
+}
+
+function onCanvasAvailable() {
+  console.log('🎵 [Waveform] Canvas became available, reinitializing...');
+  if (document.getElementById('waveformCanvas')) {
+    initializeWaveform();
+  }
 }
 
 // ===============================
@@ -412,63 +434,71 @@ function syncPlayerIcons() {
   // Reset playing class
   document.querySelectorAll(".song-list, .song-box").forEach(el => el.classList.remove("playing"));
 
-  if (!currentId) return;
-
-  // Activate the correct song card
-  const safeSelector = CSS.escape(currentId);
-  const activeCard = document.querySelector(`[data-song-id="${safeSelector}"]`);
-  if (!activeCard) return;
-
-  // Add playing class
-  activeCard.classList.add("playing");
-
-  // Get the play button (not the like button)
-  const btn = activeCard.querySelector(".song-play-btn-list, .song-play-btn-box") || activeCard.querySelector("button:last-of-type");
-  if (!btn) return;
-
-  const cardPlay = btn.querySelector(
-    ".play-icon, .play-icon-box, .play-icon-list"
-  );
-  const cardPause = btn.querySelector(
-    ".pause-icon, .pause-icon-box, .pause-icon-list"
-  );
-
-  if (!cardPlay || !cardPause) return;
-
-  if (isPaused) {
-    cardPlay.style.display = "block";
-    cardPause.style.display = "none";
-  } else {
-    cardPlay.style.display = "none";
-    cardPause.style.display = "block";
+  if (!isPaused && currentId) {
+    // Show pause icon for current song
+    const safeSelector = CSS.escape(currentId);
+    const currentCard = document.querySelector(`[data-song-id="${safeSelector}"]`);
+    
+    if (currentCard) {
+      currentCard.classList.add("playing");
+      
+      const pauseIcon = currentCard.querySelector(".pause-icon, .pause-icon-box, .pause-icon-list");
+      const playIcon = currentCard.querySelector(".play-icon, .play-icon-box, .play-icon-list");
+      
+      if (pauseIcon) pauseIcon.style.display = "block";
+      if (playIcon) playIcon.style.display = "none";
+    }
   }
 }
 
 // ===============================
-// PLAY A SONG
+// PLAY SONG
 // ===============================
 // RECORD LISTEN
 // ===============================
 async function recordListen(song) {
+  console.log("⏱️ === START recordListen function ===");
   try {
+    if (!song) {
+      console.error("❌ recordListen: No song provided");
+      return;
+    }
+    
     const artistId = song.artistId || song.artist || "Unknown";
     const songId = song.file || song.songId || song.id;
     const title = song.title || song.name || "Unknown Title";
 
-    const response = await apiFetch(`${API_URL}/record-listen`, {
-      method: "POST",
-      body: JSON.stringify({
-        songId,
-        title,
-        artistId,
-        durationPlayed: 30, // We record at 30 second mark
-      }),
+    console.log("🎧 Recording listen:", {
+      title,
+      artistId,
+      songId,
+      durationPlayed: Math.round(audio.currentTime),
+      currentTime: audio.currentTime,
+      duration: audio.duration,
     });
 
-    console.log("✅ Listen recorded:", songId);
+    const durationPlayed = Math.round(audio.currentTime);
+    const payload = {
+      songId,
+      title,
+      artistId,
+      durationPlayed,
+    };
+
+    console.log("📤 Sending to API:", JSON.stringify(payload));
+
+    const response = await apiFetch(`${API_URL}/record-listen`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    console.log("✅ API Response:", response);
+    console.log("✅ Listen recorded successfully:", songId, "Duration:", durationPlayed, "seconds");
+    console.log("⏱️ === END recordListen function ===");
   } catch (err) {
     console.error("❌ Failed to record listen:", err);
-    // Don't alert user - just log silently
+    console.error("❌ Error details:", err.message, err.stack);
+    console.log("⏱️ === END recordListen function (with error) ===");
   }
 }
 
@@ -501,6 +531,12 @@ export async function playSong(song, list = playlist) {
   currentSongReady = false; // Mark that the new song hasn't fully loaded yet
   currentSongStartTime = audio.currentTime || 0;
 
+  // Reset waveform for new song
+  waveformDataGenerated = false;
+  if (window.waveformRenderer) {
+    window.waveformRenderer.waveformBars = [];
+  }
+
   // Normalize playlist IDs before comparing
   playlist = list.map(s => ({
     ...s,
@@ -513,10 +549,27 @@ export async function playSong(song, list = playlist) {
   currentTrackName.textContent = currentSong.title || "Unknown Track";
   currentTrackArtist.textContent = currentSong.artist || "";
   if (currentTrackArt) {
-    currentTrackArt.src = currentSong.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
+    currentTrackArt.src = currentSong.coverImage || currentSong.art_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='200' height='200'/%3E%3C/svg%3E";
   }
   updateScrollingTitle();
   updateFullPlayerUI();
+  
+  // Resize canvas after player bar becomes visible (use requestAnimationFrame for layout)
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      if (waveformCanvas) {
+        const rect = waveformCanvas.getBoundingClientRect();
+        console.log('🎵 [Player] Resizing canvas after player bar shown:', rect);
+        const dpr = window.devicePixelRatio || 1;
+        waveformCanvas.width = rect.width * dpr;
+        waveformCanvas.height = rect.height * dpr;
+        if (dpr > 1) {
+          waveformCanvas.getContext('2d').scale(dpr, dpr);
+        }
+        console.log('🎵 [Player] Canvas resized to:', { width: waveformCanvas.width, height: waveformCanvas.height });
+      }
+    }, 0);
+  });
 
   try {
     let streamUrl = song.url;
@@ -567,6 +620,11 @@ export async function playSong(song, list = playlist) {
         console.warn('⚠️ [Player] Waveform renderer not available');
       }
     } catch (err) {
+      // Handle AbortError silently (user switched songs before this one finished loading)
+      if (err.name === 'AbortError') {
+        console.log('⏭️ [Player] Song playback aborted (user switched songs)');
+        return;
+      }
       console.error("❌ Play failed:", err.message);
     }
 
@@ -581,6 +639,11 @@ export async function playSong(song, list = playlist) {
     // Save player state to persist across page navigations
     savePlayerState();
   } catch (err) {
+    // Handle AbortError silently
+    if (err.name === 'AbortError') {
+      console.log('⏭️ [Player] Stream fetch aborted (user switched songs)');
+      return;
+    }
     console.error("Playback error:", err);
     alert("Cannot play this track right now.");
   }
@@ -683,6 +746,65 @@ function setupEvents() {
     syncPlayerIcons();
   });
 
+  // ===============================
+  // WAVEFORM DRAG-TO-SEEK
+  // ===============================
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  const DRAG_THRESHOLD = 5; // pixels
+
+  // Helper function to seek to position
+  const seekToPosition = (e) => {
+    if (!audio.duration || !waveformCanvasElement) return;
+    const rect = waveformCanvasElement.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const progress = x / rect.width;
+    audio.currentTime = progress * audio.duration;
+    console.log('🎯 [Seek] Moved to', (progress * 100).toFixed(1) + '%');
+  };
+
+  // Mouse down - start drag detection
+  waveformCanvasElement?.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // Only left mouse button
+    
+    isDragging = true;
+    isDraggingWaveform = true;
+    hasMovedEnoughWaveform = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+  });
+
+  // Mouse move - check if drag threshold is exceeded
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const deltaX = Math.abs(e.clientX - dragStartX);
+    const deltaY = Math.abs(e.clientY - dragStartY);
+    if (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD) {
+      hasMovedEnoughWaveform = true;
+      seekToPosition(e);
+    }
+  }, true); // Use capture phase
+
+  // Mouse up - stop dragging
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    isDraggingWaveform = false;
+  });
+
+  // Click-to-seek on canvas (single click without dragging)
+  waveformCanvasElement?.addEventListener('click', (e) => {
+    if (hasMovedEnoughWaveform) {
+      // Drag occurred, don't seek again
+      e.stopPropagation();
+      return;
+    }
+    
+    // Pure click without dragging - seek
+    seekToPosition(e);
+  });
+
   // Previous track in player bar
   const prevBtn = document.getElementById("prevBtn");
   const prevSvg = prevBtn?.querySelector("svg");
@@ -739,24 +861,57 @@ function setupEvents() {
       if (fullTotalTime) fullTotalTime.textContent = formatTime(audio.duration);
     }
 
-    // Track listen when 30+ seconds have been played
-    if (currentSong && currentSongReady && audio.currentTime >= 30) {
-      // Verify this is the correct song by checking the audio source
-      // This prevents recording listens for the wrong song when switching tracks
-      const currentSongUrl = audio.src;
-      if (currentSongUrl && currentSongUrl.length > 0) {
-        // Use song file path as unique key for better accuracy
-        const songKey = currentSong.file || currentSong.id || currentSong.songId || currentSong.title;
-        if (!listenTracked.has(songKey)) {
-          recordListen(currentSong);
-          listenTracked.add(songKey);
+    // Debug: Log state at 5, 15, 25, 30 seconds
+    const currentRounded = Math.round(audio.currentTime);
+    if ([5, 15, 25, 30].includes(currentRounded)) {
+      console.log(`⏱️ [Player] Time: ${currentRounded}s | Song: ${currentSong?.title} | Ready: ${currentSongReady} | Duration: ${audio.duration}s`);
+    }
+
+    // Track listen when:
+    // - 30+ seconds played (for songs >= 30 seconds), OR
+    // - Song finished (for songs < 30 seconds)
+    if (currentSong && audio.duration) {
+      const threshold = Math.min(30, audio.duration); // Use song duration if < 30 seconds
+      
+      if (audio.currentTime >= threshold) {
+        const currentSongUrl = audio.src;
+        if (currentSongUrl && currentSongUrl.length > 0) {
+          const songKey = currentSong.file || currentSong.id || currentSong.songId || currentSong.title;
+          if (!listenTracked.has(songKey)) {
+            console.log(`✅ [Player] 30-second threshold reached for: ${currentSong.title}`);
+            console.log(`⏱️ CALLING recordListen function...`);
+            recordListen(currentSong);
+            listenTracked.add(songKey);
+            console.log(`⏱️ recordListen function completed for: ${currentSong.title}`);
+          }
         }
       }
     }
   });
 
-  // Song end
+  // Generate waveform when audio can play
+  audio.addEventListener('canplay', () => {
+    if (!waveformDataGenerated && window.waveformRenderer && currentSong && audio.duration) {
+      console.log('🎵 [Waveform] Audio ready, generating waveform...');
+      window.waveformRenderer.generateWaveform(audio.duration);
+      waveformDataGenerated = true;
+      currentWaveformDuration = audio.duration;
+      // Reinitialize if canvas is available
+      if (document.getElementById('waveformCanvas')) {
+        startWaveformAnimation();
+      }
+    }
+  });
+
+  // Song end - backup recording for edge cases
   audio.addEventListener("ended", () => {
+    if (currentSong && currentSongReady) {
+      const songKey = currentSong.file || currentSong.id || currentSong.songId || currentSong.title;
+      if (!listenTracked.has(songKey)) {
+        recordListen(currentSong);
+        listenTracked.add(songKey);
+      }
+    }
     handleEnd();
     syncPlayerIcons();
   });
@@ -767,6 +922,10 @@ function setupEvents() {
     updateFullPlayerPlayPause(true);
     syncPlayerIcons();
     savePlayerState();
+    // Update waveform animation state
+    if (window.waveformRenderer) {
+      window.waveformRenderer.setPlaying(true);
+    }
   });
 
   audio.addEventListener("pause", () => {
@@ -775,6 +934,10 @@ function setupEvents() {
     updateFullPlayerPlayPause(false);
     syncPlayerIcons();
     savePlayerState();
+    // Update waveform animation state
+    if (window.waveformRenderer) {
+      window.waveformRenderer.setPlaying(false);
+    }
   });
 
   // Player options menu button - attach to SVG
@@ -1501,3 +1664,9 @@ if (playerBar) {
     handleSwipe();
   }, false);
 }
+
+// ===============================
+// EXPOSE TO WINDOW FOR CROSS-MODULE ACCESS
+// ===============================
+window.initializeWaveform = initializeWaveform;
+window.playSong = playSong;

@@ -8,14 +8,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   saveBtn.addEventListener("click", async () => {
     try {
-      const artistConfig = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
-      const artistId = artistConfig.id || localStorage.getItem("artistId");
+      // Try both key names for backwards compatibility
+      let artistConfig = JSON.parse(localStorage.getItem("artistConfig") || "{}");
+      if (!artistConfig.bucketName) {
+        artistConfig = JSON.parse(localStorage.getItem("amplyArtistConfig") || "{}");
+      }
+      
+      const artistId = artistConfig.artistId || localStorage.getItem("artistId");
       const bucketName = artistConfig.bucketName;
       const cloudfrontDomain = artistConfig.cloudfrontDomain;
       const roleArn = artistConfig.roleArn;
 
       const artistName = document.getElementById("artistDisplayName").value.trim();
       const bio = document.getElementById("artistBio").value.trim();
+      const defaultSongPrice = parseFloat(document.getElementById("defaultSongPrice").value) || 0.99;
+      const genre = document.getElementById("genre").value.trim();
+      const socialLinks = document.getElementById("socialLinks").value
+        .split("\n")
+        .map(link => link.trim())
+        .filter(link => link.length > 0);
       const profileFile = document.getElementById("profilePhoto").files[0];
       const coverFile = document.getElementById("coverPhoto").files[0];
 
@@ -80,6 +91,9 @@ document.addEventListener("DOMContentLoaded", () => {
         profilePhoto: profileUrl,
         coverPhoto: coverUrl,
         bio,
+        defaultSongPrice,
+        genre,
+        socialLinks,
       };
 
       console.log("🧩 Sending artist profile setup payload:", payload);
@@ -95,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (res.ok) {
         statusMessage.style.color = "green";
-        statusMessage.textContent = "Profile saved! Redirecting...";
+        statusMessage.textContent = "Profile saved! Refreshing authentication...";
 
         // 🧠 Update local cache with latest data
         const indexData = await loadAmplyIndex();
@@ -103,6 +117,40 @@ document.addEventListener("DOMContentLoaded", () => {
         if (updatedProfile) {
           localStorage.setItem("amplyArtistProfile", JSON.stringify(updatedProfile));
           console.log("🎨 Cached updated artist profile:", updatedProfile);
+        }
+
+        // ✅ Refresh token to get updated Cognito attributes (custom:role, custom:artistID)
+        try {
+          const refreshToken = localStorage.getItem("amplyRefreshToken");
+          if (refreshToken) {
+            const refreshRes = await fetch("https://cognito-idp.eu-north-1.amazonaws.com/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-amz-json-1.1",
+                "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth"
+              },
+              body: JSON.stringify({
+                ClientId: "2a031n3pf59i2grgkqcd2m6jrj",
+                AuthFlow: "REFRESH_TOKEN_AUTH",
+                AuthParameters: {
+                  REFRESH_TOKEN: refreshToken
+                }
+              })
+            });
+
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json();
+              if (refreshData.AuthenticationResult?.IdToken) {
+                localStorage.setItem("amplyIdToken", refreshData.AuthenticationResult.IdToken);
+                localStorage.setItem("amplyAccessToken", refreshData.AuthenticationResult.AccessToken);
+                console.log("🔄 Token refreshed with updated artist role");
+              }
+            } else {
+              console.warn("⚠️ Token refresh failed, proceeding anyway");
+            }
+          }
+        } catch (err) {
+          console.warn("⚠️ Token refresh error:", err.message);
         }
 
         setTimeout(() => {

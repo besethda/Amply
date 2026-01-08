@@ -7,12 +7,14 @@ const client_sts_1 = require("@aws-sdk/client-sts");
 const client_cloudfront_1 = require("@aws-sdk/client-cloudfront");
 const client_cloudformation_1 = require("@aws-sdk/client-cloudformation");
 const client_dynamodb_1 = require("@aws-sdk/client-dynamodb");
+const client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const util_dynamodb_1 = require("@aws-sdk/util-dynamodb");
 const region = "eu-north-1";
 const templateURL = "https://amply-templates.s3.eu-north-1.amazonaws.com/artist-environment.yml";
 const defaultBucket = process.env.S3_BUCKET;
 const centralBucket = "amply-central-596430611327"; // ✅ central metadata bucket
+const COGNITO_USER_POOL_ID = "eu-north-1_pL55dqPRc"; // Amply user pool
 const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
@@ -25,18 +27,16 @@ const corsHeaders = {
 };
 
 // Helper function to extract userId from Authorization header JWT token
-function extractUserIdFromToken(event) {
-    console.log("🔑 extractUserIdFromToken called!");
+// Extract payload from JWT token
+function extractTokenPayload(event) {
     try {
         const authHeader = event.headers?.authorization || event.headers?.Authorization || "";
-        console.log("🔐 Auth header present:", !!authHeader);
         if (!authHeader) {
             console.warn("❌ No Authorization header found");
             return null;
         }
         
         const token = authHeader.replace("Bearer ", "").trim();
-        console.log("🔐 Token extracted, length:", token.length);
         
         // Decode JWT without verification (frontend token is already validated by Cognito)
         const parts = token.split(".");
@@ -50,6 +50,19 @@ function extractUserIdFromToken(event) {
         base64Payload = base64Payload.replace(/-/g, "+").replace(/_/g, "/");
         
         const payload = JSON.parse(Buffer.from(base64Payload, "base64").toString());
+        return payload;
+    } catch (e) {
+        console.error("Error extracting token payload:", e);
+        return null;
+    }
+}
+
+function extractUserIdFromToken(event) {
+    console.log("🔑 extractUserIdFromToken called!");
+    try {
+        const payload = extractTokenPayload(event);
+        if (!payload) return null;
+        
         console.log("🔐 JWT payload extracted, sub:", payload.sub);
         
         const userId = payload.sub || payload["cognito:username"] || null;
@@ -289,7 +302,7 @@ const handler = async (event) => {
         if (path.endsWith("/update-index") && method === "POST") {
             console.log("➡️ Updating central index...");
             const body = JSON.parse(event.body || "{}");
-            const { artistId, artistName, cloudfrontDomain, bucketName, song, profilePhoto, coverPhoto, bio, socials } = body;
+            const { artistId, artistName, cloudfrontDomain, bucketName, song, profilePhoto, coverPhoto, bio, socials, defaultSongPrice, genre, socialLinks } = body;
             if (!artistId || !artistName || !cloudfrontDomain || !bucketName) {
                 return {
                     statusCode: 400,
@@ -335,6 +348,12 @@ const handler = async (event) => {
                 artistEntry.bio = bio;
             if (socials)
                 artistEntry.socials = socials;
+            if (defaultSongPrice !== undefined && defaultSongPrice !== null)
+                artistEntry.defaultSongPrice = defaultSongPrice;
+            if (genre)
+                artistEntry.genre = genre;
+            if (socialLinks && Array.isArray(socialLinks) && socialLinks.length > 0)
+                artistEntry.socialLinks = socialLinks;
             // --- If song provided, add/update it
             if (song) {
                 const existingIndex = artistEntry.songs.findIndex((s) => s.title === song.title);
@@ -404,7 +423,12 @@ const handler = async (event) => {
             }
             try {
                 const s3 = new client_s3_1.S3Client({ region });
-                const command = new client_s3_1.GetObjectCommand({ Bucket: bucket, Key: file });
+                const command = new client_s3_1.GetObjectCommand({ 
+                    Bucket: bucket, 
+                    Key: file,
+                    ResponseContentType: "audio/wav",
+                    ResponseCacheControl: "public, max-age=3600"
+                });
                 // generate a temporary presigned URL to stream the song
                 const signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, command, { expiresIn: 300 });
                 return {
@@ -910,8 +934,20 @@ const handler = async (event) => {
         console.log("🔍 Checking /record-listen... path:", path, "method:", method, "match:", path.endsWith("/record-listen"));
         if (path.endsWith("/record-listen") && method === "POST") {
             try {
-                // Extract userId from JWT token directly instead of authorizer
-                const userId = extractUserIdFromToken(event);
+                // Extract userId and artistId from JWT token
+                const payload = extractTokenPayload(event);
+                if (!payload) {
+                    console.warn("❌ Could not extract token payload");
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const userId = payload.sub || payload["cognito:username"];
+                const tokenArtistId = payload["custom:artistID"];
+                
                 if (!userId) {
                     console.warn("❌ No userId found in JWT token");
                     return {
@@ -922,9 +958,13 @@ const handler = async (event) => {
                 }
 
                 console.log("✅ Extracted userId from token:", userId);
+                console.log("✅ Extracted artistId from token:", tokenArtistId);
 
                 const body = JSON.parse(event.body || "{}");
-                const { songId, durationPlayed, artistId } = body;
+                const { songId, durationPlayed, title } = body;
+                
+                // Use artistId from token, fallback to request body if not in token
+                const artistId = tokenArtistId || body.artistId;
 
                 if (!songId || durationPlayed === undefined || !artistId) {
                     return {
@@ -934,15 +974,8 @@ const handler = async (event) => {
                     };
                 }
 
-                // Only count if 30+ seconds played
-                if (durationPlayed < 30) {
-                    return {
-                        statusCode: 400,
-                        headers: corsHeaders,
-                        body: JSON.stringify({ error: "Minimum 30 seconds required" }),
-                    };
-                }
-
+                // Allow any duration - even short songs count as listens
+                // Record the listen event regardless of duration
                 const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
                 const now = Date.now();
                 const listenId = `${userId}#${songId}#${now}`;
@@ -955,6 +988,7 @@ const handler = async (event) => {
                         timestamp: now,
                         userId,
                         actualSongId: songId,
+                        title: title || "Unknown",
                         artistId,
                         durationPlayed,
                         type: "listen",
@@ -1185,6 +1219,431 @@ const handler = async (event) => {
                 };
             } catch (err) {
                 console.error("❌ Complete artist setup error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === REGISTER ARTIST IN COGNITO ===
+        if (path.endsWith("/register-artist") && method === "POST") {
+            console.log("📤 Registering user as artist");
+            try {
+                // Extract userId from JWT token
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const body = JSON.parse(event.body || "{}");
+                const { artistId, bucketName, cloudfrontDomain, roleArn } = body;
+
+                if (!artistId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing artistId" }),
+                    };
+                }
+
+                if (!bucketName || !cloudfrontDomain || !roleArn) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing infrastructure data (bucketName, cloudfrontDomain, roleArn)" }),
+                    };
+                }
+
+                // Update Cognito - just set artist ID and role
+                const cognito = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({ region });
+                
+                await cognito.send(new client_cognito_identity_provider_1.AdminUpdateUserAttributesCommand({
+                    UserPoolId: COGNITO_USER_POOL_ID,
+                    Username: userId,
+                    UserAttributes: [
+                        { Name: "custom:artistID", Value: artistId },
+                        { Name: "custom:role", Value: "artist" }
+                    ]
+                }));
+
+                console.log(`✅ Updated Cognito user ${userId} to artist role with artistID: ${artistId}`);
+
+                // Store infrastructure outputs in artist config table
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const artistConfig = {
+                    artistId,
+                    provider: "aws",
+                    bucketName,
+                    cloudfrontDomain,
+                    roleArn,
+                    createdAt: new Date().toISOString(),
+                    userId
+                };
+
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: ARTIST_CONFIG_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)(artistConfig, { removeUndefinedValues: true }),
+                }));
+
+                console.log(`✅ Saved artist infrastructure for ${artistId} to DynamoDB`);
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({
+                        success: true,
+                        userId,
+                        artistId,
+                        bucketName,
+                        cloudfrontDomain,
+                        roleArn,
+                        provider: "aws",
+                        message: "Artist infrastructure registered successfully"
+                    })
+                };
+            } catch (err) {
+                console.error("❌ Register artist error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === GET ARTIST SONGS ===
+        if (path.endsWith("/get-artist-songs") && method === "POST") {
+            console.log("🎵 Fetching artist songs from index...");
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { artistId, cloudfrontDomain, bucketName } = body;
+
+                if (!artistId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing artistId" }),
+                    };
+                }
+
+                const s3 = new client_s3_1.S3Client({ region });
+                const indexKey = "amply-index.json";
+                let songs = [];
+
+                try {
+                    const existing = await s3.send(new client_s3_1.GetObjectCommand({
+                        Bucket: centralBucket,
+                        Key: indexKey,
+                    }));
+
+                    const text = await existing.Body.transformToString();
+                    const indexData = JSON.parse(text);
+
+                    // Find artist in index
+                    const artistEntry = indexData.artists.find((a) => a.artistId === artistId);
+                    if (artistEntry && artistEntry.songs) {
+                        songs = artistEntry.songs;
+                        console.log(`✅ Found ${songs.length} songs for artist ${artistId}`);
+                    } else {
+                        console.log(`ℹ️ No songs found for artist ${artistId}`);
+                    }
+                } catch (err) {
+                    console.log("ℹ️ Index file not found or error reading it:", err.message);
+                    songs = [];
+                }
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ songs }),
+                };
+            } catch (err) {
+                console.error("❌ Get artist songs error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === DELETE SONG ===
+        if (path.endsWith("/delete-song") && method === "POST") {
+            console.log("🗑️ Deleting song...");
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { artistId, songId, songFile, artFile, artistRoleArn, bucketName } = body;
+
+                if (!artistId || !songFile || !artistRoleArn || !bucketName) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing required fields: artistId, songFile, artistRoleArn, bucketName" }),
+                    };
+                }
+
+                // Assume artist's role to delete from their bucket
+                const sts = new client_sts_1.STSClient({ region });
+                const assume = await sts.send(new client_sts_1.AssumeRoleCommand({
+                    RoleArn: artistRoleArn,
+                    RoleSessionName: "AmplyArtistDelete",
+                    DurationSeconds: 900,
+                }));
+
+                const s3 = new client_s3_1.S3Client({
+                    region,
+                    credentials: {
+                        accessKeyId: assume.Credentials.AccessKeyId,
+                        secretAccessKey: assume.Credentials.SecretAccessKey,
+                        sessionToken: assume.Credentials.SessionToken,
+                    },
+                });
+
+                // Delete the song file
+                await s3.send(new client_s3_1.DeleteObjectCommand({
+                    Bucket: bucketName,
+                    Key: songFile,
+                }));
+
+                console.log(`✅ Deleted song file: ${songFile}`);
+
+                // Delete metadata file
+                const metaKey = songFile.replace(/\.[^/.]+$/, ".json");
+                await s3.send(new client_s3_1.DeleteObjectCommand({
+                    Bucket: bucketName,
+                    Key: metaKey,
+                }));
+
+                console.log(`✅ Deleted metadata file: ${metaKey}`);
+
+                // Delete art file if provided
+                if (artFile) {
+                    await s3.send(new client_s3_1.DeleteObjectCommand({
+                        Bucket: bucketName,
+                        Key: `art/${artFile}`,
+                    }));
+                    console.log(`✅ Deleted art file: ${artFile}`);
+                }
+
+                // Remove from central index
+                const s3Central = new client_s3_1.S3Client({ region });
+                const indexKey = "amply-index.json";
+                
+                try {
+                    const existing = await s3Central.send(new client_s3_1.GetObjectCommand({
+                        Bucket: centralBucket,
+                        Key: indexKey,
+                    }));
+                    
+                    const text = await existing.Body.transformToString();
+                    const indexData = JSON.parse(text);
+                    
+                    // Find artist in index
+                    const artistEntry = indexData.artists.find((a) => a.artistId === artistId);
+                    if (artistEntry && artistEntry.songs) {
+                        // Remove song from artist's songs array
+                        artistEntry.songs = artistEntry.songs.filter((s) => s.file !== songFile);
+                        
+                        // Save updated index
+                        await s3Central.send(new client_s3_1.PutObjectCommand({
+                            Bucket: centralBucket,
+                            Key: indexKey,
+                            Body: JSON.stringify(indexData, null, 2),
+                            ContentType: "application/json",
+                            ACL: "public-read",
+                        }));
+                        
+                        console.log(`✅ Removed song from central index`);
+                    }
+                } catch (indexErr) {
+                    console.warn("⚠️ Could not update central index:", indexErr.message);
+                    // Don't fail the delete if index update fails
+                }
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Song deleted successfully" }),
+                };
+            } catch (err) {
+                console.error("❌ Delete song error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === GET ARTIST ANALYTICS ===
+        if (path.endsWith("/get-artist-analytics") && method === "POST") {
+            try {
+                const body = JSON.parse(event.body || "{}");
+                const { artistId } = body;
+
+                if (!artistId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing artistId" }),
+                    };
+                }
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+
+                console.log('📊 [Analytics] Scanning LIKES_TABLE for artistId:', artistId);
+                
+                // Scan the table to get all records for this artist
+                // Note: In production, you'd want to add a GSI on artistId for better performance
+                const result = await dynamodb.send(new client_dynamodb_1.ScanCommand({
+                    TableName: LIKES_TABLE,
+                    FilterExpression: "artistId = :artistId AND #t = :type",
+                    ExpressionAttributeNames: { "#t": "type" },
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":artistId": artistId,
+                        ":type": "listen",
+                    }),
+                }));
+
+                console.log('📊 [Analytics] Scan returned', result.Items?.length, 'items');
+
+                // Items are already filtered by type = "listen", so no need to filter again
+                const listens = (result.Items || [])
+                    .map((item) => (0, util_dynamodb_1.unmarshall)(item));
+
+                // Aggregate stats
+                const stats = {
+                    totalListens: listens.length,
+                    listensPerSong: {},
+                    topSongs: [],
+                    totalDurationPlayed: 0,
+                };
+
+                listens.forEach((listen) => {
+                    const songId = listen.actualSongId || listen.songId;
+                    const title = listen.title || "Unknown";
+                    if (!stats.listensPerSong[songId]) {
+                        stats.listensPerSong[songId] = { count: 0, title };
+                    }
+                    stats.listensPerSong[songId].count++;
+                    stats.totalDurationPlayed += listen.durationPlayed || 0;
+                });
+
+                // Top 10 songs
+                stats.topSongs = Object.entries(stats.listensPerSong)
+                    .map(([songId, data]) => ({ songId, title: data.title, listens: data.count }))
+                    .sort((a, b) => b.listens - a.listens)
+                    .slice(0, 10);
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify(stats),
+                };
+            } catch (err) {
+                console.error("❌ Get artist analytics error:", err);
+                console.error("❌ Error message:", err.message);
+                console.error("❌ Error stack:", err.stack);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message, details: err.toString() }),
+                };
+            }
+        }
+
+        // === SAVE ARTIST CONFIG ===
+        if (path.endsWith("/artist/save-config") && method === "POST") {
+            try {
+                const payload = extractTokenPayload(event);
+                if (!payload) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const artistId = payload["custom:artistID"] || payload.sub;
+                const body = JSON.parse(event.body || "{}");
+
+                if (!artistId || !body.config) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing artistId or config" }),
+                    };
+                }
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: ARTIST_CONFIG_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)({
+                        artistId,
+                        config: body.config,
+                        savedAt: Date.now(),
+                    }),
+                }));
+
+                console.log("✅ Artist config saved for:", artistId);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Config saved" }),
+                };
+            } catch (err) {
+                console.error("❌ Save config error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === GET ARTIST CONFIG ===
+        if (path.endsWith("/artist/get-config") && method === "GET") {
+            try {
+                const payload = extractTokenPayload(event);
+                if (!payload) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const artistId = payload["custom:artistID"] || payload.sub;
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+
+                const result = await dynamodb.send(new client_dynamodb_1.GetItemCommand({
+                    TableName: ARTIST_CONFIG_TABLE,
+                    Key: (0, util_dynamodb_1.marshall)({ artistId }),
+                }));
+
+                if (!result.Item) {
+                    return {
+                        statusCode: 404,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "No config found" }),
+                    };
+                }
+
+                const item = (0, util_dynamodb_1.unmarshall)(result.Item);
+                console.log("✅ Artist config retrieved for:", artistId);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify(item.config),
+                };
+            } catch (err) {
+                console.error("❌ Get config error:", err);
                 return {
                     statusCode: 500,
                     headers: corsHeaders,

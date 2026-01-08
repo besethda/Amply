@@ -225,6 +225,15 @@ async function loadRoute(routeKey, routeParam = null) {
     // Re-initialize waveform after route changes
     if (typeof window.initializeWaveform === 'function') {
       window.initializeWaveform();
+    } else {
+      console.warn('⚠️ [Router] initializeWaveform not available yet, scheduling retry...');
+      setTimeout(() => {
+        if (typeof window.initializeWaveform === 'function') {
+          window.initializeWaveform();
+        } else {
+          console.warn('⚠️ [Router] initializeWaveform still not available');
+        }
+      }, 100);
     }
   } catch (err) {
     console.error("❌ Route load failed:", err);

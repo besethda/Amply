@@ -7,12 +7,14 @@ const client_sts_1 = require("@aws-sdk/client-sts");
 const client_cloudfront_1 = require("@aws-sdk/client-cloudfront");
 const client_cloudformation_1 = require("@aws-sdk/client-cloudformation");
 const client_dynamodb_1 = require("@aws-sdk/client-dynamodb");
+const client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const util_dynamodb_1 = require("@aws-sdk/util-dynamodb");
 const region = "eu-north-1";
 const templateURL = "https://amply-templates.s3.eu-north-1.amazonaws.com/artist-environment.yml";
 const defaultBucket = process.env.S3_BUCKET;
 const centralBucket = "amply-central-596430611327"; // ✅ central metadata bucket
+const COGNITO_USER_POOL_ID = "eu-north-1_pL55dqPRc"; // Amply user pool
 const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
@@ -289,7 +291,7 @@ const handler = async (event) => {
         if (path.endsWith("/update-index") && method === "POST") {
             console.log("➡️ Updating central index...");
             const body = JSON.parse(event.body || "{}");
-            const { artistId, artistName, cloudfrontDomain, bucketName, song, profilePhoto, coverPhoto, bio, socials } = body;
+            const { artistId, artistName, cloudfrontDomain, bucketName, song, profilePhoto, coverPhoto, bio, socials, defaultSongPrice, genre, socialLinks } = body;
             if (!artistId || !artistName || !cloudfrontDomain || !bucketName) {
                 return {
                     statusCode: 400,
@@ -335,6 +337,12 @@ const handler = async (event) => {
                 artistEntry.bio = bio;
             if (socials)
                 artistEntry.socials = socials;
+            if (defaultSongPrice !== undefined && defaultSongPrice !== null)
+                artistEntry.defaultSongPrice = defaultSongPrice;
+            if (genre)
+                artistEntry.genre = genre;
+            if (socialLinks && Array.isArray(socialLinks) && socialLinks.length > 0)
+                artistEntry.socialLinks = socialLinks;
             // --- If song provided, add/update it
             if (song) {
                 const existingIndex = artistEntry.songs.findIndex((s) => s.title === song.title);
@@ -1185,6 +1193,96 @@ const handler = async (event) => {
                 };
             } catch (err) {
                 console.error("❌ Complete artist setup error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === REGISTER ARTIST IN COGNITO ===
+        if (path.endsWith("/register-artist") && method === "POST") {
+            console.log("📤 Registering user as artist");
+            try {
+                // Extract userId from JWT token
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Not authenticated" }),
+                    };
+                }
+
+                const body = JSON.parse(event.body || "{}");
+                const { artistId, bucketName, cloudfrontDomain, roleArn } = body;
+
+                if (!artistId) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing artistId" }),
+                    };
+                }
+
+                if (!bucketName || !cloudfrontDomain || !roleArn) {
+                    return {
+                        statusCode: 400,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: "Missing infrastructure data (bucketName, cloudfrontDomain, roleArn)" }),
+                    };
+                }
+
+                // Update Cognito - just set artist ID and role
+                const cognito = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({ region });
+                
+                await cognito.send(new client_cognito_identity_provider_1.AdminUpdateUserAttributesCommand({
+                    UserPoolId: COGNITO_USER_POOL_ID,
+                    Username: userId,
+                    UserAttributes: [
+                        { Name: "custom:artistID", Value: artistId },
+                        { Name: "custom:role", Value: "artist" }
+                    ]
+                }));
+
+                console.log(`✅ Updated Cognito user ${userId} to artist role with artistID: ${artistId}`);
+
+                // Store infrastructure outputs in artist config table
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const artistConfig = {
+                    artistId,
+                    provider: "aws",
+                    bucketName,
+                    cloudfrontDomain,
+                    roleArn,
+                    createdAt: new Date().toISOString(),
+                    userId
+                };
+
+                await dynamodb.send(new client_dynamodb_1.PutItemCommand({
+                    TableName: ARTIST_CONFIG_TABLE,
+                    Item: (0, util_dynamodb_1.marshall)(artistConfig, { removeUndefinedValues: true }),
+                }));
+
+                console.log(`✅ Saved artist infrastructure for ${artistId} to DynamoDB`);
+
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({
+                        success: true,
+                        userId,
+                        artistId,
+                        bucketName,
+                        cloudfrontDomain,
+                        roleArn,
+                        provider: "aws",
+                        message: "Artist infrastructure registered successfully"
+                    })
+                };
+            } catch (err) {
+                console.error("❌ Register artist error:", err);
                 return {
                     statusCode: 500,
                     headers: corsHeaders,

@@ -258,19 +258,31 @@ async function loadListeningStats() {
   try {
     container.innerHTML = "<p>Loading your listening history...</p>";
 
+    const token = localStorage.getItem("amplyIdToken");
+    if (!token) {
+      container.innerHTML = "<p>Not authenticated. Please log in.</p>";
+      return;
+    }
+
+    console.log("🔄 Fetching listening history...");
     const response = await fetch(`${API_URL}/user/listening-history`, {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
 
+    console.log("📊 Response status:", response.status);
+
     if (!response.ok) {
+      const errText = await response.text();
+      console.error("❌ API Error:", errText);
       throw new Error(`API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("📊 Listening history data:", data);
     const listens = data.listens || [];
 
     if (listens.length === 0) {

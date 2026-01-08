@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics - Amply</title>
+    <link rel="stylesheet" href="/Styles/variables.css" />
+    <link rel="stylesheet" href="/Styles/core.css" />
+    <link rel="stylesheet" href="/Styles/artist/general.css" />
+    <link rel="stylesheet" href="/Styles/artist/analytics.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <h1>Analytics</h1>
+          <button id="logoutBtn" class="btn-logout">Logout</button>
+        </div>
+      </header>
+
+      <!-- Sidebar Navigation -->
+      <aside id="sidebar" class="sidebar">
+        <nav class="menu">
+          <ul>
+            <li><a href="/artist/dashboard.html">Dashboard</a></li>
+            <li><a href="/artist/songs.html">My Songs</a></li>
+            <li>
+              <a href="/artist/analytics.html" class="active">Analytics</a>
+            </li>
+            <li><a href="/artist/settings.html">Settings</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Status Message -->
+        <div id="status" class="status-message"></div>
+
+        <!-- Analytics Dashboard -->
+        <div class="analytics-dashboard">
+          <!-- Key Metrics -->
+          <section class="metrics-section">
+            <h2>Key Metrics</h2>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value" id="totalListens">0</div>
+                <div class="metric-label">Total Listens</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="totalDuration">0</div>
+                <div class="metric-label">Total Play Time (mins)</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="avgListenDuration">0</div>
+                <div class="metric-label">Avg Listen Duration (secs)</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Top Songs -->
+          <section class="top-songs-section">
+            <h2>Top Songs</h2>
+            <div class="top-songs-container">
+              <div id="topSongsList" class="songs-list">
+                <p class="loading">Loading...</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Time Period Filter -->
+          <section class="filter-section">
+            <label for="timePeriod">Time Period:</label>
+            <select id="timePeriod">
+              <option value="all">All Time</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="today">Today</option>
+            </select>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="/scripts/artist/analytics.js"></script>
+  </body>
+</html>

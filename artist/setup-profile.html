@@ -68,6 +68,30 @@
             placeholder="Tell your listeners about yourself..."
           ></textarea>
 
+          <label for="defaultSongPrice">Default Song Price ($)</label>
+          <input
+            type="number"
+            id="defaultSongPrice"
+            placeholder="0.99"
+            min="0"
+            step="0.01"
+            value="0.99"
+          />
+
+          <label for="genre">Primary Genre (optional)</label>
+          <input
+            type="text"
+            id="genre"
+            placeholder="e.g., Electronic, Hip-Hop, Indie"
+          />
+
+          <label for="socialLinks">Social Links (optional)</label>
+          <textarea
+            id="socialLinks"
+            rows="2"
+            placeholder="Instagram, Twitter, TikTok URLs (one per line)"
+          ></textarea>
+
           <button id="saveProfileBtn" class="goButton">Save & Continue</button>
           <p id="statusMessage" class="status-text"></p>
         </form>

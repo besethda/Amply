@@ -358,20 +358,40 @@ export async function initPlaylistsView() {
 
 // === SETUP PLAYLISTS PAGE LISTENERS ===
 function setupPlaylistsPageListeners(userId) {
-  const createBtn = document.getElementById("createPlaylistBtn");
-  const modal = document.getElementById("createPlaylistModal");
-  const modalClose = document.getElementById("modalClose");
-  const form = document.getElementById("createPlaylistForm");
+  // Wait for DOM to be ready
+  const waitForElement = (id, timeout = 2000) => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const checkElement = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          resolve(el);
+        } else if (Date.now() - startTime < timeout) {
+          requestAnimationFrame(checkElement);
+        } else {
+          console.warn(`Timeout waiting for element: ${id}`);
+          resolve(null);
+        }
+      };
+      checkElement();
+    });
+  };
 
-  if (!createBtn) {
-    console.error("createPlaylistBtn not found");
-    return;
-  }
+  (async () => {
+    const createBtn = await waitForElement("createPlaylistBtn");
+    const modal = await waitForElement("createPlaylistModal");
+    const modalClose = await waitForElement("modalClose");
+    const form = await waitForElement("createPlaylistForm");
 
-  createBtn.addEventListener("click", () => {
-    modal.style.display = "flex";
-    document.getElementById("playlistName").focus();
-  });
+    if (!createBtn) {
+      console.warn("createPlaylistBtn not found (playlist view may not be active)");
+      return;
+    }
+
+    createBtn.addEventListener("click", () => {
+      modal.style.display = "flex";
+      document.getElementById("playlistName").focus();
+    });
 
   modalClose.addEventListener("click", () => {
     modal.style.display = "none";
@@ -400,6 +420,7 @@ function setupPlaylistsPageListeners(userId) {
     modal.style.display = "none";
     form.reset();
   });
+  })();
 }
 
 // === EXPORT FOR WINDOW ACCESS (CommonJS compatibility) ===

@@ -18,9 +18,12 @@ export async function initArtistView(artistName) {
     return;
   }
 
-  console.log("🎤 Loading artist:", artistName);
+  // Decode URL-encoded artist name
+  const decodedArtistName = decodeURIComponent(artistName);
 
-  const artistData = await loadArtistByName(artistName);
+  console.log("🎤 Loading artist:", decodedArtistName);
+
+  const artistData = await loadArtistByName(decodedArtistName);
 
   if (!artistData) {
     console.error("❌ Artist not found:", artistName);
@@ -51,7 +54,7 @@ export async function initArtistView(artistName) {
   }
 
   // Profile photo with fallback
-  const defaultProfile = "../images/default-profile.svg";
+  const defaultProfile = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%23764ba2;stop-opacity:1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23grad)'/%3E%3C/svg%3E";
   if (artistData.profilePhoto) {
     profileImg.src = artistData.profilePhoto;
     profileImg.onerror = () => {

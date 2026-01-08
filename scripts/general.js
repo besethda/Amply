@@ -114,6 +114,7 @@ export async function loadSongs() {
       (artist.songs || []).map((song) => ({
         ...song,
         artist: artist.artistName || artist.name || "Unknown",
+        artistId: artist.artistId,
         bucket: artist.bucket,
       }))
     );
