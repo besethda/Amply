@@ -545,6 +545,24 @@ async function handleSingleUpload() {
     return;
   }
 
+  // Sanitize filename - remove special characters that cause issues
+  const sanitizedTitle = title
+    .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Remove special chars except dash, underscore
+    .replace(/\s+/g, ' ')              // Collapse multiple spaces
+    .trim();
+  
+  if (!sanitizedTitle) {
+    statusDiv.textContent = "❌ Song title contains only special characters. Please use letters, numbers, spaces, dashes, or underscores.";
+    return;
+  }
+
+  if (sanitizedTitle !== title) {
+    statusDiv.textContent = `⚠️ Song title cleaned: "${sanitizedTitle}" (special characters removed)`;
+    // Wait a bit so user sees the message
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    statusDiv.textContent = "";
+  }
+
   const validAudioTypes = ["audio/mpeg", "audio/wav"];
   const validAudioExts = [".mp3", ".wav"];
   const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
@@ -567,8 +585,9 @@ async function handleSingleUpload() {
   try {
     statusDiv.innerHTML = `<span style="color:#8df;">Preparing upload...</span>`;
 
-    // Generate key for metadata (songKey is defined later)
-    const metaKey = `songs/${file.name.replace(/\.[^/.]+$/, "")}.json`;
+    // Generate keys using sanitized title for consistency
+    const songKey = `songs/${sanitizedTitle}${fileExt}`;
+    const metaKey = `songs/${sanitizedTitle}.json`;
 
     // Upload cover art
     let coverUrl = "";
@@ -608,7 +627,7 @@ async function handleSingleUpload() {
 
     // Upload audio
     statusDiv.innerHTML = `<span style="color:#8df;">Uploading audio...</span>`;
-    const songKey = `songs/${file.name}`;
+    // songKey already defined above using sanitized title
 
     const presignAudio = await fetch(`${API_URL}/get-upload-url`, {
       method: "POST",
@@ -638,7 +657,7 @@ async function handleSingleUpload() {
     // Upload metadata
     statusDiv.innerHTML = `<span style="color:#8df;">Finalizing metadata...</span>`;
     const metadata = {
-      title: title,
+      title: sanitizedTitle,
       artist: artistName,
       uploadType: "single",
       genre: genre ? genre.split(",").map((g) => g.trim()) : [],
@@ -685,10 +704,23 @@ async function handleSingleUpload() {
 
     statusDiv.innerHTML = `✅ Uploaded "<strong>${title}</strong>" successfully!`;
     renderSinglePreview();
+    
+    // Clear form for next upload
+    clearSingleUploadForm();
 
     console.log("✅ Upload complete!");
   } catch (err) {
     console.error("❌ Upload error:", err);
     statusDiv.innerHTML = `❌ Error: ${err.message}`;
   }
+}
+
+// Clear single upload form fields
+function clearSingleUploadForm() {
+  document.getElementById("trackTitle").value = "";
+  document.getElementById("trackGenre").value = "";
+  document.getElementById("fileInput").value = "";
+  document.getElementById("coverArt").value = "";
+  singleAudioUrl = null;
+  singleCoverUrl = null;
 }

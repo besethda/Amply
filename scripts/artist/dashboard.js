@@ -79,7 +79,8 @@ function renderStats(stats) {
     li.textContent = "No songs with listens yet";
     topList.appendChild(li);
   } else {
-    stats.topSongs.forEach((song) => {
+    // Only show top 5 songs
+    stats.topSongs.slice(0, 5).forEach((song) => {
       const li = document.createElement("li");
       li.innerHTML = `<strong>${song.title}</strong> — ${song.plays.toLocaleString()} streams`;
       topList.appendChild(li);

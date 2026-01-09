@@ -1378,32 +1378,47 @@ const handler = async (event) => {
             console.log("🗑️ Deleting song...");
             try {
                 const body = JSON.parse(event.body || "{}");
-                const { artistId, songId, songFile, artFile, artistRoleArn, bucketName } = body;
+                console.log("📋 Delete request body:", JSON.stringify(body));
+                let { artistId, songId, songFile, artFile, artistRoleArn, bucketName } = body;
 
-                if (!artistId || !songFile || !artistRoleArn || !bucketName) {
+                // bucketName is required - use environment variable if not provided
+                if (!bucketName) {
+                    bucketName = process.env.ARTIST_BUCKET || "amply-besethdatest-596430611327";
+                    console.log(`📝 bucketName not provided, using: ${bucketName}`);
+                }
+                
+                if (!artistId || !songFile) {
+                    console.error("❌ Missing required fields. Received:", { artistId, songFile, bucketName });
                     return {
                         statusCode: 400,
                         headers: corsHeaders,
-                        body: JSON.stringify({ error: "Missing required fields: artistId, songFile, artistRoleArn, bucketName" }),
+                        body: JSON.stringify({ error: "Missing required fields: artistId, songFile" }),
                     };
                 }
 
-                // Assume artist's role to delete from their bucket
-                const sts = new client_sts_1.STSClient({ region });
-                const assume = await sts.send(new client_sts_1.AssumeRoleCommand({
-                    RoleArn: artistRoleArn,
-                    RoleSessionName: "AmplyArtistDelete",
-                    DurationSeconds: 900,
-                }));
+                // Create S3 client (use Lambda role if no roleArn provided, or assume role if provided)
+                let s3;
+                if (artistRoleArn) {
+                    console.log(`🔐 Assuming role: ${artistRoleArn}`);
+                    const sts = new client_sts_1.STSClient({ region });
+                    const assume = await sts.send(new client_sts_1.AssumeRoleCommand({
+                        RoleArn: artistRoleArn,
+                        RoleSessionName: "AmplyArtistDelete",
+                        DurationSeconds: 900,
+                    }));
 
-                const s3 = new client_s3_1.S3Client({
-                    region,
-                    credentials: {
-                        accessKeyId: assume.Credentials.AccessKeyId,
-                        secretAccessKey: assume.Credentials.SecretAccessKey,
-                        sessionToken: assume.Credentials.SessionToken,
-                    },
-                });
+                    s3 = new client_s3_1.S3Client({
+                        region,
+                        credentials: {
+                            accessKeyId: assume.Credentials.AccessKeyId,
+                            secretAccessKey: assume.Credentials.SecretAccessKey,
+                            sessionToken: assume.Credentials.SessionToken,
+                        },
+                    });
+                } else {
+                    console.log("📝 Using Lambda execution role for S3 access");
+                    s3 = new client_s3_1.S3Client({ region });
+                }
 
                 // Delete the song file
                 await s3.send(new client_s3_1.DeleteObjectCommand({
@@ -1421,6 +1436,19 @@ const handler = async (event) => {
                 }));
 
                 console.log(`✅ Deleted metadata file: ${metaKey}`);
+
+                // Delete waveform file if it exists
+                const waveformKey = songFile.replace(/\.[^/.]+$/, ".waveform.json");
+                try {
+                    await s3.send(new client_s3_1.DeleteObjectCommand({
+                        Bucket: bucketName,
+                        Key: waveformKey,
+                    }));
+                    console.log(`✅ Deleted waveform file: ${waveformKey}`);
+                } catch (err) {
+                    // Waveform file may not exist, which is fine
+                    console.log(`ℹ️ Waveform file not found (this is OK): ${waveformKey}`);
+                }
 
                 // Delete art file if provided
                 if (artFile) {
@@ -1644,6 +1672,95 @@ const handler = async (event) => {
                 };
             } catch (err) {
                 console.error("❌ Get config error:", err);
+                return {
+                    statusCode: 500,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: err.message }),
+                };
+            }
+        }
+
+        // === GET-WAVEFORM (Fetch pre-computed waveform data) ===
+        if (path.endsWith("/get-waveform") && method === "POST") {
+            console.log("➡️ Fetching waveform data...");
+            const body = JSON.parse(event.body || "{}");
+            let { artistId, songTitle, bucketName } = body;
+            
+            if (!songTitle || !bucketName) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Missing required fields: songTitle, bucketName" }),
+                };
+            }
+            
+            // Clean up song title - remove extension if present
+            songTitle = songTitle.replace(/\.[^.]+$/, '');
+            console.log(`📝 Looking for waveform: "${songTitle}" in bucket: ${bucketName}`);
+            
+            try {
+                const s3 = new client_s3_1.S3Client({ region });
+                
+                // Generate multiple possible file paths to search
+                // Handle case variations and different naming patterns
+                const possibleKeys = [
+                    `songs/${songTitle}.waveform.json`,              // Exact case: songs/Song Name.waveform.json
+                    `songs/${songTitle.toLowerCase()}.waveform.json`, // Lowercase: songs/song name.waveform.json
+                ];
+                
+                // Add artistId paths if artistId is provided
+                if (artistId) {
+                    possibleKeys.push(`${artistId}/${songTitle}.waveform.json`);        // Structured: artistId/Song Name.waveform.json
+                    possibleKeys.push(`${artistId}/${songTitle.toLowerCase()}.waveform.json`); // Lowercase structured
+                }
+                
+                let waveformData = null;
+                let waveformKey = null;
+                
+                // Try each possible path
+                for (const key of possibleKeys) {
+                    try {
+                        console.log(`  Trying: ${key}`);
+                        const command = new client_s3_1.GetObjectCommand({
+                            Bucket: bucketName,
+                            Key: key,
+                        });
+                        
+                        const response = await s3.send(command);
+                        const text = await response.Body.transformToString();
+                        waveformData = JSON.parse(text);
+                        waveformKey = key;
+                        console.log(`✅ Found waveform data at: ${key}`);
+                        break;
+                    } catch (err) {
+                        // File doesn't exist, try next pattern
+                        continue;
+                    }
+                }
+                
+                if (!waveformData) {
+                    console.warn(`⚠️  Waveform data not found for: "${songTitle}"`);
+                    console.log(`Attempted paths: ${possibleKeys.join(", ")}`);
+                    return {
+                        statusCode: 404,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ 
+                            error: "Waveform data not found",
+                            message: "The waveform for this song has not been analyzed yet. Please re-upload the song.",
+                            attemptedPaths: possibleKeys,
+                        }),
+                    };
+                }
+                
+                console.log(`✅ Returning waveform data with ${waveformData.data.length} samples`);
+                
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify(waveformData),
+                };
+            } catch (err) {
+                console.error("❌ Get waveform error:", err);
                 return {
                     statusCode: 500,
                     headers: corsHeaders,

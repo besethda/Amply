@@ -246,21 +246,27 @@ async function confirmDelete() {
   try {
     deleteConfirmBtn.disabled = true;
     deleteConfirmBtn.textContent = "Deleting...";
+    deleteConfirmBtn.disabled = true;
 
     const config = loadArtistConfig();
     const artistId = config.artistId || localStorage.getItem("artistId");
 
+    const requestBody = {
+      artistId,
+      songId: selectedSongToDelete.id || selectedSongToDelete.file,
+      songFile: selectedSongToDelete.file,
+      artFile: selectedSongToDelete.art_url ? selectedSongToDelete.art_url.split("/").pop() : null,
+      artistRoleArn: config.roleArn,
+      bucketName: config.bucketName,
+    };
+    
+    console.log("🗑️ Delete request body:", requestBody);
+    console.log("📝 Config loaded:", config);
+
     const res = await fetch(`${API_URL}/delete-song`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        artistId,
-        songId: selectedSongToDelete.id || selectedSongToDelete.file,
-        songFile: selectedSongToDelete.file,
-        artFile: selectedSongToDelete.art_url ? selectedSongToDelete.art_url.split("/").pop() : null,
-        artistRoleArn: config.roleArn,
-        bucketName: config.bucketName,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!res.ok) {
@@ -272,6 +278,8 @@ async function confirmDelete() {
     const songId = selectedSongToDelete.id || selectedSongToDelete.file;
     closeDeleteModal();
     statusMessage.innerHTML = messageContent;
+    deleteConfirmBtn.disabled = false;
+    deleteConfirmBtn.textContent = "Delete";
     
     // Remove from local array and re-render
     allSongs = allSongs.filter(s => (s.id || s.file) !== songId);

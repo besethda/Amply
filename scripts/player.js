@@ -289,7 +289,6 @@ export function initializeWaveform() {
     console.log('🎵 [Waveform] Canvas not found, will reinitialize when canvas appears');
     if (!window.waveformRenderer) {
       window.waveformRenderer = new SimpleWaveformRenderer(document.createElement('canvas'));
-      window.waveformRenderer.setColors('rgba(100, 100, 100, 0.6)', 'rgba(0, 255, 136, 1)');
     }
     return;
   }
@@ -301,7 +300,6 @@ export function initializeWaveform() {
   // Create or reuse waveform renderer
   if (!window.waveformRenderer) {
     window.waveformRenderer = new SimpleWaveformRenderer(canvas);
-    window.waveformRenderer.setColors('rgba(100, 100, 100, 0.6)', 'rgba(0, 255, 136, 1)');
   } else {
     // Update canvas reference
     window.waveformRenderer.canvas = canvas;
@@ -321,13 +319,10 @@ export function initializeWaveform() {
     return;
   }
   
-  // If audio is currently playing, generate new waveform
+  // If audio is currently playing, waveform is loaded from backend
   if (!audio.paused && audio.src) {
-    const duration = audio.duration || 180;
-    window.waveformRenderer.generateWaveform(duration);
     waveformDataGenerated = true;
-    currentWaveformDuration = duration;
-    console.log('🎵 [Waveform] Generated waveform for current song');
+    console.log('🎵 [Waveform] Waveform loaded from backend');
   }
   
   // Wait for canvas layout to be complete before sizing
@@ -375,37 +370,12 @@ function resizeWaveformCanvas() {
 }
 
 function startWaveformAnimation() {
-  console.log('🎬 [Waveform] startWaveformAnimation called');
-  console.log('🎬 [Waveform] waveformRenderer exists:', !!window.waveformRenderer);
-  console.log('🎬 [Waveform] audio exists:', !!audio);
-  
-  if (!window.waveformRenderer || !audio) {
-    console.warn('⚠️ [Waveform] Cannot start animation - missing waveform renderer or audio');
+  if (!window.waveformRenderer) {
     return;
   }
-
-  const animate = () => {
-    // Update progress
-    if (audio.duration) {
-      const progress = audio.currentTime / audio.duration;
-      window.waveformRenderer.setProgress(progress);
-    }
-
-    // Update waveform from live audio analysis
-    window.waveformRenderer.updateFromAudio();
-    
-    window.waveformRenderer.draw();
-    window.waveformAnimationId = requestAnimationFrame(animate);
-  };
-
-  // Cancel previous animation
-  if (window.waveformAnimationId) {
-    console.log('🎬 [Waveform] Cancelling previous animation');
-    cancelAnimationFrame(window.waveformAnimationId);
-  }
-
-  console.log('🎬 [Waveform] Starting animation loop');
-  animate();
+  
+  // Just draw once - no animation loop
+  window.waveformRenderer.draw();
 }
 
 function onCanvasAvailable() {
@@ -603,17 +573,53 @@ export async function playSong(song, list = playlist) {
       currentSongReady = true; // Song has started playing
       console.log('[Player] Audio playing successfully');
 
-      // Initialize Web Audio API on first play (after user gesture)
-      if (window.waveformRenderer && !window.waveformRenderer.isConnected) {
-        window.waveformRenderer.initAudioContext(audio);
-      }
-
       // Generate waveform and start animation
       if (window.waveformRenderer) {
-        // Use duration if available, otherwise use a default
-        const duration = audio.duration || 180;
-        console.log('🎵 [Player] Generating waveform for duration:', duration);
-        window.waveformRenderer.generateWaveform(duration);
+        // First, try to fetch pre-computed waveform data
+        let waveformLoaded = false;
+        
+        if (currentSong.bucket && currentSong.file) {
+          try {
+            console.log('🎵 [Player] Fetching pre-computed waveform data...');
+            // Extract just the filename (remove path prefix and extension)
+            const songFilename = currentSong.file.split('/').pop().replace(/\.[^.]+$/, '');
+            
+            const waveformResponse = await fetch(`${API_URL}/get-waveform`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`,
+              },
+              body: JSON.stringify({
+                artistId: currentSong.artistId || undefined,
+                songTitle: songFilename,
+                bucketName: currentSong.bucket,
+              }),
+            });
+            
+            if (waveformResponse.ok) {
+              const waveformData = await waveformResponse.json();
+              console.log('✅ [Player] Loaded pre-computed waveform with', waveformData.data.length, 'samples');
+              
+              // Load the pre-computed waveform data into the renderer
+              window.waveformRenderer.waveformBars = waveformData.data;
+              
+              window.waveformRenderer.isPlaying = true;
+              waveformLoaded = true;
+              waveformDataGenerated = true;
+            } else {
+              console.warn('⚠️ [Player] Waveform data not available:', waveformResponse.status);
+            }
+          } catch (err) {
+            console.warn('⚠️ [Player] Failed to fetch pre-computed waveform:', err.message);
+          }
+        }
+        
+        // If pre-computed waveform not available, skip (no synthetic fallback)
+        if (!waveformLoaded) {
+          console.log('⚠️ [Player] Waveform data not available');
+        }
+        
         window.waveformRenderer.draw();
         startWaveformAnimation();
       } else {
@@ -728,6 +734,8 @@ function setupEvents() {
     
     // Don't activate if we just dragged the waveform
     if (hasMovedEnoughWaveform) {
+      // Reset the flag so future clicks work
+      hasMovedEnoughWaveform = false;
       return;
     }
     
@@ -889,17 +897,10 @@ function setupEvents() {
     }
   });
 
-  // Generate waveform when audio can play
+  // Waveform is loaded from backend when song starts playing
   audio.addEventListener('canplay', () => {
-    if (!waveformDataGenerated && window.waveformRenderer && currentSong && audio.duration) {
-      console.log('🎵 [Waveform] Audio ready, generating waveform...');
-      window.waveformRenderer.generateWaveform(audio.duration);
+    if (window.waveformRenderer) {
       waveformDataGenerated = true;
-      currentWaveformDuration = audio.duration;
-      // Reinitialize if canvas is available
-      if (document.getElementById('waveformCanvas')) {
-        startWaveformAnimation();
-      }
     }
   });
 
@@ -922,10 +923,6 @@ function setupEvents() {
     updateFullPlayerPlayPause(true);
     syncPlayerIcons();
     savePlayerState();
-    // Update waveform animation state
-    if (window.waveformRenderer) {
-      window.waveformRenderer.setPlaying(true);
-    }
   });
 
   audio.addEventListener("pause", () => {
@@ -934,10 +931,6 @@ function setupEvents() {
     updateFullPlayerPlayPause(false);
     syncPlayerIcons();
     savePlayerState();
-    // Update waveform animation state
-    if (window.waveformRenderer) {
-      window.waveformRenderer.setPlaying(false);
-    }
   });
 
   // Player options menu button - attach to SVG

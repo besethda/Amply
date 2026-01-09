@@ -16,6 +16,11 @@ Parameters:
     Default: "https://u7q5tko85l.execute-api.eu-north-1.amazonaws.com/complete-artist-setup"
     Description: Amply API endpoint for callbacks
 
+  WaveformAnalyzerLambdaArn:
+    Type: String
+    Default: "arn:aws:lambda:eu-north-1:596430611327:function:waveform-analyzer"
+    Description: ARN of the waveform-analyzer Lambda function
+
 Resources:
   # IAM Role for the setup Lambda
   SetupLambdaRole:
@@ -42,11 +47,13 @@ Resources:
                   - "s3:PutBucketVersioning"
                   - "s3:PutBucketAcl"
                   - "s3:PutBucketCors"
+                  - "s3:PutBucketNotification"
                   - "cloudfront:CreateCloudFrontOriginAccessIdentity"
                   - "cloudfront:CreateDistribution"
                   - "cloudfront:GetDistribution"
                   - "iam:CreateRole"
                   - "iam:PutRolePolicy"
+                  - "lambda:AddPermission"
                 Resource: "*"
 
   # Lambda function that creates all resources
@@ -60,6 +67,7 @@ Resources:
       Environment:
         Variables:
           AMPLY_API_ENDPOINT: !Ref AmplyAPIEndpoint
+          WAVEFORM_ANALYZER_LAMBDA_ARN: !Ref WaveformAnalyzerLambdaArn
       Code:
         ZipFile: |
           const { S3Client, CreateBucketCommand, PutBucketPolicyCommand, PutBucketCorsCommand } = require('@aws-sdk/client-s3');
