@@ -545,15 +545,37 @@ export async function playSong(song, list = playlist) {
     let streamUrl = song.url;
 
     if (!streamUrl && song.bucket && song.file) {
-      const res = await fetch(
-        `${API_URL}/stream?bucket=${encodeURIComponent(
-          song.bucket
-        )}&file=${encodeURIComponent(song.file)}`
-      );
-      const data = await res.json();
-      streamUrl = data.streamUrl;
+      // /stream endpoint returns JSON with base64 audio
+      // We need to fetch it, convert to blob, and create a blob URL
+      const streamEndpoint = `${API_URL}/stream?bucket=${encodeURIComponent(
+        song.bucket
+      )}&file=${encodeURIComponent(song.file)}`;
+      
+      console.log(`🎵 [Player] Fetching audio from /stream endpoint...`);
+      const streamResponse = await fetch(streamEndpoint);
+      
+      if (!streamResponse.ok) {
+        throw new Error(`Stream endpoint failed: ${streamResponse.status} ${streamResponse.statusText}`);
+      }
+      
+      const streamData = await streamResponse.json();
+      console.log(`🎵 [Player] Received stream data, converting base64 to blob...`);
+      
+      // Convert base64 to binary blob
+      const binaryString = atob(streamData.audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      const audioBlob = new Blob([bytes], { type: streamData.mediaType || 'audio/mpeg' });
+      streamUrl = URL.createObjectURL(audioBlob);
+      console.log(`🎵 [Player] Created blob URL for audio: ${streamUrl.substring(0, 50)}...`);
     }
 
+    console.log(`🎵 [Player] Song object:`, song);
+    console.log(`🎵 [Player] Final streamUrl: ${streamUrl}, bucket: ${song.bucket}, file: ${song.file}`);
+    
     if (!streamUrl) throw new Error("Missing stream URL");
 
     audio.src = streamUrl;

@@ -7,12 +7,14 @@ Your waveform analyzer now uses professional loudness metering following the **I
 ## What Changed
 
 ### Previous Implementation
+
 - Analyzed MP3 frame side information bytes
 - Simple byte variance: `stdDev / 50`
 - Result: Narrow clustering (0.94-0.97 range)
 - Could not detect silence properly
 
 ### New Implementation (ITU-R BS.1770 LUFS)
+
 - **Decodes audio** to PCM samples (MP3 via ffmpeg, WAV parsed directly)
 - **K-weighting filter** for frequency response matching human hearing
 - **True loudness calculation** in LUFS units: `LUFS = -0.691 + 10 * log10(meanSquare)`
@@ -22,24 +24,30 @@ Your waveform analyzer now uses professional loudness metering following the **I
 ## How It Works
 
 ### 1. Audio Decoding
+
 ```
 MP3 → ffmpeg → PCM samples at 44100Hz
 WAV → Parsed directly to PCM samples
 ```
 
 ### 2. K-Weighting Filter
+
 Applies frequency response curve matching human hearing:
+
 - High-pass filter removes low-frequency rumble
 - Shelf filter emphasizes mid/high frequencies
 - Result: Perceived loudness, not just energy
 
 ### 3. LUFS Calculation
+
 For each 0.5-second window:
+
 1. Apply K-weighting to samples
 2. Calculate mean square of weighted signal
 3. Convert to LUFS: `-0.691 + 10 * log10(meanSquare)`
 
 ### 4. Normalization to 0-1 Scale
+
 - LUFS range: -60 (silence) to -5 (loud)
 - Display range: 0.0 to 1.0
 - Power curve (exponent 0.4) for visualization
@@ -49,6 +57,7 @@ For each 0.5-second window:
 ### Test File: "Call You Baby" (43.5 MB, 24-bit WAV)
 
 #### Scale Factors (Previous)
+
 ```
 Samples:  329
 Min:      0.0000
@@ -58,6 +67,7 @@ Distribution: Clustered at 0.94-0.97 (poor variation)
 ```
 
 #### LUFS (New)
+
 ```
 Samples:  329
 Min:      0.0000
@@ -100,13 +110,13 @@ Each uploaded audio file generates a waveform JSON file:
 
 LUFS values in waveform correspond to:
 
-| Display Value | LUFS Range | Audio Type |
-|---|---|---|
-| 0.0-0.2 | -60 to -48 | Silence/very quiet |
-| 0.2-0.4 | -48 to -36 | Quiet passages |
-| 0.4-0.6 | -36 to -23 | Normal dialogue/speech |
-| 0.6-0.8 | -23 to -10 | Music normal levels |
-| 0.8-1.0 | -10 to -5 | Loud/emphasized sections |
+| Display Value | LUFS Range | Audio Type               |
+| ------------- | ---------- | ------------------------ |
+| 0.0-0.2       | -60 to -48 | Silence/very quiet       |
+| 0.2-0.4       | -48 to -36 | Quiet passages           |
+| 0.4-0.6       | -36 to -23 | Normal dialogue/speech   |
+| 0.6-0.8       | -23 to -10 | Music normal levels      |
+| 0.8-1.0       | -10 to -5  | Loud/emphasized sections |
 
 ## File Locations
 
@@ -117,6 +127,7 @@ LUFS values in waveform correspond to:
 ## Backwards Compatibility
 
 ✅ **No breaking changes**
+
 - Existing waveform API still works
 - Player code unchanged
 - Upload form unchanged
@@ -130,14 +141,14 @@ LUFS values in waveform correspond to:
 
 ## Advantages Over Previous Approach
 
-| Feature | Scale Factors | LUFS |
-|---|---|---|
-| Industry Standard | ❌ Custom | ✅ ITU-R BS.1770 |
-| Silence Detection | ❌ Poor | ✅ Proper (-60 LUFS) |
-| Dynamic Range | ❌ 0.94-0.97 clustering | ✅ Full 0.0-1.0 |
-| Perceptual Accuracy | ❌ Byte variance | ✅ Human hearing curve |
-| Broadcast Compliance | ❌ No | ✅ EBU R128 compatible |
-| Real Audio Analysis | ❌ Frame metadata | ✅ Actual samples |
+| Feature              | Scale Factors           | LUFS                   |
+| -------------------- | ----------------------- | ---------------------- |
+| Industry Standard    | ❌ Custom               | ✅ ITU-R BS.1770       |
+| Silence Detection    | ❌ Poor                 | ✅ Proper (-60 LUFS)   |
+| Dynamic Range        | ❌ 0.94-0.97 clustering | ✅ Full 0.0-1.0        |
+| Perceptual Accuracy  | ❌ Byte variance        | ✅ Human hearing curve |
+| Broadcast Compliance | ❌ No                   | ✅ EBU R128 compatible |
+| Real Audio Analysis  | ❌ Frame metadata       | ✅ Actual samples      |
 
 ## Testing
 
@@ -151,14 +162,18 @@ To verify the implementation:
 ## Technical Notes
 
 ### K-Weighting Implementation
+
 The implementation uses a simplified K-weighting filter with:
+
 - High-pass filter coefficient: 0.85 (removes frequencies < ~300Hz)
 - Shelf filter boost: 1.3x (emphasizes mid/high frequencies)
 
 This approximates the official ITU-R BS.1770 curve while remaining computationally efficient.
 
 ### ffmpeg Dependency
+
 MP3 decoding requires ffmpeg, which is included in the Lambda layer. The function automatically handles both:
+
 - **MP3 files**: Decoded to 44100Hz, 2-channel PCM
 - **WAV files**: Parsed directly (supports 16, 24, 32-bit)
 

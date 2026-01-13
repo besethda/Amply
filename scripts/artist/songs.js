@@ -59,26 +59,57 @@ async function loadSongs() {
       return;
     }
 
-    const artistId = config.artistId || localStorage.getItem("artistId");
+    const token = localStorage.getItem("amplyIdToken");
+    const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
+    const artistName = config.artistName || artistProfile.artistName || "Unknown Artist";
 
-    // Fetch the artist's songs from the central index
-    const res = await fetch(`${API_URL}/get-artist-songs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        artistId,
-        cloudfrontDomain: config.cloudfrontDomain,
-        bucketName: config.bucketName,
-      }),
+    // Fetch releases
+    const releasesRes = await fetch(`${API_URL}/releases`, {
+      method: "GET",
+      headers: { 
+        "Authorization": `Bearer ${token}`,
+      },
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Failed to fetch songs: ${errText}`);
+    if (!releasesRes.ok) {
+      const errText = await releasesRes.text();
+      throw new Error(`Failed to fetch releases: ${errText}`);
     }
 
-    const data = await res.json();
-    allSongs = data.songs || [];
+    const releasesData = await releasesRes.json();
+    const releases = releasesData.releases || [];
+    
+    // Fetch songs for each release
+    allSongs = [];
+    for (const release of releases) {
+      try {
+        const songsRes = await fetch(`${API_URL}/release/${release.releaseId}/songs`, {
+          method: "GET",
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (songsRes.ok) {
+          const songsData = await songsRes.json();
+          const songs = songsData.songs || [];
+          // Enrich songs with release and artist info
+          allSongs.push(...songs.map(song => ({
+            ...song,
+            // Use existing fields, add fallbacks
+            art_url: song.art_url || release.coverArt,
+            artist: song.artist || artistName,
+            uploaded_at: song.uploaded_at || song.createdAt || release.releaseDate,
+            album: song.album || release.title,
+            releaseId: release.releaseId,
+            releaseTitle: release.title,
+            releaseType: release.releaseType,
+          })));
+        }
+      } catch (err) {
+        console.warn(`⚠️ Failed to fetch songs for release ${release.releaseId}:`, err);
+      }
+    }
 
     if (allSongs.length === 0) {
       statusMessage.textContent = "";
@@ -241,32 +272,36 @@ function closeDeleteModal() {
 }
 
 async function confirmDelete() {
-  if (!selectedSongToDelete) return;
+  if (!selectedSongToDelete) {
+    console.warn("⚠️ No song selected for deletion");
+    return;
+  }
 
+  // Store a reference to the song being deleted before any operations
+  const songToDelete = selectedSongToDelete;
+  
   try {
     deleteConfirmBtn.disabled = true;
     deleteConfirmBtn.textContent = "Deleting...";
-    deleteConfirmBtn.disabled = true;
 
     const config = loadArtistConfig();
     const artistId = config.artistId || localStorage.getItem("artistId");
 
-    const requestBody = {
-      artistId,
-      songId: selectedSongToDelete.id || selectedSongToDelete.file,
-      songFile: selectedSongToDelete.file,
-      artFile: selectedSongToDelete.art_url ? selectedSongToDelete.art_url.split("/").pop() : null,
-      artistRoleArn: config.roleArn,
-      bucketName: config.bucketName,
-    };
+    // Use new release-based delete endpoint
+    const releaseId = songToDelete.releaseId;
+    const songId = songToDelete.songId || songToDelete.id;
     
-    console.log("🗑️ Delete request body:", requestBody);
-    console.log("📝 Config loaded:", config);
+    if (!releaseId || !songId) {
+      throw new Error("Missing release or song ID");
+    }
+    
+    console.log(`🗑️ Deleting song ${songId} from release ${releaseId}`);
 
-    const res = await fetch(`${API_URL}/delete-song`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
+    const res = await fetch(`${API_URL}/release/${releaseId}/song/${songId}`, {
+      method: "DELETE",
+      headers: { 
+        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+      },
     });
 
     if (!res.ok) {
@@ -274,15 +309,14 @@ async function confirmDelete() {
       throw new Error(`Failed to delete song: ${errText}`);
     }
 
-    const messageContent = `✅ Deleted "<strong>${selectedSongToDelete.title}</strong>" successfully!`;
-    const songId = selectedSongToDelete.id || selectedSongToDelete.file;
+    const messageContent = `✅ Deleted "<strong>${songToDelete.title}</strong>" successfully!`;
     closeDeleteModal();
     statusMessage.innerHTML = messageContent;
     deleteConfirmBtn.disabled = false;
     deleteConfirmBtn.textContent = "Delete";
     
     // Remove from local array and re-render
-    allSongs = allSongs.filter(s => (s.id || s.file) !== songId);
+    allSongs = allSongs.filter(s => (s.id || s.file) !== (songToDelete.id || songToDelete.file));
     
     if (allSongs.length === 0) {
       songsList.classList.add("hidden");

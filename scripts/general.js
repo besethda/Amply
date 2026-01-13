@@ -106,10 +106,67 @@ export function parseJwt(token) {
 // loads the songs from amply-index in my account
 export async function loadSongs() {
   try {
+    // NEW: Try the simplified releases API (release-first architecture)
+    // Single call to get releases WITH songs embedded
+    const releasesRes = await fetch(`${API_URL}/releases`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken") || ""}`,
+      },
+    });
+
+    if (releasesRes.ok) {
+      const releasesData = await releasesRes.json();
+      const releases = releasesData.releases || [];
+      
+      // Build artist lookup from INDEX_URL for artist names (fallback only)
+      let artistMap = {};
+      try {
+        const indexRes = await fetch(INDEX_URL + "?v=" + Date.now());
+        const indexData = await indexRes.json();
+        (indexData.artists || []).forEach(artist => {
+          artistMap[artist.artistId] = artist.artistName || artist.name;
+        });
+      } catch (err) {
+        console.warn("⚠️ Could not load INDEX_URL for artist names:", err);
+      }
+      
+      // Flatten songs from all releases
+      const allSongs = [];
+      for (const release of releases) {
+        const songs = release.songs || [];
+        
+        // Prefer artistName from release (stored during creation), fallback to map
+        let artistName = release.artistName || artistMap[release.artistId] || "Unknown Artist";
+        
+        allSongs.push(...songs.map(song => ({
+          ...song,
+          id: song.songId || song.id,
+          artist: artistName,
+          artistId: release.artistId,
+          title: song.title,
+          genre: song.genre ? [song.genre] : [],
+          releaseId: release.releaseId,
+          releaseTitle: release.title,
+          releaseType: release.releaseType,
+          coverArt: release.coverArt,
+          art_url: release.coverArt, // Fallback for different naming
+          bucket: song.bucket || release.bucket, // Explicitly preserve bucket from enrichment
+          file: song.file, // File path for streaming
+        })));
+      }
+      
+      if (allSongs.length > 0) {
+        console.log("✅ Loaded songs from releases API (single call):", allSongs.length);
+        return allSongs;
+      }
+    }
+
+    // Fallback to old INDEX_URL if releases API fails
+    console.warn("⚠️ Releases API failed, falling back to INDEX_URL");
     const res = await fetch(INDEX_URL + "?v=" + Date.now());
     const data = await res.json();
 
-    // Flatten artist → songs
     return data.artists.flatMap((artist) =>
       (artist.songs || []).map((song) => ({
         ...song,

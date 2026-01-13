@@ -56,6 +56,9 @@ function setupEventListeners() {
   // Single upload
   uploadBtn.addEventListener("click", handleSingleUpload);
 
+  // Album upload
+  uploadAlbumBtn.addEventListener("click", handleAlbumUpload);
+
   // Album song management
   addSongBtn.addEventListener("click", addNewSongToAlbum);
   viewTogglesAlbum.forEach(toggle => {
@@ -296,6 +299,16 @@ function renderSinglePreview() {
   } else {
     previewContent.appendChild(createBoxItem(title, artistName, singleAudioUrl, singleCoverUrl, null));
   }
+}
+
+function clearSingleUploadForm() {
+  document.getElementById("fileInput").value = "";
+  document.getElementById("coverArt").value = "";
+  document.getElementById("trackTitle").value = "";
+  document.getElementById("trackGenre").value = "";
+  singleCoverUrl = null;
+  singleAudioUrl = null;
+  renderSinglePreview();
 }
 
 function renderAlbumPreview() {
@@ -585,9 +598,9 @@ async function handleSingleUpload() {
   try {
     statusDiv.innerHTML = `<span style="color:#8df;">Preparing upload...</span>`;
 
-    // Generate keys using sanitized title for consistency
+    // Generate keys for S3 paths
+    const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
     const songKey = `songs/${sanitizedTitle}${fileExt}`;
-    const metaKey = `songs/${sanitizedTitle}.json`;
 
     // Upload cover art
     let coverUrl = "";
@@ -654,55 +667,54 @@ async function handleSingleUpload() {
     singleAudioUrl = generateCdnUrl(config, songKey);
     singleCoverUrl = coverUrl;
 
-    // Upload metadata
-    statusDiv.innerHTML = `<span style="color:#8df;">Finalizing metadata...</span>`;
-    const metadata = {
-      title: sanitizedTitle,
-      artist: artistName,
-      uploadType: "single",
-      genre: genre ? genre.split(",").map((g) => g.trim()) : [],
-      art_url: coverUrl,
-      file: songKey,
-      uploaded_at: new Date().toISOString(),
-    };
-
-    const presignMeta = await fetch(`${API_URL}/get-upload-url`, {
+    // Step 1: Create release (metadata only - no songs)
+    statusDiv.innerHTML = `<span style="color:#8df;">Creating release...</span>`;
+    const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
+    const artistName = config.artistName || artistProfile.artistName || "Unknown Artist";
+    
+    const releaseRes = await fetch(`${API_URL}/create-release`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+      },
       body: JSON.stringify({
-        fileName: metaKey,
-        artistRoleArn: config.roleArn,
-        bucketName: config.bucketName,
-        contentType: "application/json",
+        releaseType: "single",
+        title: sanitizedTitle,
+        artistName: artistName,
+        description: "",
+        coverArt: coverUrl,
+        releaseDate: new Date().toISOString(),
       }),
     });
 
-    const presignMetaData = await presignMeta.json();
-    if (!presignMetaData.uploadUrl) throw new Error("Failed to get upload URL for metadata.");
+    if (!releaseRes.ok) throw new Error("Failed to create release");
+    
+    const releaseData = await releaseRes.json();
+    const releaseId = releaseData.releaseId;
 
-    await fetch(presignMetaData.uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(metadata, null, 2),
-    });
-
-    // Update index
-    statusDiv.innerHTML = `<span style="color:#8df;">Updating global index...</span>`;
-    const updateRes = await fetch(`${API_URL}/update-index`, {
+    // Step 2: Add song to release
+    statusDiv.innerHTML = `<span style="color:#8df;">Adding song to release...</span>`;
+    const s3Key = `songs/${artistId}/${releaseId}/${sanitizedTitle}${fileExt}`;
+    
+    const addSongRes = await fetch(`${API_URL}/release/${releaseId}/add-song`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+      },
       body: JSON.stringify({
-        artistId,
-        artistName,
-        cloudfrontDomain: config.cloudfrontDomain,
-        bucketName: config.bucketName,
-        song: metadata,
+        title: sanitizedTitle,
+        genre: genre || "",
+        duration: Math.round((file.size / 128000)), // Rough estimate: 128kbps
+        s3Key: s3Key,
       }),
     });
 
-    if (!updateRes.ok) throw new Error("Central index update failed");
-
-    statusDiv.innerHTML = `✅ Uploaded "<strong>${title}</strong>" successfully!`;
+    if (!addSongRes.ok) throw new Error("Failed to add song to release");
+    
+    const songData = await addSongRes.json();
+    statusDiv.innerHTML = `✅ Uploaded "<strong>${title}</strong>" as single successfully! Release ID: ${releaseId}`;
     renderSinglePreview();
     
     // Clear form for next upload
@@ -715,12 +727,200 @@ async function handleSingleUpload() {
   }
 }
 
-// Clear single upload form fields
-function clearSingleUploadForm() {
-  document.getElementById("trackTitle").value = "";
-  document.getElementById("trackGenre").value = "";
-  document.getElementById("fileInput").value = "";
-  document.getElementById("coverArt").value = "";
-  singleAudioUrl = null;
-  singleCoverUrl = null;
+// ===== ALBUM/EP UPLOAD =====
+async function handleAlbumUpload() {
+  const albumTitle = document.getElementById("albumTitle").value.trim();
+  if (!albumTitle) {
+    statusAlbumDiv.textContent = "Please enter an album title.";
+    return;
+  }
+
+  if (albumSongs.length === 0) {
+    statusAlbumDiv.textContent = "Please add at least one song to the album.";
+    return;
+  }
+
+  // Validate all songs have files and titles
+  for (const song of albumSongs) {
+    if (!song.title) {
+      statusAlbumDiv.textContent = "All songs must have a title.";
+      return;
+    }
+    if (!song.file) {
+      statusAlbumDiv.textContent = `"${song.title}" is missing an audio file.`;
+      return;
+    }
+  }
+
+  const config = await loadArtistConfig();
+  if (!config?.roleArn || !config?.bucketName) {
+    statusAlbumDiv.textContent = "❌ Missing AWS info. Please reconnect your artist account.";
+    return;
+  }
+
+  const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
+  const artistName = artistProfile.artistName || config.displayName || "Unknown Artist";
+
+  try {
+    statusAlbumDiv.innerHTML = `<span style="color:#8df;">Preparing album upload...</span>`;
+
+    // Upload album cover art
+    let coverUrl = "";
+    const coverFile = document.getElementById("albumCoverArt").files[0];
+    if (coverFile) {
+      const validImageExts = [".jpg", ".jpeg", ".png"];
+      const coverExt = coverFile.name.toLowerCase().slice(coverFile.name.lastIndexOf("."));
+      if (!validImageExts.includes(coverExt)) {
+        statusAlbumDiv.textContent = "❌ Only .jpg, .jpeg, or .png allowed for cover art.";
+        return;
+      }
+
+      const coverKey = `art/${albumTitle}-cover${coverExt}`;
+      const presignCover = await fetch(`${API_URL}/get-upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: coverKey,
+          artistRoleArn: config.roleArn,
+          bucketName: config.bucketName,
+          contentType: coverFile.type || "image/jpeg",
+        }),
+      });
+
+      const presignCoverData = await presignCover.json();
+      if (!presignCoverData.uploadUrl) throw new Error("Failed to get upload URL for cover art.");
+
+      await fetch(presignCoverData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": coverFile.type || "image/jpeg" },
+        body: coverFile,
+      });
+
+      coverUrl = generateCdnUrl(config, coverKey);
+    }
+
+    // Upload all songs and build release data
+    for (let idx = 0; idx < albumSongs.length; idx++) {
+      const song = albumSongs[idx];
+      const sanitizedTitle = song.title
+        .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      statusAlbumDiv.innerHTML = `<span style="color:#8df;">Uploading song ${idx + 1}/${albumSongs.length}...</span>`;
+
+      const fileExt = song.file.name.toLowerCase().slice(song.file.name.lastIndexOf("."));
+      const songKey = `songs/${albumTitle}/${sanitizedTitle}${fileExt}`;
+
+      // Get upload URL
+      const presignAudio = await fetch(`${API_URL}/get-upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: songKey,
+          artistRoleArn: config.roleArn,
+          bucketName: config.bucketName,
+          contentType: song.file.type || "audio/mpeg",
+        }),
+      });
+
+      const presignAudioData = await presignAudio.json();
+      if (!presignAudioData.uploadUrl) throw new Error(`Failed to get upload URL for ${song.title}`);
+
+      // Upload file
+      await fetch(presignAudioData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": song.file.type || "audio/mpeg" },
+        body: song.file,
+      });
+    }
+
+    // Determine release type based on song count
+    let releaseType = "single";
+    if (albumSongs.length === 2 || albumSongs.length === 3) {
+      releaseType = "ep";
+    } else if (albumSongs.length >= 4) {
+      releaseType = "album";
+    }
+
+    // Override with user selection
+    if (uploadType === "ep") releaseType = "ep";
+    if (uploadType === "album") releaseType = "album";
+
+    // Step 1: Create release (metadata only - no songs)
+    statusAlbumDiv.innerHTML = `<span style="color:#8df;">Creating release...</span>`;
+    const artistProfile = JSON.parse(localStorage.getItem("amplyArtistProfile") || "{}");
+    const artistName = config.artistName || artistProfile.artistName || "Unknown Artist";
+    
+    const releaseRes = await fetch(`${API_URL}/create-release`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+      },
+      body: JSON.stringify({
+        releaseType,
+        title: albumTitle,
+        artistName: artistName,
+        description: "",
+        coverArt: coverUrl,
+        releaseDate: new Date().toISOString(),
+      }),
+    });
+
+    if (!releaseRes.ok) throw new Error("Failed to create release");
+    
+    const releaseData = await releaseRes.json();
+    const releaseId = releaseData.releaseId;
+
+    // Step 2: Add all songs to the release
+    for (let idx = 0; idx < albumSongs.length; idx++) {
+      const song = albumSongs[idx];
+      const sanitizedTitle = song.title
+        .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      statusAlbumDiv.innerHTML = `<span style="color:#8df;">Adding song ${idx + 1}/${albumSongs.length} to release...</span>`;
+
+      const fileExt = song.file.name.toLowerCase().slice(song.file.name.lastIndexOf("."));
+      const s3Key = `songs/${artistId}/${releaseId}/${sanitizedTitle}${fileExt}`;
+
+      // Add song to release
+      const addSongRes = await fetch(`${API_URL}/release/${releaseId}/add-song`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("amplyIdToken")}`,
+        },
+        body: JSON.stringify({
+          title: sanitizedTitle,
+          genre: song.genre || "",
+          duration: Math.round((song.file.size / 128000)), // Rough estimate: 128kbps
+          s3Key: s3Key,
+        }),
+      });
+
+      if (!addSongRes.ok) throw new Error(`Failed to add "${song.title}" to release`);
+    }
+
+    statusAlbumDiv.innerHTML = `✅ Uploaded "<strong>${albumTitle}</strong>" successfully! Release ID: ${releaseId}`;
+    renderAlbumPreview();
+    clearAlbumUploadForm();
+
+    console.log("✅ Album upload complete!");
+  } catch (err) {
+    console.error("❌ Album upload error:", err);
+    statusAlbumDiv.innerHTML = `❌ Error: ${err.message}`;
+  }
+}
+
+// Clear album upload form fields
+function clearAlbumUploadForm() {
+  document.getElementById("albumTitle").value = "";
+  document.getElementById("albumCoverArt").value = "";
+  albumSongs = [];
+  albumCoverUrl = null;
+  renderAlbumSongsList();
+  renderAlbumPreview();
 }

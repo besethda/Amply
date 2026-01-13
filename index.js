@@ -18,8 +18,10 @@ const COGNITO_USER_POOL_ID = "eu-north-1_pL55dqPRc"; // Amply user pool
 const environment = process.env.ENVIRONMENT || "dev";
 const USERS_TABLE = `amply-users-${environment}`;
 const PLAYLISTS_TABLE = `amply-playlists-${environment}`;
-const LIKES_TABLE = `amply-listen-history-${environment}`; // Reuse listen table with GSI for likes
-const ARTIST_CONFIG_TABLE = `amply-artist-config-${environment}`; // Artist cloud provider configurations (singular: amply-artist-config-dev)
+const LIKES_TABLE = `amply-likes-${environment}`;
+const ARTIST_CONFIG_TABLE = `amply-artist-config-${environment}`; // Artist cloud provider configurations
+const RELEASES_TABLE = `amply-releases-${environment}`;
+const SONGS_TABLE = `amply-songs-${environment}`;
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
@@ -76,6 +78,47 @@ function extractUserIdFromToken(event) {
         console.error("❌ Error extracting userId from token:", err.message);
         return null;
     }
+}
+
+// Helper function to enrich songs with streaming info
+async function enrichSongsWithStreamInfo(songs, dynamodb, artistId) {
+    console.log(`📦 Enriching ${songs.length} songs with bucket/file info for artist ${artistId}`);
+    
+    // Look up artist's bucket from config
+    let bucketName = defaultBucket;
+    try {
+        const configResult = await dynamodb.send(
+            new client_dynamodb_1.GetItemCommand({
+                TableName: ARTIST_CONFIG_TABLE,
+                Key: (0, util_dynamodb_1.marshall)({ artistId }),
+            })
+        );
+        if (configResult.Item) {
+            const config = (0, util_dynamodb_1.unmarshall)(configResult.Item);
+            bucketName = config.bucketName || defaultBucket;
+            console.log(`   ✅ Found artist bucket in config: ${bucketName}`);
+        } else {
+            console.log(`   ℹ️ No artist config found, using default bucket: ${defaultBucket}`);
+        }
+    } catch (e) {
+        console.warn(`   ⚠️ Could not get artist bucket from config: ${e.message}, using default: ${defaultBucket}`);
+    }
+    
+    for (let song of songs) {
+        // Look for s3Key or file field
+        const s3Path = song.s3Key || song.file;
+        console.log(`   Song: ${song.title}, s3Key: ${song.s3Key}, file: ${song.file}`);
+        if (s3Path) {
+            // Provide bucket and file so player can call /stream endpoint
+            // /stream endpoint has CORS headers configured and handles presigning
+            song.bucket = bucketName;
+            song.file = s3Path;
+            console.log(`   ✅ Added bucket=${song.bucket}, file=${song.file}`);
+        } else {
+            console.warn(`   ⚠️ No s3Key or file for song ${song.title}`);
+        }
+    }
+    return songs;
 }
 
 const handler = async (event) => {
@@ -414,7 +457,9 @@ const handler = async (event) => {
         // === STREAM ===
         if (path.endsWith("/stream") && method === "GET") {
             const { file, bucket } = event.queryStringParameters || {};
+            console.log("🎵 [Stream] Received request - bucket:", bucket, "file:", file);
             if (!file || !bucket) {
+                console.error("❌ [Stream] Missing parameters");
                 return {
                     statusCode: 400,
                     headers: corsHeaders,
@@ -422,27 +467,47 @@ const handler = async (event) => {
                 };
             }
             try {
+                console.log("📀 [Stream] Creating S3 client for region:", region);
                 const s3 = new client_s3_1.S3Client({ region });
+                console.log("📀 [Stream] Fetching from S3 - bucket:", bucket, "key:", file);
                 const command = new client_s3_1.GetObjectCommand({ 
                     Bucket: bucket, 
                     Key: file,
-                    ResponseContentType: "audio/wav",
-                    ResponseCacheControl: "public, max-age=3600"
+                    ResponseContentType: "audio/mpeg"
                 });
-                // generate a temporary presigned URL to stream the song
-                const signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, command, { expiresIn: 300 });
+                
+                // Fetch the file from S3
+                const response = await s3.send(command);
+                console.log("📀 [Stream] Got response from S3, converting to base64...");
+                
+                // Convert the stream to base64 for return as JSON
+                const chunks = [];
+                for await (const chunk of response.Body) {
+                    chunks.push(chunk);
+                }
+                const buffer = Buffer.concat(chunks);
+                const base64Audio = buffer.toString('base64');
+                console.log("✅ [Stream] Successfully created base64 audio, size:", base64Audio.length);
+                
                 return {
                     statusCode: 200,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ streamUrl: signedUrl }),
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ 
+                        audio: base64Audio,
+                        mediaType: "audio/mpeg",
+                        size: buffer.length
+                    }),
                 };
-            }
-            catch (err) {
+            } catch (err) {
                 console.error("❌ Stream error:", err);
+                console.error("Stack:", err.stack);
                 return {
                     statusCode: 500,
                     headers: corsHeaders,
-                    body: JSON.stringify({ error: "Failed to generate stream URL: " + err.message }),
+                    body: JSON.stringify({ error: "Failed to stream file: " + err.message }),
                 };
             }
         }
@@ -1766,6 +1831,534 @@ const handler = async (event) => {
                     headers: corsHeaders,
                     body: JSON.stringify({ error: err.message }),
                 };
+            }
+        }
+
+        // === CREATE RELEASE ===
+        if (path.endsWith("/create-release") && method === "POST") {
+            try {
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                const body = JSON.parse(event.body || "{}");
+                const { releaseType, title, description, coverArt, releaseDate, artistName } = body;
+
+                if (!releaseType || !title) {
+                    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "Missing required fields: releaseType, title" }) };
+                }
+
+                if (!["single", "EP", "album"].includes(releaseType)) {
+                    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "releaseType must be 'single', 'EP', or 'album'" }) };
+                }
+
+                const releaseId = require("crypto").randomUUID();
+                const timestamp = new Date().toISOString();
+                
+                // Try to get artist name from request or from artist config
+                let finalArtistName = artistName || "Unknown Artist";
+                if (!artistName) {
+                    try {
+                        const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                        const configResult = await dynamodb.send(
+                            new client_dynamodb_1.GetItemCommand({
+                                TableName: ARTIST_CONFIG_TABLE,
+                                Key: (0, util_dynamodb_1.marshall)({ artistId: userId }),
+                            })
+                        );
+                        if (configResult.Item) {
+                            const config = (0, util_dynamodb_1.unmarshall)(configResult.Item);
+                            finalArtistName = config.artistName || config.displayName || "Unknown Artist";
+                        }
+                    } catch (err) {
+                        console.warn("⚠️ Failed to fetch artist config, using default name:", err);
+                    }
+                }
+
+                const releaseData = {
+                    releaseId,
+                    artistId: userId,
+                    artistName: finalArtistName,
+                    releaseType,
+                    title,
+                    description: description || "",
+                    coverArt: coverArt || "",
+                    releaseDate: releaseDate || timestamp,
+                    status: "draft",
+                    createdAt: timestamp,
+                    updatedAt: timestamp,
+                };
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                await dynamodb.send(
+                    new client_dynamodb_1.PutItemCommand({
+                        TableName: RELEASES_TABLE,
+                        Item: (0, util_dynamodb_1.marshall)(releaseData),
+                    })
+                );
+
+                console.log(`✅ Created release: ${releaseId} for artist ${finalArtistName}`);
+                return {
+                    statusCode: 201,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ releaseId, ...releaseData }),
+                };
+            } catch (err) {
+                console.error("❌ Create release error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === GET RELEASES (WITH SONGS EMBEDDED) ===
+        if (path.endsWith("/releases") && method === "GET") {
+            try {
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                const queryParams = event.queryStringParameters || {};
+                const artistId = queryParams.artistId || userId;
+                const releaseType = queryParams.type;
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const expressionValues = { ":artistId": artistId };
+                if (releaseType) {
+                    expressionValues[":type"] = releaseType;
+                }
+
+                let queryParams2 = {
+                    TableName: RELEASES_TABLE,
+                    KeyConditionExpression: "artistId = :artistId",
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)(expressionValues),
+                };
+
+                if (releaseType) {
+                    queryParams2.FilterExpression = "releaseType = :type";
+                }
+
+                const result = await dynamodb.send(new client_dynamodb_1.QueryCommand(queryParams2));
+                let releases = (result.Items || []).map((item) => (0, util_dynamodb_1.unmarshall)(item));
+
+                // For each release, fetch songs and embed them
+                for (let release of releases) {
+                    try {
+                        const songsResult = await dynamodb.send(
+                            new client_dynamodb_1.QueryCommand({
+                                TableName: SONGS_TABLE,
+                                IndexName: "releaseIdIndex",
+                                KeyConditionExpression: "releaseId = :releaseId",
+                                ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                                    ":releaseId": release.releaseId,
+                                }),
+                            })
+                        );
+                        release.songs = (songsResult.Items || []).map((item) => (0, util_dynamodb_1.unmarshall)(item));
+                        console.log(`   Release ${release.releaseId}: Found ${release.songs.length} songs, enriching...`);
+                        // Enrich songs with bucket and file info for streaming
+                        release.songs = await enrichSongsWithStreamInfo(release.songs, dynamodb, artistId);
+                    } catch (err) {
+                        console.warn(`⚠️ Failed to fetch songs for release ${release.releaseId}:`, err);
+                        release.songs = [];
+                    }
+                }
+
+                console.log(`✅ Retrieved ${releases.length} releases with songs for artist ${artistId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ releases }),
+                };
+            } catch (err) {
+                console.error("❌ Get releases error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === GET SINGLE RELEASE ===
+        if (path.match(/^\/release\/[^\/]+$/) && method === "GET") {
+            try {
+                const releaseId = path.split("/").pop();
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+
+                // Query releases table to find the release
+                const queryParams2 = {
+                    TableName: RELEASES_TABLE,
+                    IndexName: "releaseIdIndex",
+                    KeyConditionExpression: "releaseId = :releaseId",
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                        ":releaseId": releaseId,
+                    }),
+                };
+
+                const result = await dynamodb.send(new client_dynamodb_1.QueryCommand(queryParams2));
+                if (!result.Items || result.Items.length === 0) {
+                    return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Release not found" }) };
+                }
+
+                const release = (0, util_dynamodb_1.unmarshall)(result.Items[0]);
+                console.log(`✅ Retrieved release: ${releaseId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify(release),
+                };
+            } catch (err) {
+                console.error("❌ Get release error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === UPDATE RELEASE ===
+        if (path.match(/^\/release\/[^\/]+$/) && method === "PUT") {
+            try {
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                const releaseId = path.split("/").pop();
+                const body = JSON.parse(event.body || "{}");
+                const { title, description, coverArt, status } = body;
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const timestamp = new Date().toISOString();
+
+                // Build update expression dynamically
+                const updateFields = ["#updated = :updated"];
+                const expressionNames = { "#updated": "updatedAt" };
+                const expressionValues = { ":updated": timestamp };
+
+                if (title) {
+                    updateFields.push("#title = :title");
+                    expressionNames["#title"] = "title";
+                    expressionValues[":title"] = title;
+                }
+                if (description !== undefined) {
+                    updateFields.push("#desc = :desc");
+                    expressionNames["#desc"] = "description";
+                    expressionValues[":desc"] = description;
+                }
+                if (coverArt !== undefined) {
+                    updateFields.push("#cover = :cover");
+                    expressionNames["#cover"] = "coverArt";
+                    expressionValues[":cover"] = coverArt;
+                }
+                if (status) {
+                    updateFields.push("#status = :status");
+                    expressionNames["#status"] = "status";
+                    expressionValues[":status"] = status;
+                }
+
+                const updateParams = {
+                    TableName: RELEASES_TABLE,
+                    Key: (0, util_dynamodb_1.marshall)({
+                        artistId: userId,
+                        releaseId,
+                    }),
+                    UpdateExpression: "SET " + updateFields.join(", "),
+                    ExpressionAttributeNames: expressionNames,
+                    ExpressionAttributeValues: (0, util_dynamodb_1.marshall)(expressionValues),
+                    ReturnValues: "ALL_NEW",
+                };
+
+                const result = await dynamodb.send(new client_dynamodb_1.UpdateItemCommand(updateParams));
+                const updatedRelease = (0, util_dynamodb_1.unmarshall)(result.Attributes);
+
+                console.log(`✅ Updated release: ${releaseId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify(updatedRelease),
+                };
+            } catch (err) {
+                console.error("❌ Update release error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === DELETE RELEASE ===
+        if (path.match(/^\/release\/[^\/]+$/) && method === "DELETE") {
+            try {
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                const releaseId = path.split("/").pop();
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+
+                await dynamodb.send(
+                    new client_dynamodb_1.DeleteItemCommand({
+                        TableName: RELEASES_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({
+                            artistId: userId,
+                            releaseId,
+                        }),
+                    })
+                );
+
+                console.log(`✅ Deleted release: ${releaseId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Release deleted" }),
+                };
+            } catch (err) {
+                console.error("❌ Delete release error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === ADD SONG TO RELEASE ===
+        if (path.match(/^\/release\/[^\/]+\/add-song$/) && method === "POST") {
+            try {
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                const releaseId = path.split("/")[2];
+                const body = JSON.parse(event.body || "{}");
+                const { title, genre, duration, s3Key } = body;
+
+                if (!title || !s3Key) {
+                    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "Missing required fields: title, s3Key" }) };
+                }
+
+                const songId = require("crypto").randomUUID();
+                const timestamp = new Date().toISOString();
+
+                const songData = {
+                    songId,
+                    releaseId,
+                    artistId: userId,
+                    title,
+                    genre: genre || "",
+                    duration: duration || 0,
+                    s3Key,
+                    createdAt: timestamp,
+                    updatedAt: timestamp,
+                };
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                await dynamodb.send(
+                    new client_dynamodb_1.PutItemCommand({
+                        TableName: SONGS_TABLE,
+                        Item: (0, util_dynamodb_1.marshall)(songData),
+                    })
+                );
+
+                console.log(`✅ Added song ${songId} to release ${releaseId}`);
+                return {
+                    statusCode: 201,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ songId, ...songData }),
+                };
+            } catch (err) {
+                console.error("❌ Add song error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === REMOVE SONG FROM RELEASE ===
+        if (path.match(/^\/release\/[^\/]+\/song\/[^\/]+$/) && method === "DELETE") {
+            try {
+                const userId = extractUserIdFromToken(event);
+                if (!userId) {
+                    return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                const releaseId = path.split("/")[2];
+                const songId = path.split("/")[4];
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                
+                // First, get song to verify ownership and get s3Key
+                const getResult = await dynamodb.send(
+                    new client_dynamodb_1.GetItemCommand({
+                        TableName: SONGS_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({ songId }),
+                    })
+                );
+
+                if (!getResult.Item) {
+                    return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Song not found" }) };
+                }
+
+                const song = (0, util_dynamodb_1.unmarshall)(getResult.Item);
+                if (song.artistId !== userId || song.releaseId !== releaseId) {
+                    return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+                }
+
+                // Get artist's S3 bucket from artist-config
+                let bucketName = defaultBucket;
+                try {
+                    const configResult = await dynamodb.send(
+                        new client_dynamodb_1.GetItemCommand({
+                            TableName: ARTIST_CONFIG_TABLE,
+                            Key: (0, util_dynamodb_1.marshall)({ artistId: userId }),
+                        })
+                    );
+                    if (configResult.Item) {
+                        const config = (0, util_dynamodb_1.unmarshall)(configResult.Item);
+                        bucketName = config.bucketName || defaultBucket;
+                    }
+                } catch (e) {
+                    console.warn("⚠️ Could not get artist bucket, using default:", e.message);
+                }
+
+                // Delete from S3
+                const s3 = new client_s3_1.S3Client({ region });
+                try {
+                    await s3.send(new client_s3_1.DeleteObjectCommand({
+                        Bucket: bucketName,
+                        Key: song.s3Key,
+                    }));
+                    console.log(`✅ Deleted S3 file: ${bucketName}/${song.s3Key}`);
+                } catch (s3Err) {
+                    console.warn(`⚠️ S3 deletion failed (file may not exist): ${s3Err.message}`);
+                    // Continue with DynamoDB deletion even if S3 fails
+                }
+
+                // Delete from DynamoDB
+                await dynamodb.send(
+                    new client_dynamodb_1.DeleteItemCommand({
+                        TableName: SONGS_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({ songId }),
+                    })
+                );
+
+                // Check if there are any remaining songs in this release
+                const remainingSongsResult = await dynamodb.send(
+                    new client_dynamodb_1.QueryCommand({
+                        TableName: SONGS_TABLE,
+                        IndexName: "releaseIdIndex",
+                        KeyConditionExpression: "releaseId = :releaseId",
+                        ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                            ":releaseId": releaseId,
+                        }),
+                    })
+                );
+
+                const remainingSongs = remainingSongsResult.Items || [];
+                if (remainingSongs.length === 0) {
+                    // No more songs in release, delete the release too
+                    try {
+                        await dynamodb.send(
+                            new client_dynamodb_1.DeleteItemCommand({
+                                TableName: RELEASES_TABLE,
+                                Key: (0, util_dynamodb_1.marshall)({ 
+                                    artistId: userId,
+                                    releaseId: releaseId,
+                                }),
+                            })
+                        );
+                        console.log(`✅ Deleted empty release ${releaseId}`);
+                    } catch (err) {
+                        console.warn(`⚠️ Failed to delete empty release ${releaseId}:`, err);
+                    }
+                }
+
+                console.log(`✅ Deleted song ${songId} from release ${releaseId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: "Song deleted", releaseDeleted: remainingSongs.length === 0 }),
+                };
+            } catch (err) {
+                console.error("❌ Delete song error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === GET SONGS IN RELEASE ===
+        // === GET RELEASE SONGS (WITH RELEASE DATA) ===
+        if (path.match(/^\/release\/[^\/]+\/songs$/) && method === "GET") {
+            try {
+                const releaseId = path.split("/")[2];
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                
+                // Get the release data first
+                let release = null;
+                try {
+                    const releaseResult = await dynamodb.send(
+                        new client_dynamodb_1.QueryCommand({
+                            TableName: RELEASES_TABLE,
+                            IndexName: "releaseIdIndex",
+                            KeyConditionExpression: "releaseId = :releaseId",
+                            ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                                ":releaseId": releaseId,
+                            }),
+                        })
+                    );
+                    if (releaseResult.Items && releaseResult.Items.length > 0) {
+                        release = (0, util_dynamodb_1.unmarshall)(releaseResult.Items[0]);
+                    }
+                } catch (err) {
+                    console.warn(`⚠️ Failed to fetch release ${releaseId}:`, err);
+                }
+
+                // Get songs for the release
+                const songsResult = await dynamodb.send(
+                    new client_dynamodb_1.QueryCommand({
+                        TableName: SONGS_TABLE,
+                        IndexName: "releaseIdIndex",
+                        KeyConditionExpression: "releaseId = :releaseId",
+                        ExpressionAttributeValues: (0, util_dynamodb_1.marshall)({
+                            ":releaseId": releaseId,
+                        }),
+                    })
+                );
+
+                let songs = (songsResult.Items || []).map((item) => (0, util_dynamodb_1.unmarshall)(item));
+                // Enrich songs with bucket and file info for streaming
+                const artistId = release?.artistId || songs[0]?.artistId;
+                songs = await enrichSongsWithStreamInfo(songs, dynamodb, artistId);
+                console.log(`✅ Retrieved ${songs.length} songs in release ${releaseId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ release, songs }),
+                };
+            } catch (err) {
+                console.error("❌ Get songs error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+            }
+        }
+
+        // === GET SONG DETAILS ===
+        if (path.match(/^\/songs\/[^\/]+$/) && method === "GET") {
+            try {
+                const songId = path.split("/")[2];
+
+                const dynamodb = new client_dynamodb_1.DynamoDBClient({ region });
+                const result = await dynamodb.send(
+                    new client_dynamodb_1.GetItemCommand({
+                        TableName: SONGS_TABLE,
+                        Key: (0, util_dynamodb_1.marshall)({ songId }),
+                    })
+                );
+
+                if (!result.Item) {
+                    return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Song not found" }) };
+                }
+
+                let song = (0, util_dynamodb_1.unmarshall)(result.Item);
+                // Enrich song with bucket and file info for streaming
+                const songs = await enrichSongsWithStreamInfo([song], dynamodb, song.artistId);
+                song = songs[0];
+                console.log(`✅ Retrieved song ${songId}`);
+                return {
+                    statusCode: 200,
+                    headers: corsHeaders,
+                    body: JSON.stringify(song),
+                };
+            } catch (err) {
+                console.error("❌ Get song error:", err);
+                return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
             }
         }
 
